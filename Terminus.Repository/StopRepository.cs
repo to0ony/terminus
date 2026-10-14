@@ -22,6 +22,16 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
         return entity is null ? null : StopMapper.ToModel(entity);
     }
 
+    public async Task<IReadOnlyList<IStopModel>> GetManyAsync(Guid agencyId, IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default)
+    {
+        var entities = await context.Stops
+            .AsNoTracking()
+            .Where(s => s.AgencyId == agencyId && ids.Contains(s.Id))
+            .ToListAsync(cancellationToken);
+
+        return entities.Select(StopMapper.ToModel).ToList();
+    }
+
     public async Task<PagedResult<IStopModel>> FindAsync(Guid agencyId, StopFilter filter, CancellationToken cancellationToken = default)
     {
         var query = context.Stops

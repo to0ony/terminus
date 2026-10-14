@@ -4,6 +4,10 @@
 @stopId = 00000000-0000-0000-0000-000000000000
 @routeId = 00000000-0000-0000-0000-000000000000
 @calendarId = 00000000-0000-0000-0000-000000000000
+@tripId = 00000000-0000-0000-0000-000000000000
+# Dva stajališta ili perona (ne kolodvori) za primjer vremena vožnje
+@stopAId = 00000000-0000-0000-0000-000000000000
+@stopBId = 00000000-0000-0000-0000-000000000000
 
 ### Popis agencija
 GET {{Terminus.WebApi_HostAddress}}/api/agencies?search=&page=1&pageSize=20
@@ -193,5 +197,58 @@ DELETE {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars/{{cal
 
 ### Brisanje kalendara (409 ako ga koriste vožnje)
 DELETE {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars/{{calendarId}}
+
+### Popis vožnji (poredano po prvom polasku; filteri routeId, serviceCalendarId, directionId)
+GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/trips?routeId={{routeId}}&page=1&pageSize=20
+Accept: application/json
+
+### Nova vožnja
+POST {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/trips
+Content-Type: application/json
+
+{
+  "routeId": "{{routeId}}",
+  "serviceCalendarId": "{{calendarId}}",
+  "code": "OS-DJ-0615",
+  "headsign": "Đakovo",
+  "directionId": 0,
+  "wheelchairAccessible": 1
+}
+
+### Jedna vožnja
+GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/trips/{{tripId}}
+Accept: application/json
+
+### Izmjena vožnje
+PUT {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/trips/{{tripId}}
+Content-Type: application/json
+
+{
+  "routeId": "{{routeId}}",
+  "serviceCalendarId": "{{calendarId}}",
+  "code": "OS-DJ-0615",
+  "headsign": "Đakovo AK",
+  "directionId": 0,
+  "wheelchairAccessible": 1,
+  "bikesAllowed": 2
+}
+
+### Stanice i vremena vožnje
+GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/trips/{{tripId}}/stop-times
+Accept: application/json
+
+### Postavi stanice i vremena (zamjenjuje cijeli popis; departureTime je opcionalan)
+PUT {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/trips/{{tripId}}/stop-times
+Content-Type: application/json
+
+{
+  "stopTimes": [
+    { "stopId": "{{stopAId}}", "arrivalTime": "06:15:00" },
+    { "stopId": "{{stopBId}}", "arrivalTime": "07:05:00", "departureTime": "07:05:00" }
+  ]
+}
+
+### Brisanje vožnje (briše i njezina vremena)
+DELETE {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/trips/{{tripId}}
 
 ###

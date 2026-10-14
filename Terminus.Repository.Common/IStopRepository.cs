@@ -8,6 +8,9 @@ public interface IStopRepository
 {
     Task<IStopModel?> GetAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default);
 
+    /// <returns>Stanice agencije s traženim Id-evima; nepostojeći Id-evi se izostavljaju.</returns>
+    Task<IReadOnlyList<IStopModel>> GetManyAsync(Guid agencyId, IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default);
+
     Task<PagedResult<IStopModel>> FindAsync(Guid agencyId, StopFilter filter, CancellationToken cancellationToken = default);
 
     Task<bool> HasChildStopsAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default);

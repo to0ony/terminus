@@ -32,12 +32,15 @@ builder.Services.AddScoped<IStopRepository, StopRepository>();
 builder.Services.AddScoped<IRouteRepository, RouteRepository>();
 builder.Services.AddScoped<IServiceCalendarRepository, ServiceCalendarRepository>();
 builder.Services.AddScoped<ICalendarDateRepository, CalendarDateRepository>();
+builder.Services.AddScoped<ITripRepository, TripRepository>();
+builder.Services.AddScoped<IStopTimeRepository, StopTimeRepository>();
 
 // Servisi
 builder.Services.AddScoped<IAgencyService, AgencyService>();
 builder.Services.AddScoped<IStopService, StopService>();
 builder.Services.AddScoped<IRouteService, RouteService>();
 builder.Services.AddScoped<IServiceCalendarService, ServiceCalendarService>();
+builder.Services.AddScoped<ITripService, TripService>();
 
 var app = builder.Build();
 
