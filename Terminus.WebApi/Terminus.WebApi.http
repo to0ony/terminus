@@ -252,3 +252,8 @@ Content-Type: application/json
 DELETE {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/trips/{{tripId}}
 
 ###
+
+### GTFS izvoz (ZIP; 422 s popisom problema ako feed nije spreman)
+GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/gtfs
+
+###

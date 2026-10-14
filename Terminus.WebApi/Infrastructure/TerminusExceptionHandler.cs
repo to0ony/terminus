@@ -35,6 +35,13 @@ public sealed class TerminusExceptionHandler(IProblemDetailsService problemDetai
                 Title = "Sukob s postojećim podacima.",
                 Detail = exception.Message
             },
+            UnprocessableException unprocessable => new ProblemDetails
+            {
+                Status = StatusCodes.Status422UnprocessableEntity,
+                Title = "Podaci nisu spremni za ovu operaciju.",
+                Detail = exception.Message,
+                Extensions = { ["problems"] = unprocessable.Problems }
+            },
             _ => null
         };
 

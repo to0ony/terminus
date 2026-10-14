@@ -5,6 +5,7 @@ using Terminus.Repository;
 using Terminus.Repository.Common;
 using Terminus.Service;
 using Terminus.Service.Common;
+using Terminus.Service.Gtfs;
 using Terminus.WebApi.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,6 +35,7 @@ builder.Services.AddScoped<IServiceCalendarRepository, ServiceCalendarRepository
 builder.Services.AddScoped<ICalendarDateRepository, CalendarDateRepository>();
 builder.Services.AddScoped<ITripRepository, TripRepository>();
 builder.Services.AddScoped<IStopTimeRepository, StopTimeRepository>();
+builder.Services.AddScoped<IGtfsExportRepository, GtfsExportRepository>();
 
 // Servisi
 builder.Services.AddScoped<IAgencyService, AgencyService>();
@@ -41,6 +43,7 @@ builder.Services.AddScoped<IStopService, StopService>();
 builder.Services.AddScoped<IRouteService, RouteService>();
 builder.Services.AddScoped<IServiceCalendarService, ServiceCalendarService>();
 builder.Services.AddScoped<ITripService, TripService>();
+builder.Services.AddScoped<IGtfsExportService, GtfsExportService>();
 
 var app = builder.Build();
 
