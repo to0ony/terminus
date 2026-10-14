@@ -1,3 +1,197 @@
 @Terminus.WebApi_HostAddress = http://localhost:5183
+# Id agencije (iz odgovora na "Nova agencija")
+@agencyId = 00000000-0000-0000-0000-000000000000
+@stopId = 00000000-0000-0000-0000-000000000000
+@routeId = 00000000-0000-0000-0000-000000000000
+@calendarId = 00000000-0000-0000-0000-000000000000
+
+### Popis agencija
+GET {{Terminus.WebApi_HostAddress}}/api/agencies?search=&page=1&pageSize=20
+Accept: application/json
+
+### Nova agencija (timezone i lang su opcionalni: Europe/Zagreb, hr)
+POST {{Terminus.WebApi_HostAddress}}/api/agencies
+Content-Type: application/json
+
+{
+  "name": "Test prijevoznik",
+  "url": "https://example.com",
+  "phone": "+385 31 000 000",
+  "email": "info@example.com"
+}
+
+### Jedna agencija
+GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}
+Accept: application/json
+
+### Izmjena agencije
+PUT {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}
+Content-Type: application/json
+
+{
+  "name": "Test prijevoznik d.o.o.",
+  "url": "https://example.com",
+  "timezone": "Europe/Zagreb",
+  "lang": "hr"
+}
+
+### Brisanje agencije (PAZI: kaskadno briše sve njezine podatke)
+DELETE {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}
+
+### Popis stanica (pretraga, filteri, straničenje)
+GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/stops?search=osijek&page=1&pageSize=20
+Accept: application/json
+
+### Jedna stanica
+GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/stops/{{stopId}}
+Accept: application/json
+
+### Novi kolodvor
+POST {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/stops
+Content-Type: application/json
+
+{
+  "code": "OS-AK",
+  "name": "Osijek, Autobusni kolodvor",
+  "latitude": 45.5531,
+  "longitude": 18.6955,
+  "locationType": 1,
+  "wheelchairBoarding": 1
+}
+
+### Novi peron (parentStationId = id kolodvora)
+POST {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/stops
+Content-Type: application/json
+
+{
+  "code": "OS-AK-3",
+  "name": "Osijek, Autobusni kolodvor",
+  "latitude": 45.5532,
+  "longitude": 18.6957,
+  "locationType": 0,
+  "parentStationId": "{{stopId}}",
+  "platformCode": "3"
+}
+
+### Izmjena stanice (PUT zamjenjuje sva polja)
+PUT {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/stops/{{stopId}}
+Content-Type: application/json
+
+{
+  "code": "OS-AK",
+  "name": "Osijek, Autobusni kolodvor",
+  "latitude": 45.5531,
+  "longitude": 18.6955,
+  "locationType": 1,
+  "wheelchairBoarding": 1,
+  "isActive": true
+}
+
+### Brisanje stanice
+DELETE {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/stops/{{stopId}}
+
+### Popis linija
+GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/routes?search=&page=1&pageSize=20
+Accept: application/json
+
+### Nova linija (routeType 3 = autobus je zadan, boja može s # ili bez)
+POST {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/routes
+Content-Type: application/json
+
+{
+  "code": "OS-DJ",
+  "shortName": "12",
+  "longName": "Osijek - Đakovo",
+  "color": "#1565c0",
+  "textColor": "FFFFFF",
+  "sortOrder": 10
+}
+
+### Jedna linija
+GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/routes/{{routeId}}
+Accept: application/json
+
+### Izmjena linije
+PUT {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/routes/{{routeId}}
+Content-Type: application/json
+
+{
+  "code": "OS-DJ",
+  "shortName": "12",
+  "longName": "Osijek - Đakovo (preko Čepina)",
+  "color": "1565C0",
+  "textColor": "FFFFFF",
+  "sortOrder": 10,
+  "isActive": true
+}
+
+### Brisanje linije (kaskadno briše i njezine vožnje)
+DELETE {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/routes/{{routeId}}
+
+### Popis kalendara
+GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars?search=&page=1&pageSize=20
+Accept: application/json
+
+### Novi kalendar: radni dani 2026.
+POST {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars
+Content-Type: application/json
+
+{
+  "code": "RD-2026",
+  "name": "Radni dan",
+  "monday": true,
+  "tuesday": true,
+  "wednesday": true,
+  "thursday": true,
+  "friday": true,
+  "startDate": "2026-01-01",
+  "endDate": "2026-12-31"
+}
+
+### Jedan kalendar
+GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars/{{calendarId}}
+Accept: application/json
+
+### Izmjena kalendara
+PUT {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars/{{calendarId}}
+Content-Type: application/json
+
+{
+  "code": "RD-2026",
+  "name": "Radni dan (osim praznika)",
+  "monday": true,
+  "tuesday": true,
+  "wednesday": true,
+  "thursday": true,
+  "friday": true,
+  "startDate": "2026-01-01",
+  "endDate": "2026-12-31"
+}
+
+### Iznimke kalendara
+GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars/{{calendarId}}/dates
+Accept: application/json
+
+### Iznimka: Božić ne vozi (2 = ne vozi)
+PUT {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars/{{calendarId}}/dates/2026-12-25
+Content-Type: application/json
+
+{
+  "exceptionType": 2
+}
+
+### Iznimka: dodatna subota vozi (1 = vozi)
+PUT {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars/{{calendarId}}/dates/2026-12-19
+Content-Type: application/json
+
+{
+  "exceptionType": 1
+}
+
+### Brisanje iznimke
+DELETE {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars/{{calendarId}}/dates/2026-12-25
+
+### Brisanje kalendara (409 ako ga koriste vožnje)
+DELETE {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars/{{calendarId}}
 
 ###

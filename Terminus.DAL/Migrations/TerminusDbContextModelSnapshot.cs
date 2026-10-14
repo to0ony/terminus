@@ -68,6 +68,7 @@ namespace Terminus.DAL.Migrations
                         .HasDefaultValueSql("now()");
 
                     b.Property<string>("Url")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("url");
 

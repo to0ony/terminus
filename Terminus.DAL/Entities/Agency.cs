@@ -4,7 +4,7 @@ public class Agency : IAuditable
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = null!;
-    public string? Url { get; set; }
+    public string Url { get; set; } = null!;
     public string Timezone { get; set; } = "Europe/Zagreb";
     public string Lang { get; set; } = "hr";
     public string? Phone { get; set; }

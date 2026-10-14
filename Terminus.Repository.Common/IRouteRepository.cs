@@ -1,0 +1,20 @@
+using Terminus.Common;
+using Terminus.Model.Common;
+using Terminus.Model.Common.Filters;
+
+namespace Terminus.Repository.Common;
+
+public interface IRouteRepository
+{
+    Task<IRouteModel?> GetAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default);
+
+    Task<PagedResult<IRouteModel>> FindAsync(Guid agencyId, RouteFilter filter, CancellationToken cancellationToken = default);
+
+    Task<IRouteModel> InsertAsync(IRouteModel route, CancellationToken cancellationToken = default);
+
+    /// <returns>Ažurirana linija ili null ako ne postoji.</returns>
+    Task<IRouteModel?> UpdateAsync(IRouteModel route, CancellationToken cancellationToken = default);
+
+    /// <returns>false ako linija ne postoji.</returns>
+    Task<bool> DeleteAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default);
+}

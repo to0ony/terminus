@@ -1,0 +1,138 @@
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using Terminus.Common;
+using Terminus.Common.Exceptions;
+using Terminus.DAL;
+using Terminus.DAL.Entities;
+using Terminus.Model.Common;
+using Terminus.Model.Common.Filters;
+using Terminus.Repository.Common;
+using Terminus.Repository.Mapping;
+
+namespace Terminus.Repository;
+
+public class StopRepository(TerminusDbContext context) : IStopRepository
+{
+    public async Task<IStopModel?> GetAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default)
+    {
+        var entity = await context.Stops
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.AgencyId == agencyId && s.Id == id, cancellationToken);
+
+        return entity is null ? null : StopMapper.ToModel(entity);
+    }
+
+    public async Task<PagedResult<IStopModel>> FindAsync(Guid agencyId, StopFilter filter, CancellationToken cancellationToken = default)
+    {
+        var query = context.Stops
+            .AsNoTracking()
+            .Where(s => s.AgencyId == agencyId);
+
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            var pattern = LikePattern.Contains(filter.Search);
+            query = query.Where(s =>
+                EF.Functions.ILike(s.Name, pattern, LikePattern.EscapeCharacter) ||
+                EF.Functions.ILike(s.Code, pattern, LikePattern.EscapeCharacter));
+        }
+
+        if (filter.IsActive is bool isActive)
+        {
+            query = query.Where(s => s.IsActive == isActive);
+        }
+
+        if (filter.LocationType is { } locationType)
+        {
+            var value = (short)locationType;
+            query = query.Where(s => s.LocationType == value);
+        }
+
+        if (filter.ParentStationId is Guid parentStationId)
+        {
+            query = query.Where(s => s.ParentStationId == parentStationId);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var entities = await query
+            .OrderBy(s => s.Name)
+            .ThenBy(s => s.Code)
+            .Skip((filter.Page - 1) * filter.PageSize)
+            .Take(filter.PageSize)
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<IStopModel>(
+            entities.Select(StopMapper.ToModel).ToList(),
+            filter.Page,
+            filter.PageSize,
+            totalCount);
+    }
+
+    public Task<bool> HasChildStopsAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default) =>
+        context.Stops.AnyAsync(s => s.AgencyId == agencyId && s.ParentStationId == id, cancellationToken);
+
+    public async Task<IStopModel> InsertAsync(IStopModel stop, CancellationToken cancellationToken = default)
+    {
+        var entity = new Stop { AgencyId = stop.AgencyId };
+        StopMapper.Apply(stop, entity);
+
+        context.Stops.Add(entity);
+        await SaveChangesAsync(stop, cancellationToken);
+
+        // Id, CreatedAt i UpdatedAt je vratila baza (RETURNING).
+        return StopMapper.ToModel(entity);
+    }
+
+    public async Task<IStopModel?> UpdateAsync(IStopModel stop, CancellationToken cancellationToken = default)
+    {
+        var entity = await context.Stops
+            .FirstOrDefaultAsync(s => s.AgencyId == stop.AgencyId && s.Id == stop.Id, cancellationToken);
+
+        if (entity is null)
+        {
+            return null;
+        }
+
+        StopMapper.Apply(stop, entity);
+        await SaveChangesAsync(stop, cancellationToken);
+
+        return StopMapper.ToModel(entity);
+    }
+
+    public async Task<bool> DeleteAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Peroni ove stanice dobivaju parent_station_id = NULL (ON DELETE SET NULL).
+            var deleted = await context.Stops
+                .Where(s => s.AgencyId == agencyId && s.Id == id)
+                .ExecuteDeleteAsync(cancellationToken);
+
+            return deleted > 0;
+        }
+        catch (Exception ex) when (ex.GetBaseException() is PostgresException
+        {
+            SqlState: PostgresErrorCodes.ForeignKeyViolation,
+            ConstraintName: "fk_stop_times_stops_stop_id"
+        })
+        {
+            throw new ConflictException("Stanica se koristi u voznom redu i ne može se obrisati.", ex);
+        }
+    }
+
+    private async Task SaveChangesAsync(IStopModel stop, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (ex.GetBaseException() is PostgresException { ConstraintName: "uq_stops_agency_code" })
+        {
+            throw new ConflictException($"Stanica s kodom '{stop.Code}' već postoji.", ex);
+        }
+        catch (DbUpdateException ex) when (ex.GetBaseException() is PostgresException { ConstraintName: "fk_stops_agencies_agency_id" })
+        {
+            throw new NotFoundException($"Agencija {stop.AgencyId} ne postoji.", ex);
+        }
+    }
+}
