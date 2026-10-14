@@ -52,8 +52,12 @@ Pravila koja zahtijevaju upit nad drugim recima provodi servisni sloj:
 - nadređena stanica (`parent_station_id`) mora pripadati istoj agenciji i biti
   stanica (`location_type = 1`); stanica sama ne smije imati nadređenu;
 - stanica koja ima perone ne može se pretvoriti u stajalište;
-- linija i kalendar vožnje moraju pripadati istoj agenciji kao i vožnja
-  (vožnje su u izradi);
+- linija i kalendar vožnje moraju pripadati istoj agenciji kao i vožnja;
+- vožnja ima barem dvije stanice; sve su iz iste agencije i nijedna nije
+  kolodvor (`location_type = 1`), nego stajalište ili peron;
+- vremena ne idu unatrag: dolazak na stanicu nije prije polaska s prethodne;
+- redne brojeve (`stop_sequence`) dodjeljuje aplikacija prema redoslijedu
+  stanica (1, 2, 3 …), a vremena vožnje spremaju se uvijek kao cjelina;
 - `agencies.url` i `agencies.timezone` (IANA naziv) obavezni su jer ih GTFS traži.
 
 ## Brisanje
