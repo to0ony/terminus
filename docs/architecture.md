@@ -8,7 +8,7 @@ s implementacijom.
 
 | Projekt | Odgovornost |
 |---|---|
-| `Terminus.Common` | Tipovi zajednički svim slojevima: `PagedResult<T>`, iznimke (`NotFoundException`, `ConflictException`, `ValidationException`). Bez ovisnosti. |
+| `Terminus.Common` | Tipovi zajednički svim slojevima: `PagedResult<T>`, iznimke (`NotFoundException`, `ConflictException`, `ValidationException`, `UnprocessableException`) i GTFS formati (`GtfsTime`, `GtfsDate`). Bez ovisnosti. |
 | `Terminus.Model.Common` | Sučelja domenskih modela (`IStopModel` …), enumi (`LocationType`, `RouteType` …) i filteri za pretragu. |
 | `Terminus.Model` | Implementacije domenskih modela. |
 | `Terminus.DAL` | EF Core: entiteti, konfiguracije, `TerminusDbContext`, interceptori i migracije. |
@@ -57,6 +57,7 @@ HTTP ─► Controller ─► Service ─► Repository ─► DbContext ─► 
 | `ValidationException` | 400 (s greškama po polju) |
 | `NotFoundException` | 404 |
 | `ConflictException` | 409 |
+| `UnprocessableException` | 422 (s popisom problema, npr. kod GTFS izvoza) |
 | ostalo | 500 |
 
 ## Višekorisnički rad (tenanti)

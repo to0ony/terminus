@@ -18,4 +18,5 @@ ASP.NET Core Web API (.NET 10), Entity Framework Core, PostgreSQL
 - [Lokalni razvoj](docs/development.md)
 - [Arhitektura](docs/architecture.md)
 - [Model podataka i GTFS](docs/data-model.md)
+- [GTFS izvoz](docs/gtfs-export.md)
 - [Shema baze](docs/terminus_schema.sql)
