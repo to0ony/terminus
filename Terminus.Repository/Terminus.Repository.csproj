@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Terminus.Repository.Common\Terminus.Repository.Common.csproj" />
+    <ProjectReference Include="..\Terminus.DAL\Terminus.DAL.csproj" />
+    <ProjectReference Include="..\Terminus.Model\Terminus.Model.csproj" />
+    <ProjectReference Include="..\Terminus.Model.Common\Terminus.Model.Common.csproj" />
+    <ProjectReference Include="..\Terminus.Common\Terminus.Common.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

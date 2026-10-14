@@ -1,0 +1,12 @@
+<Solution>
+  <Project Path="Terminus.Common/Terminus.Common.csproj" />
+  <Project Path="Terminus.DAL/Terminus.DAL.csproj" />
+  <Project Path="Terminus.Model.Common/Terminus.Model.Common.csproj" />
+  <Project Path="Terminus.Model/Terminus.Model.csproj" />
+  <Project Path="Terminus.Repository.Common/Terminus.Repository.Common.csproj" />
+  <Project Path="Terminus.Repository/Terminus.Repository.csproj" />
+  <Project Path="Terminus.Service.Common/Terminus.Service.Common.csproj" />
+  <Project Path="Terminus.Service/Terminus.Service.csproj" />
+  <Project Path="Terminus.Tests/Terminus.Tests.csproj" />
+  <Project Path="Terminus.WebApi/Terminus.WebApi.csproj" />
+</Solution>

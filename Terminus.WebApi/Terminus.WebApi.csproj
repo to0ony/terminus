@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>2505bd09-a014-4dd8-98aa-b76ac415d5cf</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.13">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Terminus.Service.Common\Terminus.Service.Common.csproj" />
+    <ProjectReference Include="..\Terminus.Service\Terminus.Service.csproj" />
+    <ProjectReference Include="..\Terminus.Repository.Common\Terminus.Repository.Common.csproj" />
+    <ProjectReference Include="..\Terminus.Repository\Terminus.Repository.csproj" />
+    <ProjectReference Include="..\Terminus.DAL\Terminus.DAL.csproj" />
+    <ProjectReference Include="..\Terminus.Model\Terminus.Model.csproj" />
+    <ProjectReference Include="..\Terminus.Common\Terminus.Common.csproj" />
+  </ItemGroup>
+
+</Project>
