@@ -17,7 +17,7 @@ namespace Terminus.DAL.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     name = table.Column<string>(type: "text", nullable: false),
-                    url = table.Column<string>(type: "text", nullable: true),
+                    url = table.Column<string>(type: "text", nullable: false),
                     timezone = table.Column<string>(type: "text", nullable: false, defaultValue: "Europe/Zagreb"),
                     lang = table.Column<string>(type: "text", nullable: false, defaultValue: "hr"),
                     phone = table.Column<string>(type: "text", nullable: true),

@@ -12,7 +12,7 @@ using Terminus.DAL;
 namespace Terminus.DAL.Migrations
 {
     [DbContext(typeof(TerminusDbContext))]
-    [Migration("20261014193945_InitialCreate")]
+    [Migration("20261014215820_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -71,6 +71,7 @@ namespace Terminus.DAL.Migrations
                         .HasDefaultValueSql("now()");
 
                     b.Property<string>("Url")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("url");
 
