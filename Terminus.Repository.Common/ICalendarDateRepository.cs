@@ -3,7 +3,7 @@ using Terminus.Model.Common;
 namespace Terminus.Repository.Common;
 
 /// <summary>
-/// Iznimke kalendara. Ne provjerava pripadnost agenciji; to radi servis
+/// Iznimke kalendara. Ne provjerava postoji li kalendar; to radi servis
 /// dohvatom kalendara prije svake operacije.
 /// </summary>
 public interface ICalendarDateRepository

@@ -6,9 +6,9 @@ namespace Terminus.Repository.Common;
 
 public interface IRouteRepository
 {
-    Task<IRouteModel?> GetAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default);
+    Task<IRouteModel?> GetAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<PagedResult<IRouteModel>> FindAsync(Guid agencyId, RouteFilter filter, CancellationToken cancellationToken = default);
+    Task<PagedResult<IRouteModel>> FindAsync(RouteFilter filter, CancellationToken cancellationToken = default);
 
     Task<IRouteModel> InsertAsync(IRouteModel route, CancellationToken cancellationToken = default);
 
@@ -16,5 +16,5 @@ public interface IRouteRepository
     Task<IRouteModel?> UpdateAsync(IRouteModel route, CancellationToken cancellationToken = default);
 
     /// <returns>false ako linija ne postoji.</returns>
-    Task<bool> DeleteAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default);
+    Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }

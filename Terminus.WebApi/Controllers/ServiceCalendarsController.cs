@@ -6,7 +6,7 @@ using Terminus.WebApi.Contracts.Calendars;
 namespace Terminus.WebApi.Controllers;
 
 [ApiController]
-[Route("api/agencies/{agencyId:guid}/calendars")]
+[Route("api/calendars")]
 [Produces("application/json")]
 public class ServiceCalendarsController(IServiceCalendarService calendarService) : ControllerBase
 {
@@ -14,35 +14,32 @@ public class ServiceCalendarsController(IServiceCalendarService calendarService)
     [ProducesResponseType<PagedResult<ServiceCalendarResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PagedResult<ServiceCalendarResponse>>> Find(
-        Guid agencyId,
         [FromQuery] ServiceCalendarListQuery query,
         CancellationToken cancellationToken)
     {
-        var result = await calendarService.FindAsync(agencyId, query.ToFilter(), cancellationToken);
+        var result = await calendarService.FindAsync(query.ToFilter(), cancellationToken);
         return Ok(result.Map(c => c.ToResponse()));
     }
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType<ServiceCalendarResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<ServiceCalendarResponse>> Get(Guid agencyId, Guid id, CancellationToken cancellationToken)
+    public async Task<ActionResult<ServiceCalendarResponse>> Get(Guid id, CancellationToken cancellationToken)
     {
-        var calendar = await calendarService.GetAsync(agencyId, id, cancellationToken);
+        var calendar = await calendarService.GetAsync(id, cancellationToken);
         return Ok(calendar.ToResponse());
     }
 
     [HttpPost]
     [ProducesResponseType<ServiceCalendarResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<ServiceCalendarResponse>> Create(
-        Guid agencyId,
         ServiceCalendarRequest request,
         CancellationToken cancellationToken)
     {
-        var created = await calendarService.CreateAsync(agencyId, request.ToModel(), cancellationToken);
-        return CreatedAtAction(nameof(Get), new { agencyId, id = created.Id }, created.ToResponse());
+        var created = await calendarService.CreateAsync(request.ToModel(), cancellationToken);
+        return CreatedAtAction(nameof(Get), new { id = created.Id }, created.ToResponse());
     }
 
     [HttpPut("{id:guid}")]
@@ -51,12 +48,11 @@ public class ServiceCalendarsController(IServiceCalendarService calendarService)
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<ServiceCalendarResponse>> Update(
-        Guid agencyId,
         Guid id,
         ServiceCalendarRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await calendarService.UpdateAsync(agencyId, id, request.ToModel(), cancellationToken);
+        var updated = await calendarService.UpdateAsync(id, request.ToModel(), cancellationToken);
         return Ok(updated.ToResponse());
     }
 
@@ -65,9 +61,9 @@ public class ServiceCalendarsController(IServiceCalendarService calendarService)
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Delete(Guid agencyId, Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        await calendarService.DeleteAsync(agencyId, id, cancellationToken);
+        await calendarService.DeleteAsync(id, cancellationToken);
         return NoContent();
     }
 
@@ -76,11 +72,10 @@ public class ServiceCalendarsController(IServiceCalendarService calendarService)
     [ProducesResponseType<IReadOnlyList<CalendarDateResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IReadOnlyList<CalendarDateResponse>>> GetDates(
-        Guid agencyId,
         Guid id,
         CancellationToken cancellationToken)
     {
-        var dates = await calendarService.GetDatesAsync(agencyId, id, cancellationToken);
+        var dates = await calendarService.GetDatesAsync(id, cancellationToken);
         return Ok(dates.Select(d => d.ToResponse()).ToList());
     }
 
@@ -91,14 +86,13 @@ public class ServiceCalendarsController(IServiceCalendarService calendarService)
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<CalendarDateResponse>> SetDate(
-        Guid agencyId,
         Guid id,
         DateOnly date,
         CalendarDateRequest request,
         CancellationToken cancellationToken)
     {
         var calendarDate = await calendarService.SetDateAsync(
-            agencyId, id, date, request.ExceptionType!.Value, cancellationToken);
+            id, date, request.ExceptionType!.Value, cancellationToken);
 
         return Ok(calendarDate.ToResponse());
     }
@@ -107,12 +101,11 @@ public class ServiceCalendarsController(IServiceCalendarService calendarService)
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RemoveDate(
-        Guid agencyId,
         Guid id,
         DateOnly date,
         CancellationToken cancellationToken)
     {
-        await calendarService.RemoveDateAsync(agencyId, id, date, cancellationToken);
+        await calendarService.RemoveDateAsync(id, date, cancellationToken);
         return NoContent();
     }
 }

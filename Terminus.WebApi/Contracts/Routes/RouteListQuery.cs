@@ -6,6 +6,10 @@ namespace Terminus.WebApi.Contracts.Routes;
 public class RouteListQuery
 {
     public string? Search { get; set; }
+
+    /// <summary>Samo linije zadanog prijevoznika.</summary>
+    public Guid? AgencyId { get; set; }
+
     public bool? IsActive { get; set; }
     public RouteType? RouteType { get; set; }
     public int Page { get; set; } = 1;

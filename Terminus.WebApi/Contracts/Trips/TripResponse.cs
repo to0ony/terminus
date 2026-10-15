@@ -4,7 +4,6 @@ namespace Terminus.WebApi.Contracts.Trips;
 
 public record TripResponse(
     Guid Id,
-    Guid AgencyId,
     Guid RouteId,
     Guid ServiceCalendarId,
     string Code,

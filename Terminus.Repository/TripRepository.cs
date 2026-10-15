@@ -13,20 +13,19 @@ namespace Terminus.Repository;
 
 public class TripRepository(TerminusDbContext context) : ITripRepository
 {
-    public async Task<ITripModel?> GetAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default)
+    public async Task<ITripModel?> GetAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var entity = await context.Trips
             .AsNoTracking()
-            .FirstOrDefaultAsync(t => t.AgencyId == agencyId && t.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
 
         return entity is null ? null : TripMapper.ToModel(entity);
     }
 
-    public async Task<PagedResult<ITripModel>> FindAsync(Guid agencyId, TripFilter filter, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<ITripModel>> FindAsync(TripFilter filter, CancellationToken cancellationToken = default)
     {
         var query = context.Trips
-            .AsNoTracking()
-            .Where(t => t.AgencyId == agencyId);
+            .AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
@@ -71,7 +70,7 @@ public class TripRepository(TerminusDbContext context) : ITripRepository
 
     public async Task<ITripModel> InsertAsync(ITripModel trip, CancellationToken cancellationToken = default)
     {
-        var entity = new Trip { AgencyId = trip.AgencyId };
+        var entity = new Trip();
         TripMapper.Apply(trip, entity);
 
         context.Trips.Add(entity);
@@ -84,7 +83,7 @@ public class TripRepository(TerminusDbContext context) : ITripRepository
     public async Task<ITripModel?> UpdateAsync(ITripModel trip, CancellationToken cancellationToken = default)
     {
         var entity = await context.Trips
-            .FirstOrDefaultAsync(t => t.AgencyId == trip.AgencyId && t.Id == trip.Id, cancellationToken);
+            .FirstOrDefaultAsync(t => t.Id == trip.Id, cancellationToken);
 
         if (entity is null)
         {
@@ -97,11 +96,11 @@ public class TripRepository(TerminusDbContext context) : ITripRepository
         return TripMapper.ToModel(entity);
     }
 
-    public async Task<bool> DeleteAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         // Vremena (stop_times) se brišu kaskadno.
         var deleted = await context.Trips
-            .Where(t => t.AgencyId == agencyId && t.Id == id)
+            .Where(t => t.Id == id)
             .ExecuteDeleteAsync(cancellationToken);
 
         return deleted > 0;
@@ -113,13 +112,9 @@ public class TripRepository(TerminusDbContext context) : ITripRepository
         {
             await context.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException ex) when (ex.GetBaseException() is PostgresException { ConstraintName: "uq_trips_agency_code" })
+        catch (DbUpdateException ex) when (ex.GetBaseException() is PostgresException { ConstraintName: "uq_trips_code" })
         {
             throw new ConflictException($"Vožnja s kodom '{trip.Code}' već postoji.", ex);
-        }
-        catch (DbUpdateException ex) when (ex.GetBaseException() is PostgresException { ConstraintName: "fk_trips_agencies_agency_id" })
-        {
-            throw new NotFoundException($"Agencija {trip.AgencyId} ne postoji.", ex);
         }
         catch (DbUpdateException ex) when (ex.GetBaseException() is PostgresException { ConstraintName: "fk_trips_routes_route_id" })
         {

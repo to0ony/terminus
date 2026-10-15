@@ -1,5 +1,5 @@
 @Terminus.WebApi_HostAddress = http://localhost:5183
-# Id agencije (iz odgovora na "Nova agencija")
+# Id prijevoznika (GET /api/agencies; prvi se stvara iz konfiguracije Agency:*)
 @agencyId = 00000000-0000-0000-0000-000000000000
 @stopId = 00000000-0000-0000-0000-000000000000
 @routeId = 00000000-0000-0000-0000-000000000000
@@ -39,19 +39,19 @@ Content-Type: application/json
   "lang": "hr"
 }
 
-### Brisanje agencije (PAZI: kaskadno briše sve njezine podatke)
+### Brisanje agencije (409 ako ima linije)
 DELETE {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}
 
 ### Popis stanica (pretraga, filteri, straničenje)
-GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/stops?search=osijek&page=1&pageSize=20
+GET {{Terminus.WebApi_HostAddress}}/api/stops?search=osijek&page=1&pageSize=20
 Accept: application/json
 
 ### Jedna stanica
-GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/stops/{{stopId}}
+GET {{Terminus.WebApi_HostAddress}}/api/stops/{{stopId}}
 Accept: application/json
 
 ### Novi kolodvor
-POST {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/stops
+POST {{Terminus.WebApi_HostAddress}}/api/stops
 Content-Type: application/json
 
 {
@@ -64,7 +64,7 @@ Content-Type: application/json
 }
 
 ### Novi peron (parentStationId = id kolodvora)
-POST {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/stops
+POST {{Terminus.WebApi_HostAddress}}/api/stops
 Content-Type: application/json
 
 {
@@ -78,7 +78,7 @@ Content-Type: application/json
 }
 
 ### Izmjena stanice (PUT zamjenjuje sva polja)
-PUT {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/stops/{{stopId}}
+PUT {{Terminus.WebApi_HostAddress}}/api/stops/{{stopId}}
 Content-Type: application/json
 
 {
@@ -92,17 +92,18 @@ Content-Type: application/json
 }
 
 ### Brisanje stanice
-DELETE {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/stops/{{stopId}}
+DELETE {{Terminus.WebApi_HostAddress}}/api/stops/{{stopId}}
 
-### Popis linija
-GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/routes?search=&page=1&pageSize=20
+### Popis linija (opcionalno ?agencyId= za jednog prijevoznika)
+GET {{Terminus.WebApi_HostAddress}}/api/routes?search=&page=1&pageSize=20
 Accept: application/json
 
 ### Nova linija (routeType 3 = autobus je zadan, boja može s # ili bez)
-POST {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/routes
+POST {{Terminus.WebApi_HostAddress}}/api/routes
 Content-Type: application/json
 
 {
+  "agencyId": "{{agencyId}}",
   "code": "OS-DJ",
   "shortName": "12",
   "longName": "Osijek - Đakovo",
@@ -112,14 +113,15 @@ Content-Type: application/json
 }
 
 ### Jedna linija
-GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/routes/{{routeId}}
+GET {{Terminus.WebApi_HostAddress}}/api/routes/{{routeId}}
 Accept: application/json
 
 ### Izmjena linije
-PUT {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/routes/{{routeId}}
+PUT {{Terminus.WebApi_HostAddress}}/api/routes/{{routeId}}
 Content-Type: application/json
 
 {
+  "agencyId": "{{agencyId}}",
   "code": "OS-DJ",
   "shortName": "12",
   "longName": "Osijek - Đakovo (preko Čepina)",
@@ -130,14 +132,14 @@ Content-Type: application/json
 }
 
 ### Brisanje linije (kaskadno briše i njezine vožnje)
-DELETE {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/routes/{{routeId}}
+DELETE {{Terminus.WebApi_HostAddress}}/api/routes/{{routeId}}
 
 ### Popis kalendara
-GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars?search=&page=1&pageSize=20
+GET {{Terminus.WebApi_HostAddress}}/api/calendars?search=&page=1&pageSize=20
 Accept: application/json
 
 ### Novi kalendar: radni dani 2026.
-POST {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars
+POST {{Terminus.WebApi_HostAddress}}/api/calendars
 Content-Type: application/json
 
 {
@@ -153,11 +155,11 @@ Content-Type: application/json
 }
 
 ### Jedan kalendar
-GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars/{{calendarId}}
+GET {{Terminus.WebApi_HostAddress}}/api/calendars/{{calendarId}}
 Accept: application/json
 
 ### Izmjena kalendara
-PUT {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars/{{calendarId}}
+PUT {{Terminus.WebApi_HostAddress}}/api/calendars/{{calendarId}}
 Content-Type: application/json
 
 {
@@ -173,11 +175,11 @@ Content-Type: application/json
 }
 
 ### Iznimke kalendara
-GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars/{{calendarId}}/dates
+GET {{Terminus.WebApi_HostAddress}}/api/calendars/{{calendarId}}/dates
 Accept: application/json
 
 ### Iznimka: Božić ne vozi (2 = ne vozi)
-PUT {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars/{{calendarId}}/dates/2026-12-25
+PUT {{Terminus.WebApi_HostAddress}}/api/calendars/{{calendarId}}/dates/2026-12-25
 Content-Type: application/json
 
 {
@@ -185,7 +187,7 @@ Content-Type: application/json
 }
 
 ### Iznimka: dodatna subota vozi (1 = vozi)
-PUT {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars/{{calendarId}}/dates/2026-12-19
+PUT {{Terminus.WebApi_HostAddress}}/api/calendars/{{calendarId}}/dates/2026-12-19
 Content-Type: application/json
 
 {
@@ -193,17 +195,17 @@ Content-Type: application/json
 }
 
 ### Brisanje iznimke
-DELETE {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars/{{calendarId}}/dates/2026-12-25
+DELETE {{Terminus.WebApi_HostAddress}}/api/calendars/{{calendarId}}/dates/2026-12-25
 
 ### Brisanje kalendara (409 ako ga koriste vožnje)
-DELETE {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/calendars/{{calendarId}}
+DELETE {{Terminus.WebApi_HostAddress}}/api/calendars/{{calendarId}}
 
 ### Popis vožnji (poredano po prvom polasku; filteri routeId, serviceCalendarId, directionId)
-GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/trips?routeId={{routeId}}&page=1&pageSize=20
+GET {{Terminus.WebApi_HostAddress}}/api/trips?routeId={{routeId}}&page=1&pageSize=20
 Accept: application/json
 
 ### Nova vožnja
-POST {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/trips
+POST {{Terminus.WebApi_HostAddress}}/api/trips
 Content-Type: application/json
 
 {
@@ -216,11 +218,11 @@ Content-Type: application/json
 }
 
 ### Jedna vožnja
-GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/trips/{{tripId}}
+GET {{Terminus.WebApi_HostAddress}}/api/trips/{{tripId}}
 Accept: application/json
 
 ### Izmjena vožnje
-PUT {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/trips/{{tripId}}
+PUT {{Terminus.WebApi_HostAddress}}/api/trips/{{tripId}}
 Content-Type: application/json
 
 {
@@ -234,11 +236,11 @@ Content-Type: application/json
 }
 
 ### Stanice i vremena vožnje
-GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/trips/{{tripId}}/stop-times
+GET {{Terminus.WebApi_HostAddress}}/api/trips/{{tripId}}/stop-times
 Accept: application/json
 
 ### Postavi stanice i vremena (zamjenjuje cijeli popis; departureTime je opcionalan)
-PUT {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/trips/{{tripId}}/stop-times
+PUT {{Terminus.WebApi_HostAddress}}/api/trips/{{tripId}}/stop-times
 Content-Type: application/json
 
 {
@@ -249,11 +251,11 @@ Content-Type: application/json
 }
 
 ### Brisanje vožnje (briše i njezina vremena)
-DELETE {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/trips/{{tripId}}
+DELETE {{Terminus.WebApi_HostAddress}}/api/trips/{{tripId}}
 
 ###
 
 ### GTFS izvoz (ZIP; 422 s popisom problema ako feed nije spreman)
-GET {{Terminus.WebApi_HostAddress}}/api/agencies/{{agencyId}}/gtfs
+GET {{Terminus.WebApi_HostAddress}}/api/gtfs
 
 ###

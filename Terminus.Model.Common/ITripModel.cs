@@ -5,11 +5,10 @@ namespace Terminus.Model.Common;
 public interface ITripModel
 {
     Guid Id { get; set; }
-    Guid AgencyId { get; set; }
     Guid RouteId { get; set; }
     Guid ServiceCalendarId { get; set; }
 
-    /// <summary>GTFS trip_id, jedinstven unutar agencije.</summary>
+    /// <summary>GTFS trip_id, jedinstven.</summary>
     string Code { get; set; }
 
     /// <summary>Natpis smjera na vozilu, npr. "Đakovo".</summary>

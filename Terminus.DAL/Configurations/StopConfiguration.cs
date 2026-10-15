@@ -28,20 +28,14 @@ public class StopConfiguration : IEntityTypeConfiguration<Stop>
 
         builder.ConfigureAuditColumns();
 
-        builder.HasOne(e => e.Agency)
-            .WithMany(a => a.Stops)
-            .HasForeignKey(e => e.AgencyId)
-            .OnDelete(DeleteBehavior.Cascade);
-
         builder.HasOne(e => e.ParentStation)
             .WithMany(p => p.ChildStops)
             .HasForeignKey(e => e.ParentStationId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        // Pokriva i upite po agency_id (prvi stupac indeksa).
-        builder.HasIndex(e => new { e.AgencyId, e.Code })
+        builder.HasIndex(e => e.Code)
             .IsUnique()
-            .HasDatabaseName("uq_stops_agency_code");
+            .HasDatabaseName("uq_stops_code");
 
         builder.HasIndex(e => e.ParentStationId)
             .HasDatabaseName("ix_stops_parent_station_id");

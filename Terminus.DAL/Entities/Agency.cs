@@ -12,8 +12,5 @@ public class Agency : IAuditable
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
-    public ICollection<Stop> Stops { get; set; } = new List<Stop>();
     public ICollection<Route> Routes { get; set; } = new List<Route>();
-    public ICollection<ServiceCalendar> ServiceCalendars { get; set; } = new List<ServiceCalendar>();
-    public ICollection<Trip> Trips { get; set; } = new List<Trip>();
 }

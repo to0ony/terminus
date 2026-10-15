@@ -24,7 +24,6 @@ public static class TripMappings
 
     public static TripResponse ToResponse(this ITripModel model) => new(
         model.Id,
-        model.AgencyId,
         model.RouteId,
         model.ServiceCalendarId,
         model.Code,

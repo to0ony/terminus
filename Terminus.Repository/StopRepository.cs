@@ -13,30 +13,29 @@ namespace Terminus.Repository;
 
 public class StopRepository(TerminusDbContext context) : IStopRepository
 {
-    public async Task<IStopModel?> GetAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default)
+    public async Task<IStopModel?> GetAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var entity = await context.Stops
             .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.AgencyId == agencyId && s.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
 
         return entity is null ? null : StopMapper.ToModel(entity);
     }
 
-    public async Task<IReadOnlyList<IStopModel>> GetManyAsync(Guid agencyId, IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<IStopModel>> GetManyAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default)
     {
         var entities = await context.Stops
             .AsNoTracking()
-            .Where(s => s.AgencyId == agencyId && ids.Contains(s.Id))
+            .Where(s => ids.Contains(s.Id))
             .ToListAsync(cancellationToken);
 
         return entities.Select(StopMapper.ToModel).ToList();
     }
 
-    public async Task<PagedResult<IStopModel>> FindAsync(Guid agencyId, StopFilter filter, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<IStopModel>> FindAsync(StopFilter filter, CancellationToken cancellationToken = default)
     {
         var query = context.Stops
-            .AsNoTracking()
-            .Where(s => s.AgencyId == agencyId);
+            .AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
@@ -78,12 +77,12 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
             totalCount);
     }
 
-    public Task<bool> HasChildStopsAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default) =>
-        context.Stops.AnyAsync(s => s.AgencyId == agencyId && s.ParentStationId == id, cancellationToken);
+    public Task<bool> HasChildStopsAsync(Guid id, CancellationToken cancellationToken = default) =>
+        context.Stops.AnyAsync(s => s.ParentStationId == id, cancellationToken);
 
     public async Task<IStopModel> InsertAsync(IStopModel stop, CancellationToken cancellationToken = default)
     {
-        var entity = new Stop { AgencyId = stop.AgencyId };
+        var entity = new Stop();
         StopMapper.Apply(stop, entity);
 
         context.Stops.Add(entity);
@@ -96,7 +95,7 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
     public async Task<IStopModel?> UpdateAsync(IStopModel stop, CancellationToken cancellationToken = default)
     {
         var entity = await context.Stops
-            .FirstOrDefaultAsync(s => s.AgencyId == stop.AgencyId && s.Id == stop.Id, cancellationToken);
+            .FirstOrDefaultAsync(s => s.Id == stop.Id, cancellationToken);
 
         if (entity is null)
         {
@@ -109,13 +108,13 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
         return StopMapper.ToModel(entity);
     }
 
-    public async Task<bool> DeleteAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
         {
             // Peroni ove stanice dobivaju parent_station_id = NULL (ON DELETE SET NULL).
             var deleted = await context.Stops
-                .Where(s => s.AgencyId == agencyId && s.Id == id)
+                .Where(s => s.Id == id)
                 .ExecuteDeleteAsync(cancellationToken);
 
             return deleted > 0;
@@ -136,13 +135,9 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
         {
             await context.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException ex) when (ex.GetBaseException() is PostgresException { ConstraintName: "uq_stops_agency_code" })
+        catch (DbUpdateException ex) when (ex.GetBaseException() is PostgresException { ConstraintName: "uq_stops_code" })
         {
             throw new ConflictException($"Stanica s kodom '{stop.Code}' već postoji.", ex);
-        }
-        catch (DbUpdateException ex) when (ex.GetBaseException() is PostgresException { ConstraintName: "fk_stops_agencies_agency_id" })
-        {
-            throw new NotFoundException($"Agencija {stop.AgencyId} ne postoji.", ex);
         }
     }
 }

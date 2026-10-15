@@ -18,59 +18,56 @@ public class TripService(
     /// <summary>GTFS: vožnja mora imati barem dvije stanice.</summary>
     private const int MinStopTimes = 2;
 
-    public async Task<ITripModel> GetAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default) =>
-        await tripRepository.GetAsync(agencyId, id, cancellationToken) ?? throw TripNotFound(id);
+    public async Task<ITripModel> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
+        await tripRepository.GetAsync(id, cancellationToken) ?? throw TripNotFound(id);
 
-    public Task<PagedResult<ITripModel>> FindAsync(Guid agencyId, TripFilter filter, CancellationToken cancellationToken = default)
+    public Task<PagedResult<ITripModel>> FindAsync(TripFilter filter, CancellationToken cancellationToken = default)
     {
         var errors = new ValidationErrors();
         errors.AddPagingErrors(filter.Page, filter.PageSize);
         errors.ThrowIfAny();
 
-        return tripRepository.FindAsync(agencyId, filter, cancellationToken);
+        return tripRepository.FindAsync(filter, cancellationToken);
     }
 
-    public async Task<ITripModel> CreateAsync(Guid agencyId, ITripModel trip, CancellationToken cancellationToken = default)
+    public async Task<ITripModel> CreateAsync(ITripModel trip, CancellationToken cancellationToken = default)
     {
         trip.Id = Guid.Empty;
-        trip.AgencyId = agencyId;
         Normalize(trip);
         await ValidateAsync(trip, cancellationToken);
 
         return await tripRepository.InsertAsync(trip, cancellationToken);
     }
 
-    public async Task<ITripModel> UpdateAsync(Guid agencyId, Guid id, ITripModel trip, CancellationToken cancellationToken = default)
+    public async Task<ITripModel> UpdateAsync(Guid id, ITripModel trip, CancellationToken cancellationToken = default)
     {
         trip.Id = id;
-        trip.AgencyId = agencyId;
         Normalize(trip);
         await ValidateAsync(trip, cancellationToken);
 
         return await tripRepository.UpdateAsync(trip, cancellationToken) ?? throw TripNotFound(id);
     }
 
-    public async Task DeleteAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        if (!await tripRepository.DeleteAsync(agencyId, id, cancellationToken))
+        if (!await tripRepository.DeleteAsync(id, cancellationToken))
         {
             throw TripNotFound(id);
         }
     }
 
-    public async Task<IReadOnlyList<IStopTimeModel>> GetStopTimesAsync(Guid agencyId, Guid tripId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<IStopTimeModel>> GetStopTimesAsync(Guid tripId, CancellationToken cancellationToken = default)
     {
-        await EnsureTripExistsAsync(agencyId, tripId, cancellationToken);
+        await EnsureTripExistsAsync(tripId, cancellationToken);
         return await stopTimeRepository.GetByTripAsync(tripId, cancellationToken);
     }
 
     public async Task<IReadOnlyList<IStopTimeModel>> ReplaceStopTimesAsync(
-        Guid agencyId,
         Guid tripId,
         IReadOnlyList<IStopTimeModel> stopTimes,
         CancellationToken cancellationToken = default)
     {
-        await EnsureTripExistsAsync(agencyId, tripId, cancellationToken);
+        await EnsureTripExistsAsync(tripId, cancellationToken);
 
         for (var i = 0; i < stopTimes.Count; i++)
         {
@@ -79,14 +76,14 @@ public class TripService(
             stopTimes[i].StopHeadsign = NullIfBlank(stopTimes[i].StopHeadsign);
         }
 
-        await ValidateStopTimesAsync(agencyId, stopTimes, cancellationToken);
+        await ValidateStopTimesAsync(stopTimes, cancellationToken);
 
         return await stopTimeRepository.ReplaceForTripAsync(tripId, stopTimes, cancellationToken);
     }
 
-    private async Task EnsureTripExistsAsync(Guid agencyId, Guid tripId, CancellationToken cancellationToken)
+    private async Task EnsureTripExistsAsync(Guid tripId, CancellationToken cancellationToken)
     {
-        if (await tripRepository.GetAsync(agencyId, tripId, cancellationToken) is null)
+        if (await tripRepository.GetAsync(tripId, cancellationToken) is null)
         {
             throw TripNotFound(tripId);
         }
@@ -124,13 +121,12 @@ public class TripService(
             errors.Add(nameof(trip.BikesAllowed), "Nepoznata vrijednost za prijevoz bicikala.");
         }
 
-        // Shema ne povezuje agency_id vožnje s agencijom linije i kalendara, pa to provjeravamo ovdje.
-        if (await routeRepository.GetAsync(trip.AgencyId, trip.RouteId, cancellationToken) is null)
+        if (await routeRepository.GetAsync(trip.RouteId, cancellationToken) is null)
         {
             errors.Add(nameof(trip.RouteId), "Linija ne postoji.");
         }
 
-        if (await calendarRepository.GetAsync(trip.AgencyId, trip.ServiceCalendarId, cancellationToken) is null)
+        if (await calendarRepository.GetAsync(trip.ServiceCalendarId, cancellationToken) is null)
         {
             errors.Add(nameof(trip.ServiceCalendarId), "Kalendar ne postoji.");
         }
@@ -138,7 +134,7 @@ public class TripService(
         errors.ThrowIfAny();
     }
 
-    private async Task ValidateStopTimesAsync(Guid agencyId, IReadOnlyList<IStopTimeModel> stopTimes, CancellationToken cancellationToken)
+    private async Task ValidateStopTimesAsync(IReadOnlyList<IStopTimeModel> stopTimes, CancellationToken cancellationToken)
     {
         var errors = new ValidationErrors();
 
@@ -149,7 +145,7 @@ public class TripService(
         }
 
         var stopIds = stopTimes.Select(st => st.StopId).Distinct().ToList();
-        var stops = (await stopRepository.GetManyAsync(agencyId, stopIds, cancellationToken))
+        var stops = (await stopRepository.GetManyAsync(stopIds, cancellationToken))
             .ToDictionary(s => s.Id);
 
         for (var i = 0; i < stopTimes.Count; i++)

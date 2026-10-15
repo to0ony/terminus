@@ -13,20 +13,19 @@ namespace Terminus.Repository;
 
 public class ServiceCalendarRepository(TerminusDbContext context) : IServiceCalendarRepository
 {
-    public async Task<IServiceCalendarModel?> GetAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default)
+    public async Task<IServiceCalendarModel?> GetAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var entity = await context.ServiceCalendars
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.AgencyId == agencyId && c.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
         return entity is null ? null : ServiceCalendarMapper.ToModel(entity);
     }
 
-    public async Task<PagedResult<IServiceCalendarModel>> FindAsync(Guid agencyId, ServiceCalendarFilter filter, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<IServiceCalendarModel>> FindAsync(ServiceCalendarFilter filter, CancellationToken cancellationToken = default)
     {
         var query = context.ServiceCalendars
-            .AsNoTracking()
-            .Where(c => c.AgencyId == agencyId);
+            .AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
@@ -54,7 +53,7 @@ public class ServiceCalendarRepository(TerminusDbContext context) : IServiceCale
 
     public async Task<IServiceCalendarModel> InsertAsync(IServiceCalendarModel calendar, CancellationToken cancellationToken = default)
     {
-        var entity = new ServiceCalendar { AgencyId = calendar.AgencyId };
+        var entity = new ServiceCalendar();
         ServiceCalendarMapper.Apply(calendar, entity);
 
         context.ServiceCalendars.Add(entity);
@@ -67,7 +66,7 @@ public class ServiceCalendarRepository(TerminusDbContext context) : IServiceCale
     public async Task<IServiceCalendarModel?> UpdateAsync(IServiceCalendarModel calendar, CancellationToken cancellationToken = default)
     {
         var entity = await context.ServiceCalendars
-            .FirstOrDefaultAsync(c => c.AgencyId == calendar.AgencyId && c.Id == calendar.Id, cancellationToken);
+            .FirstOrDefaultAsync(c => c.Id == calendar.Id, cancellationToken);
 
         if (entity is null)
         {
@@ -80,13 +79,13 @@ public class ServiceCalendarRepository(TerminusDbContext context) : IServiceCale
         return ServiceCalendarMapper.ToModel(entity);
     }
 
-    public async Task<bool> DeleteAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
         {
             // Iznimke (calendar_dates) se brišu kaskadno.
             var deleted = await context.ServiceCalendars
-                .Where(c => c.AgencyId == agencyId && c.Id == id)
+                .Where(c => c.Id == id)
                 .ExecuteDeleteAsync(cancellationToken);
 
             return deleted > 0;
@@ -107,13 +106,9 @@ public class ServiceCalendarRepository(TerminusDbContext context) : IServiceCale
         {
             await context.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException ex) when (ex.GetBaseException() is PostgresException { ConstraintName: "uq_service_calendars_agency_code" })
+        catch (DbUpdateException ex) when (ex.GetBaseException() is PostgresException { ConstraintName: "uq_service_calendars_code" })
         {
             throw new ConflictException($"Kalendar s kodom '{calendar.Code}' već postoji.", ex);
-        }
-        catch (DbUpdateException ex) when (ex.GetBaseException() is PostgresException { ConstraintName: "fk_service_calendars_agencies_agency_id" })
-        {
-            throw new NotFoundException($"Agencija {calendar.AgencyId} ne postoji.", ex);
         }
     }
 }

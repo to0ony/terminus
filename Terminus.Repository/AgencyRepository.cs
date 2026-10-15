@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Terminus.Common;
+using Terminus.Common.Exceptions;
 using Terminus.DAL;
 using Terminus.DAL.Entities;
 using Terminus.Model.Common;
@@ -75,11 +77,24 @@ public class AgencyRepository(TerminusDbContext context) : IAgencyRepository
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        // ON DELETE CASCADE u bazi briše i sve stanice, linije, kalendare i vožnje agencije.
-        var deleted = await context.Agencies
-            .Where(a => a.Id == id)
-            .ExecuteDeleteAsync(cancellationToken);
+        try
+        {
+            var deleted = await context.Agencies
+                .Where(a => a.Id == id)
+                .ExecuteDeleteAsync(cancellationToken);
 
-        return deleted > 0;
+            return deleted > 0;
+        }
+        catch (Exception ex) when (ex.GetBaseException() is PostgresException
+        {
+            SqlState: PostgresErrorCodes.ForeignKeyViolation,
+            ConstraintName: "fk_routes_agencies_agency_id"
+        })
+        {
+            throw new ConflictException("Prijevoznik ima linije i ne može se obrisati.", ex);
+        }
     }
+
+    public Task<bool> AnyAsync(CancellationToken cancellationToken = default) =>
+        context.Agencies.AnyAsync(cancellationToken);
 }

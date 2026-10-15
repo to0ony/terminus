@@ -6,6 +6,10 @@ namespace Terminus.WebApi.Contracts.Routes;
 /// <summary>Tijelo zahtjeva za stvaranje (POST) i potpunu izmjenu (PUT) linije.</summary>
 public class RouteRequest
 {
+    /// <summary>Prijevoznik koji vozi liniju (GTFS routes.agency_id).</summary>
+    [Required]
+    public Guid? AgencyId { get; set; }
+
     [Required]
     public string? Code { get; set; }
 

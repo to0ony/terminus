@@ -26,13 +26,17 @@ public class RouteConfiguration : IEntityTypeConfiguration<Route>
 
         builder.ConfigureAuditColumns();
 
+        // GTFS routes.agency_id: operater linije. Operater koji ima linije ne može se obrisati.
         builder.HasOne(e => e.Agency)
             .WithMany(a => a.Routes)
             .HasForeignKey(e => e.AgencyId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(e => new { e.AgencyId, e.Code })
+        builder.HasIndex(e => e.Code)
             .IsUnique()
-            .HasDatabaseName("uq_routes_agency_code");
+            .HasDatabaseName("uq_routes_code");
+
+        builder.HasIndex(e => e.AgencyId)
+            .HasDatabaseName("ix_routes_agency_id");
     }
 }

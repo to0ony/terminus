@@ -5,9 +5,8 @@ namespace Terminus.Model.Common;
 public interface IStopModel
 {
     Guid Id { get; set; }
-    Guid AgencyId { get; set; }
 
-    /// <summary>GTFS stop_id, jedinstven unutar agencije.</summary>
+    /// <summary>GTFS stop_id, jedinstven.</summary>
     string Code { get; set; }
 
     string Name { get; set; }

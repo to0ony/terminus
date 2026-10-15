@@ -16,5 +16,9 @@ public interface IAgencyRepository
     Task<IAgencyModel?> UpdateAsync(IAgencyModel agency, CancellationToken cancellationToken = default);
 
     /// <returns>false ako agencija ne postoji.</returns>
+    /// <exception cref="Terminus.Common.Exceptions.ConflictException">Agencija ima linije.</exception>
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <returns>true ako postoji barem jedna agencija.</returns>
+    Task<bool> AnyAsync(CancellationToken cancellationToken = default);
 }

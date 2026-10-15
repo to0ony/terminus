@@ -3,7 +3,6 @@ namespace Terminus.DAL.Entities;
 public class ServiceCalendar : IAuditable
 {
     public Guid Id { get; set; }
-    public Guid AgencyId { get; set; }
     public string Code { get; set; } = null!;
     public string Name { get; set; } = null!;
     public bool Monday { get; set; }
@@ -18,7 +17,6 @@ public class ServiceCalendar : IAuditable
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
-    public Agency Agency { get; set; } = null!;
     public ICollection<CalendarDate> CalendarDates { get; set; } = new List<CalendarDate>();
     public ICollection<Trip> Trips { get; set; } = new List<Trip>();
 }

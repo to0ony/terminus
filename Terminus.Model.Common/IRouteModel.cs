@@ -7,7 +7,7 @@ public interface IRouteModel
     Guid Id { get; set; }
     Guid AgencyId { get; set; }
 
-    /// <summary>GTFS route_id, jedinstven unutar agencije.</summary>
+    /// <summary>GTFS route_id, jedinstven.</summary>
     string Code { get; set; }
 
     /// <summary>Kratka oznaka, npr. "12".</summary>

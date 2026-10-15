@@ -14,35 +14,43 @@ public class GtfsExportService(IGtfsExportRepository repository) : IGtfsExportSe
 {
     private const int MinStopTimesPerTrip = 2;
 
-    public async Task<GtfsFeedFile> ExportAsync(Guid agencyId, CancellationToken cancellationToken = default)
+    public async Task<GtfsFeedFile> ExportAsync(CancellationToken cancellationToken = default)
     {
-        var agency = await repository.GetAgencyAsync(agencyId, cancellationToken)
-            ?? throw new NotFoundException($"Agencija {agencyId} ne postoji.");
-
         // DbContext nije thread-safe, pa se upiti izvršavaju jedan za drugim.
         var source = new FeedSource(
-            Stops: await repository.GetStopsAsync(agencyId, cancellationToken),
-            Routes: await repository.GetRoutesAsync(agencyId, cancellationToken),
-            Calendars: await repository.GetServiceCalendarsAsync(agencyId, cancellationToken),
-            CalendarDates: await repository.GetCalendarDatesAsync(agencyId, cancellationToken),
-            Trips: await repository.GetTripsAsync(agencyId, cancellationToken),
-            StopTimes: await repository.GetStopTimesAsync(agencyId, cancellationToken));
+            Agencies: await repository.GetAgenciesAsync(cancellationToken),
+            Stops: await repository.GetStopsAsync(cancellationToken),
+            Routes: await repository.GetRoutesAsync(cancellationToken),
+            Calendars: await repository.GetServiceCalendarsAsync(cancellationToken),
+            CalendarDates: await repository.GetCalendarDatesAsync(cancellationToken),
+            Trips: await repository.GetTripsAsync(cancellationToken),
+            StopTimes: await repository.GetStopTimesAsync(cancellationToken));
+
+        // Izdavač feeda (feed_info.txt, naziv datoteke) je prvi uneseni prijevoznik,
+        // dok feed_info ne dobije vlastite postavke.
+        var publisher = source.Agencies.FirstOrDefault()
+            ?? throw new UnprocessableException(
+                "GTFS feed se ne može izvesti dok se ne isprave navedeni problemi.",
+                ["Nije unesen nijedan prijevoznik."]);
 
         var feed = Select(source);
         Validate(feed);
 
         var generatedAt = DateTime.UtcNow;
-        return new GtfsFeedFile(FileName(agency, generatedAt), Write(agency, feed, generatedAt));
+        return new GtfsFeedFile(FileName(publisher, generatedAt), Write(publisher, feed, generatedAt));
     }
 
     /// <summary>
-    /// Aktivne linije → njihove vožnje → kalendari i stanice koje te vožnje koriste
-    /// (uključujući nadređene stanice perona).
+    /// Aktivne linije → njihovi prijevoznici i vožnje → kalendari i stanice koje te
+    /// vožnje koriste (uključujući nadređene stanice perona).
     /// </summary>
     private static Feed Select(FeedSource source)
     {
         var routes = source.Routes.Where(r => r.IsActive).ToList();
         var routeIds = routes.Select(r => r.Id).ToHashSet();
+
+        var agencyIds = routes.Select(r => r.AgencyId).ToHashSet();
+        var agencies = source.Agencies.Where(a => agencyIds.Contains(a.Id)).ToList();
 
         var trips = source.Trips.Where(t => routeIds.Contains(t.RouteId)).ToList();
         var tripIds = trips.Select(t => t.Id).ToHashSet();
@@ -68,6 +76,7 @@ public class GtfsExportService(IGtfsExportRepository repository) : IGtfsExportSe
         var stops = source.Stops.Where(s => exportedStopIds.Contains(s.Id)).ToList();
 
         return new Feed(
+            agencies,
             routes,
             trips,
             stopTimesByTrip,
@@ -130,15 +139,25 @@ public class GtfsExportService(IGtfsExportRepository repository) : IGtfsExportSe
         }
     }
 
-    private static byte[] Write(IAgencyModel agency, Feed feed, DateTime generatedAt)
+    private static byte[] Write(IAgencyModel publisher, Feed feed, DateTime generatedAt)
     {
         using var buffer = new MemoryStream();
 
         using (var archive = new ZipArchive(buffer, ZipArchiveMode.Create, leaveOpen: true))
         {
+            // agency_id je obavezan čim feed ima više prijevoznika, pa se uvijek piše.
             GtfsCsvWriter.WriteEntry(archive, "agency.txt",
-                ["agency_name", "agency_url", "agency_timezone", "agency_lang", "agency_phone", "agency_email"],
-                [[agency.Name, agency.Url, agency.Timezone, agency.Lang, agency.Phone, agency.Email]]);
+                ["agency_id", "agency_name", "agency_url", "agency_timezone", "agency_lang", "agency_phone", "agency_email"],
+                feed.Agencies.Select(a => (IReadOnlyList<string?>)
+                [
+                    AgencyId(a.Id),
+                    a.Name,
+                    a.Url,
+                    a.Timezone,
+                    a.Lang,
+                    a.Phone,
+                    a.Email
+                ]));
 
             GtfsCsvWriter.WriteEntry(archive, "stops.txt",
                 ["stop_id", "stop_name", "stop_desc", "stop_lat", "stop_lon", "location_type", "parent_station", "wheelchair_boarding", "platform_code"],
@@ -156,10 +175,11 @@ public class GtfsExportService(IGtfsExportRepository repository) : IGtfsExportSe
                 ]));
 
             GtfsCsvWriter.WriteEntry(archive, "routes.txt",
-                ["route_id", "route_short_name", "route_long_name", "route_desc", "route_type", "route_color", "route_text_color", "route_sort_order"],
+                ["route_id", "agency_id", "route_short_name", "route_long_name", "route_desc", "route_type", "route_color", "route_text_color", "route_sort_order"],
                 feed.Routes.Select(r => (IReadOnlyList<string?>)
                 [
                     r.Code,
+                    AgencyId(r.AgencyId),
                     r.ShortName,
                     r.LongName,
                     r.Description,
@@ -233,9 +253,9 @@ public class GtfsExportService(IGtfsExportRepository repository) : IGtfsExportSe
             GtfsCsvWriter.WriteEntry(archive, "feed_info.txt",
                 ["feed_publisher_name", "feed_publisher_url", "feed_lang", "feed_start_date", "feed_end_date", "feed_version"],
                 [[
-                    agency.Name,
-                    agency.Url,
-                    agency.Lang,
+                    publisher.Name,
+                    publisher.Url,
+                    publisher.Lang,
                     GtfsDate.Format(feedStart),
                     GtfsDate.Format(feedEnd),
                     generatedAt.ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture)
@@ -269,6 +289,9 @@ public class GtfsExportService(IGtfsExportRepository repository) : IGtfsExportSe
 
     private static string Flag(bool value) => value ? "1" : "0";
 
+    /// <summary>Prijevoznik nema kod, pa je GTFS agency_id njegov Id.</summary>
+    private static string AgencyId(Guid id) => id.ToString();
+
     /// <summary>npr. "gtfs-test-prijevoznik-d-o-o-20261014.zip"</summary>
     private static string FileName(IAgencyModel agency, DateTime generatedAt) =>
         $"gtfs-{Slug(agency.Name)}-{generatedAt:yyyyMMdd}.zip";
@@ -297,6 +320,7 @@ public class GtfsExportService(IGtfsExportRepository repository) : IGtfsExportSe
     }
 
     private sealed record FeedSource(
+        IReadOnlyList<IAgencyModel> Agencies,
         IReadOnlyList<IStopModel> Stops,
         IReadOnlyList<IRouteModel> Routes,
         IReadOnlyList<IServiceCalendarModel> Calendars,
@@ -305,6 +329,7 @@ public class GtfsExportService(IGtfsExportRepository repository) : IGtfsExportSe
         IReadOnlyList<IStopTimeModel> StopTimes);
 
     private sealed record Feed(
+        IReadOnlyList<IAgencyModel> Agencies,
         IReadOnlyList<IRouteModel> Routes,
         IReadOnlyList<ITripModel> Trips,
         IReadOnlyDictionary<Guid, IReadOnlyList<IStopTimeModel>> StopTimesByTrip,

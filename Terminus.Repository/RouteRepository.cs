@@ -13,20 +13,24 @@ namespace Terminus.Repository;
 
 public class RouteRepository(TerminusDbContext context) : IRouteRepository
 {
-    public async Task<IRouteModel?> GetAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default)
+    public async Task<IRouteModel?> GetAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var entity = await context.Routes
             .AsNoTracking()
-            .FirstOrDefaultAsync(r => r.AgencyId == agencyId && r.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
 
         return entity is null ? null : RouteMapper.ToModel(entity);
     }
 
-    public async Task<PagedResult<IRouteModel>> FindAsync(Guid agencyId, RouteFilter filter, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<IRouteModel>> FindAsync(RouteFilter filter, CancellationToken cancellationToken = default)
     {
         var query = context.Routes
-            .AsNoTracking()
-            .Where(r => r.AgencyId == agencyId);
+            .AsNoTracking();
+
+        if (filter.AgencyId is Guid agencyId)
+        {
+            query = query.Where(r => r.AgencyId == agencyId);
+        }
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
@@ -69,7 +73,7 @@ public class RouteRepository(TerminusDbContext context) : IRouteRepository
 
     public async Task<IRouteModel> InsertAsync(IRouteModel route, CancellationToken cancellationToken = default)
     {
-        var entity = new Route { AgencyId = route.AgencyId };
+        var entity = new Route();
         RouteMapper.Apply(route, entity);
 
         context.Routes.Add(entity);
@@ -82,7 +86,7 @@ public class RouteRepository(TerminusDbContext context) : IRouteRepository
     public async Task<IRouteModel?> UpdateAsync(IRouteModel route, CancellationToken cancellationToken = default)
     {
         var entity = await context.Routes
-            .FirstOrDefaultAsync(r => r.AgencyId == route.AgencyId && r.Id == route.Id, cancellationToken);
+            .FirstOrDefaultAsync(r => r.Id == route.Id, cancellationToken);
 
         if (entity is null)
         {
@@ -95,11 +99,11 @@ public class RouteRepository(TerminusDbContext context) : IRouteRepository
         return RouteMapper.ToModel(entity);
     }
 
-    public async Task<bool> DeleteAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         // ON DELETE CASCADE u bazi briše i sve vožnje linije (i njihova vremena).
         var deleted = await context.Routes
-            .Where(r => r.AgencyId == agencyId && r.Id == id)
+            .Where(r => r.Id == id)
             .ExecuteDeleteAsync(cancellationToken);
 
         return deleted > 0;
@@ -111,13 +115,17 @@ public class RouteRepository(TerminusDbContext context) : IRouteRepository
         {
             await context.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException ex) when (ex.GetBaseException() is PostgresException { ConstraintName: "uq_routes_agency_code" })
+        catch (DbUpdateException ex) when (ex.GetBaseException() is PostgresException { ConstraintName: "uq_routes_code" })
         {
             throw new ConflictException($"Linija s kodom '{route.Code}' već postoji.", ex);
         }
         catch (DbUpdateException ex) when (ex.GetBaseException() is PostgresException { ConstraintName: "fk_routes_agencies_agency_id" })
         {
-            throw new NotFoundException($"Agencija {route.AgencyId} ne postoji.", ex);
+            // Servis provjerava operatera; ovo pokriva brisanje operatera u međuvremenu.
+            throw new ValidationException(new Dictionary<string, string[]>
+            {
+                [nameof(route.AgencyId)] = ["Prijevoznik ne postoji."]
+            });
         }
     }
 }

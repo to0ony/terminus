@@ -2,7 +2,6 @@ namespace Terminus.WebApi.Contracts.Calendars;
 
 public record ServiceCalendarResponse(
     Guid Id,
-    Guid AgencyId,
     string Code,
     string Name,
     bool Monday,

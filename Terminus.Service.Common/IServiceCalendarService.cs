@@ -8,20 +8,20 @@ namespace Terminus.Service.Common;
 /// <summary>Kalendari (GTFS calendar) i njihove iznimke (GTFS calendar_dates).</summary>
 public interface IServiceCalendarService
 {
-    Task<IServiceCalendarModel> GetAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default);
+    Task<IServiceCalendarModel> GetAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<PagedResult<IServiceCalendarModel>> FindAsync(Guid agencyId, ServiceCalendarFilter filter, CancellationToken cancellationToken = default);
+    Task<PagedResult<IServiceCalendarModel>> FindAsync(ServiceCalendarFilter filter, CancellationToken cancellationToken = default);
 
-    Task<IServiceCalendarModel> CreateAsync(Guid agencyId, IServiceCalendarModel calendar, CancellationToken cancellationToken = default);
+    Task<IServiceCalendarModel> CreateAsync(IServiceCalendarModel calendar, CancellationToken cancellationToken = default);
 
-    Task<IServiceCalendarModel> UpdateAsync(Guid agencyId, Guid id, IServiceCalendarModel calendar, CancellationToken cancellationToken = default);
+    Task<IServiceCalendarModel> UpdateAsync(Guid id, IServiceCalendarModel calendar, CancellationToken cancellationToken = default);
 
-    Task DeleteAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default);
+    Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<ICalendarDateModel>> GetDatesAsync(Guid agencyId, Guid calendarId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ICalendarDateModel>> GetDatesAsync(Guid calendarId, CancellationToken cancellationToken = default);
 
     /// <summary>Dodaje iznimku za datum ili mijenja postojeću.</summary>
-    Task<ICalendarDateModel> SetDateAsync(Guid agencyId, Guid calendarId, DateOnly date, CalendarExceptionType exceptionType, CancellationToken cancellationToken = default);
+    Task<ICalendarDateModel> SetDateAsync(Guid calendarId, DateOnly date, CalendarExceptionType exceptionType, CancellationToken cancellationToken = default);
 
-    Task RemoveDateAsync(Guid agencyId, Guid calendarId, DateOnly date, CancellationToken cancellationToken = default);
+    Task RemoveDateAsync(Guid calendarId, DateOnly date, CancellationToken cancellationToken = default);
 }

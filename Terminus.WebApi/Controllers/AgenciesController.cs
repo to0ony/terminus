@@ -52,10 +52,11 @@ public class AgenciesController(IAgencyService agencyService) : ControllerBase
         return Ok(updated.ToResponse());
     }
 
-    /// <summary>Briše agenciju i (kaskadno) sve njezine stanice, linije, kalendare i vožnje.</summary>
+    /// <summary>Briše prijevoznika. Prijevoznik koji ima linije ne može se obrisati (409).</summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         await agencyService.DeleteAsync(id, cancellationToken);

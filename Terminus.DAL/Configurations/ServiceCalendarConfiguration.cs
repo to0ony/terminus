@@ -28,13 +28,8 @@ public class ServiceCalendarConfiguration : IEntityTypeConfiguration<ServiceCale
 
         builder.ConfigureAuditColumns();
 
-        builder.HasOne(e => e.Agency)
-            .WithMany(a => a.ServiceCalendars)
-            .HasForeignKey(e => e.AgencyId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder.HasIndex(e => new { e.AgencyId, e.Code })
+        builder.HasIndex(e => e.Code)
             .IsUnique()
-            .HasDatabaseName("uq_service_calendars_agency_code");
+            .HasDatabaseName("uq_service_calendars_code");
     }
 }

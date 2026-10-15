@@ -10,7 +10,6 @@ internal static class StopMapper
     public static IStopModel ToModel(Stop entity) => new StopModel
     {
         Id = entity.Id,
-        AgencyId = entity.AgencyId,
         Code = entity.Code,
         Name = entity.Name,
         Description = entity.Description,
@@ -26,7 +25,7 @@ internal static class StopMapper
     };
 
     /// <summary>
-    /// Prepisuje polja koja korisnik smije mijenjati. Id, AgencyId i vremenske
+    /// Prepisuje polja koja korisnik smije mijenjati. Id i vremenske
     /// oznake ne dira (njih postavljaju baza, interceptor ili repozitorij).
     /// </summary>
     public static void Apply(IStopModel model, Stop entity)

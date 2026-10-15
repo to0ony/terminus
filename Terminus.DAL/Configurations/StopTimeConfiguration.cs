@@ -32,8 +32,7 @@ public class StopTimeConfiguration : IEntityTypeConfiguration<StopTime>
             .HasForeignKey(e => e.TripId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // NO ACTION (kao u shemi): brisanje agencije kaskadno briše i stanice i
-        // stop_times, pa se provjera mora odgoditi do kraja naredbe.
+        // NO ACTION (kao u shemi): stanica koja se koristi u voznom redu ne može se obrisati.
         builder.HasOne(e => e.Stop)
             .WithMany(s => s.StopTimes)
             .HasForeignKey(e => e.StopId)

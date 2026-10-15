@@ -10,7 +10,6 @@ internal static class TripMapper
     public static ITripModel ToModel(Trip entity) => new TripModel
     {
         Id = entity.Id,
-        AgencyId = entity.AgencyId,
         RouteId = entity.RouteId,
         ServiceCalendarId = entity.ServiceCalendarId,
         Code = entity.Code,
@@ -24,7 +23,7 @@ internal static class TripMapper
         UpdatedAt = entity.UpdatedAt
     };
 
-    /// <summary>Prepisuje polja koja korisnik smije mijenjati (bez Id-a, AgencyId-a i vremenskih oznaka).</summary>
+    /// <summary>Prepisuje polja koja korisnik smije mijenjati (bez Id-a i vremenskih oznaka).</summary>
     public static void Apply(ITripModel model, Trip entity)
     {
         entity.RouteId = model.RouteId;

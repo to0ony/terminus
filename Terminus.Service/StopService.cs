@@ -10,22 +10,21 @@ namespace Terminus.Service;
 
 public class StopService(IStopRepository repository) : IStopService
 {
-    public async Task<IStopModel> GetAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default) =>
-        await repository.GetAsync(agencyId, id, cancellationToken) ?? throw StopNotFound(id);
+    public async Task<IStopModel> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
+        await repository.GetAsync(id, cancellationToken) ?? throw StopNotFound(id);
 
-    public Task<PagedResult<IStopModel>> FindAsync(Guid agencyId, StopFilter filter, CancellationToken cancellationToken = default)
+    public Task<PagedResult<IStopModel>> FindAsync(StopFilter filter, CancellationToken cancellationToken = default)
     {
         var errors = new ValidationErrors();
         errors.AddPagingErrors(filter.Page, filter.PageSize);
         errors.ThrowIfAny();
 
-        return repository.FindAsync(agencyId, filter, cancellationToken);
+        return repository.FindAsync(filter, cancellationToken);
     }
 
-    public async Task<IStopModel> CreateAsync(Guid agencyId, IStopModel stop, CancellationToken cancellationToken = default)
+    public async Task<IStopModel> CreateAsync(IStopModel stop, CancellationToken cancellationToken = default)
     {
         stop.Id = Guid.Empty;
-        stop.AgencyId = agencyId;
         Normalize(stop);
 
         await ValidateAsync(stop, existing: null, cancellationToken);
@@ -33,12 +32,11 @@ public class StopService(IStopRepository repository) : IStopService
         return await repository.InsertAsync(stop, cancellationToken);
     }
 
-    public async Task<IStopModel> UpdateAsync(Guid agencyId, Guid id, IStopModel stop, CancellationToken cancellationToken = default)
+    public async Task<IStopModel> UpdateAsync(Guid id, IStopModel stop, CancellationToken cancellationToken = default)
     {
-        var existing = await repository.GetAsync(agencyId, id, cancellationToken) ?? throw StopNotFound(id);
+        var existing = await repository.GetAsync(id, cancellationToken) ?? throw StopNotFound(id);
 
         stop.Id = id;
-        stop.AgencyId = agencyId;
         Normalize(stop);
 
         await ValidateAsync(stop, existing, cancellationToken);
@@ -46,9 +44,9 @@ public class StopService(IStopRepository repository) : IStopService
         return await repository.UpdateAsync(stop, cancellationToken) ?? throw StopNotFound(id);
     }
 
-    public async Task DeleteAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        if (!await repository.DeleteAsync(agencyId, id, cancellationToken))
+        if (!await repository.DeleteAsync(id, cancellationToken))
         {
             throw StopNotFound(id);
         }
@@ -108,7 +106,7 @@ public class StopService(IStopRepository repository) : IStopService
             }
             else
             {
-                var parent = await repository.GetAsync(stop.AgencyId, parentStationId, cancellationToken);
+                var parent = await repository.GetAsync(parentStationId, cancellationToken);
                 if (parent is null)
                 {
                     errors.Add(nameof(stop.ParentStationId), "Nadređena stanica ne postoji.");
@@ -122,7 +120,7 @@ public class StopService(IStopRepository repository) : IStopService
 
         if (existing?.LocationType == LocationType.Station
             && stop.LocationType != LocationType.Station
-            && await repository.HasChildStopsAsync(stop.AgencyId, stop.Id, cancellationToken))
+            && await repository.HasChildStopsAsync(stop.Id, cancellationToken))
         {
             errors.Add(nameof(stop.LocationType), "Kolodvor ima perone pa se ne može pretvoriti u stajalište.");
         }

@@ -3,10 +3,10 @@ namespace Terminus.Service.Common;
 public interface IGtfsExportService
 {
     /// <summary>
-    /// Generira GTFS feed (ZIP) za agenciju. Baca UnprocessableException s popisom
-    /// problema ako podaci nisu spremni za izvoz.
+    /// Generira GTFS feed (ZIP) sa svim aktivnim linijama. Baca UnprocessableException
+    /// s popisom problema ako podaci nisu spremni za izvoz.
     /// </summary>
-    Task<GtfsFeedFile> ExportAsync(Guid agencyId, CancellationToken cancellationToken = default);
+    Task<GtfsFeedFile> ExportAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>Generirani GTFS feed.</summary>

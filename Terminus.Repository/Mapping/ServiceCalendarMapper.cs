@@ -10,7 +10,6 @@ internal static class ServiceCalendarMapper
     public static IServiceCalendarModel ToModel(ServiceCalendar entity) => new ServiceCalendarModel
     {
         Id = entity.Id,
-        AgencyId = entity.AgencyId,
         Code = entity.Code,
         Name = entity.Name,
         Monday = entity.Monday,
@@ -26,7 +25,7 @@ internal static class ServiceCalendarMapper
         UpdatedAt = entity.UpdatedAt
     };
 
-    /// <summary>Prepisuje polja koja korisnik smije mijenjati (bez Id-a, AgencyId-a i vremenskih oznaka).</summary>
+    /// <summary>Prepisuje polja koja korisnik smije mijenjati (bez Id-a i vremenskih oznaka).</summary>
     public static void Apply(IServiceCalendarModel model, ServiceCalendar entity)
     {
         entity.Code = model.Code;

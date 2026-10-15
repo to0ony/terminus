@@ -5,7 +5,6 @@ namespace Terminus.Model;
 public class ServiceCalendarModel : IServiceCalendarModel
 {
     public Guid Id { get; set; }
-    public Guid AgencyId { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public bool Monday { get; set; }

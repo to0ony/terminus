@@ -3,7 +3,7 @@ using Terminus.Model.Common;
 namespace Terminus.Repository.Common;
 
 /// <summary>
-/// Vremena vožnje po stanicama. Ne provjerava pripadnost agenciji; to radi servis
+/// Vremena vožnje po stanicama. Ne provjerava postoji li vožnja; to radi servis
 /// dohvatom vožnje prije svake operacije.
 /// </summary>
 public interface IStopTimeRepository

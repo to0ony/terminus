@@ -8,43 +8,41 @@ using Terminus.Service.Common;
 
 namespace Terminus.Service;
 
-public partial class RouteService(IRouteRepository repository) : IRouteService
+public partial class RouteService(IRouteRepository repository, IAgencyRepository agencyRepository) : IRouteService
 {
-    public async Task<IRouteModel> GetAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default) =>
-        await repository.GetAsync(agencyId, id, cancellationToken) ?? throw RouteNotFound(id);
+    public async Task<IRouteModel> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
+        await repository.GetAsync(id, cancellationToken) ?? throw RouteNotFound(id);
 
-    public Task<PagedResult<IRouteModel>> FindAsync(Guid agencyId, RouteFilter filter, CancellationToken cancellationToken = default)
+    public Task<PagedResult<IRouteModel>> FindAsync(RouteFilter filter, CancellationToken cancellationToken = default)
     {
         var errors = new ValidationErrors();
         errors.AddPagingErrors(filter.Page, filter.PageSize);
         errors.ThrowIfAny();
 
-        return repository.FindAsync(agencyId, filter, cancellationToken);
+        return repository.FindAsync(filter, cancellationToken);
     }
 
-    public async Task<IRouteModel> CreateAsync(Guid agencyId, IRouteModel route, CancellationToken cancellationToken = default)
+    public async Task<IRouteModel> CreateAsync(IRouteModel route, CancellationToken cancellationToken = default)
     {
         route.Id = Guid.Empty;
-        route.AgencyId = agencyId;
         Normalize(route);
-        Validate(route);
+        await ValidateAsync(route, cancellationToken);
 
         return await repository.InsertAsync(route, cancellationToken);
     }
 
-    public async Task<IRouteModel> UpdateAsync(Guid agencyId, Guid id, IRouteModel route, CancellationToken cancellationToken = default)
+    public async Task<IRouteModel> UpdateAsync(Guid id, IRouteModel route, CancellationToken cancellationToken = default)
     {
         route.Id = id;
-        route.AgencyId = agencyId;
         Normalize(route);
-        Validate(route);
+        await ValidateAsync(route, cancellationToken);
 
         return await repository.UpdateAsync(route, cancellationToken) ?? throw RouteNotFound(id);
     }
 
-    public async Task DeleteAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        if (!await repository.DeleteAsync(agencyId, id, cancellationToken))
+        if (!await repository.DeleteAsync(id, cancellationToken))
         {
             throw RouteNotFound(id);
         }
@@ -60,9 +58,15 @@ public partial class RouteService(IRouteRepository repository) : IRouteService
         route.TextColor = NormalizeColor(route.TextColor);
     }
 
-    private static void Validate(IRouteModel route)
+    private async Task ValidateAsync(IRouteModel route, CancellationToken cancellationToken)
     {
         var errors = new ValidationErrors();
+
+        // GTFS routes.agency_id: linija mora imati operatera.
+        if (await agencyRepository.GetAsync(route.AgencyId, cancellationToken) is null)
+        {
+            errors.Add(nameof(route.AgencyId), "Prijevoznik ne postoji.");
+        }
 
         if (route.Code.Length == 0)
         {

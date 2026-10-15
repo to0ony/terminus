@@ -23,7 +23,6 @@ public static class StopMappings
 
     public static StopResponse ToResponse(this IStopModel model) => new(
         model.Id,
-        model.AgencyId,
         model.Code,
         model.Name,
         model.Description,

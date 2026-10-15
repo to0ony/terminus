@@ -24,9 +24,10 @@ internal static class RouteMapper
         UpdatedAt = entity.UpdatedAt
     };
 
-    /// <summary>Prepisuje polja koja korisnik smije mijenjati (bez Id-a, AgencyId-a i vremenskih oznaka).</summary>
+    /// <summary>Prepisuje polja koja korisnik smije mijenjati (bez Id-a i vremenskih oznaka).</summary>
     public static void Apply(IRouteModel model, Route entity)
     {
+        entity.AgencyId = model.AgencyId;
         entity.Code = model.Code;
         entity.ShortName = model.ShortName;
         entity.LongName = model.LongName;

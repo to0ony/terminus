@@ -3,7 +3,6 @@ namespace Terminus.DAL.Entities;
 public class Stop : IAuditable
 {
     public Guid Id { get; set; }
-    public Guid AgencyId { get; set; }
     public string Code { get; set; } = null!;
     public string Name { get; set; } = null!;
     public string? Description { get; set; }
@@ -17,7 +16,6 @@ public class Stop : IAuditable
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
-    public Agency Agency { get; set; } = null!;
     public Stop? ParentStation { get; set; }
     public ICollection<Stop> ChildStops { get; set; } = new List<Stop>();
     public ICollection<StopTime> StopTimes { get; set; } = new List<StopTime>();

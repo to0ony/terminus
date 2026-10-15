@@ -6,7 +6,7 @@ using Terminus.WebApi.Contracts.Trips;
 namespace Terminus.WebApi.Controllers;
 
 [ApiController]
-[Route("api/agencies/{agencyId:guid}/trips")]
+[Route("api/trips")]
 [Produces("application/json")]
 public class TripsController(ITripService tripService) : ControllerBase
 {
@@ -15,20 +15,19 @@ public class TripsController(ITripService tripService) : ControllerBase
     [ProducesResponseType<PagedResult<TripResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PagedResult<TripResponse>>> Find(
-        Guid agencyId,
         [FromQuery] TripListQuery query,
         CancellationToken cancellationToken)
     {
-        var result = await tripService.FindAsync(agencyId, query.ToFilter(), cancellationToken);
+        var result = await tripService.FindAsync(query.ToFilter(), cancellationToken);
         return Ok(result.Map(t => t.ToResponse()));
     }
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType<TripResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<TripResponse>> Get(Guid agencyId, Guid id, CancellationToken cancellationToken)
+    public async Task<ActionResult<TripResponse>> Get(Guid id, CancellationToken cancellationToken)
     {
-        var trip = await tripService.GetAsync(agencyId, id, cancellationToken);
+        var trip = await tripService.GetAsync(id, cancellationToken);
         return Ok(trip.ToResponse());
     }
 
@@ -38,12 +37,11 @@ public class TripsController(ITripService tripService) : ControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<TripResponse>> Create(
-        Guid agencyId,
         TripRequest request,
         CancellationToken cancellationToken)
     {
-        var created = await tripService.CreateAsync(agencyId, request.ToModel(), cancellationToken);
-        return CreatedAtAction(nameof(Get), new { agencyId, id = created.Id }, created.ToResponse());
+        var created = await tripService.CreateAsync(request.ToModel(), cancellationToken);
+        return CreatedAtAction(nameof(Get), new { id = created.Id }, created.ToResponse());
     }
 
     [HttpPut("{id:guid}")]
@@ -52,12 +50,11 @@ public class TripsController(ITripService tripService) : ControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<TripResponse>> Update(
-        Guid agencyId,
         Guid id,
         TripRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await tripService.UpdateAsync(agencyId, id, request.ToModel(), cancellationToken);
+        var updated = await tripService.UpdateAsync(id, request.ToModel(), cancellationToken);
         return Ok(updated.ToResponse());
     }
 
@@ -65,9 +62,9 @@ public class TripsController(ITripService tripService) : ControllerBase
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(Guid agencyId, Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        await tripService.DeleteAsync(agencyId, id, cancellationToken);
+        await tripService.DeleteAsync(id, cancellationToken);
         return NoContent();
     }
 
@@ -76,11 +73,10 @@ public class TripsController(ITripService tripService) : ControllerBase
     [ProducesResponseType<IReadOnlyList<StopTimeResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IReadOnlyList<StopTimeResponse>>> GetStopTimes(
-        Guid agencyId,
         Guid id,
         CancellationToken cancellationToken)
     {
-        var stopTimes = await tripService.GetStopTimesAsync(agencyId, id, cancellationToken);
+        var stopTimes = await tripService.GetStopTimesAsync(id, cancellationToken);
         return Ok(stopTimes.Select(st => st.ToResponse()).ToList());
     }
 
@@ -90,12 +86,11 @@ public class TripsController(ITripService tripService) : ControllerBase
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IReadOnlyList<StopTimeResponse>>> ReplaceStopTimes(
-        Guid agencyId,
         Guid id,
         ReplaceStopTimesRequest request,
         CancellationToken cancellationToken)
     {
-        var stopTimes = await tripService.ReplaceStopTimesAsync(agencyId, id, request.ToModels(), cancellationToken);
+        var stopTimes = await tripService.ReplaceStopTimesAsync(id, request.ToModels(), cancellationToken);
         return Ok(stopTimes.Select(st => st.ToResponse()).ToList());
     }
 }

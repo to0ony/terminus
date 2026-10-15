@@ -24,7 +24,6 @@ public static class ServiceCalendarMappings
 
     public static ServiceCalendarResponse ToResponse(this IServiceCalendarModel model) => new(
         model.Id,
-        model.AgencyId,
         model.Code,
         model.Name,
         model.Monday,

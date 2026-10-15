@@ -6,13 +6,13 @@ namespace Terminus.Service.Common;
 
 public interface IRouteService
 {
-    Task<IRouteModel> GetAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default);
+    Task<IRouteModel> GetAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<PagedResult<IRouteModel>> FindAsync(Guid agencyId, RouteFilter filter, CancellationToken cancellationToken = default);
+    Task<PagedResult<IRouteModel>> FindAsync(RouteFilter filter, CancellationToken cancellationToken = default);
 
-    Task<IRouteModel> CreateAsync(Guid agencyId, IRouteModel route, CancellationToken cancellationToken = default);
+    Task<IRouteModel> CreateAsync(IRouteModel route, CancellationToken cancellationToken = default);
 
-    Task<IRouteModel> UpdateAsync(Guid agencyId, Guid id, IRouteModel route, CancellationToken cancellationToken = default);
+    Task<IRouteModel> UpdateAsync(Guid id, IRouteModel route, CancellationToken cancellationToken = default);
 
-    Task DeleteAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default);
+    Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }

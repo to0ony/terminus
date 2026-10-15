@@ -6,9 +6,10 @@ namespace Terminus.WebApi.Contracts.Routes;
 
 public static class RouteMappings
 {
-    // Code je [Required], pa ga je model binding već provjerio.
+    // AgencyId i Code su [Required], pa ih je model binding već provjerio.
     public static IRouteModel ToModel(this RouteRequest request) => new RouteModel
     {
+        AgencyId = request.AgencyId!.Value,
         Code = request.Code!,
         ShortName = request.ShortName,
         LongName = request.LongName,
@@ -38,6 +39,7 @@ public static class RouteMappings
     public static RouteFilter ToFilter(this RouteListQuery query) => new()
     {
         Search = query.Search,
+        AgencyId = query.AgencyId,
         IsActive = query.IsActive,
         RouteType = query.RouteType,
         Page = query.Page,

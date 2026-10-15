@@ -6,7 +6,6 @@ namespace Terminus.Model;
 public class TripModel : ITripModel
 {
     public Guid Id { get; set; }
-    public Guid AgencyId { get; set; }
     public Guid RouteId { get; set; }
     public Guid ServiceCalendarId { get; set; }
     public string Code { get; set; } = string.Empty;

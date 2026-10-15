@@ -170,9 +170,12 @@ namespace Terminus.DAL.Migrations
                     b.HasKey("Id")
                         .HasName("pk_routes");
 
-                    b.HasIndex("AgencyId", "Code")
+                    b.HasIndex("AgencyId")
+                        .HasDatabaseName("ix_routes_agency_id");
+
+                    b.HasIndex("Code")
                         .IsUnique()
-                        .HasDatabaseName("uq_routes_agency_code");
+                        .HasDatabaseName("uq_routes_code");
 
                     b.ToTable("routes", null, t =>
                         {
@@ -191,10 +194,6 @@ namespace Terminus.DAL.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id")
                         .HasDefaultValueSql("gen_random_uuid()");
-
-                    b.Property<Guid>("AgencyId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("agency_id");
 
                     b.Property<string>("Code")
                         .IsRequired()
@@ -271,9 +270,9 @@ namespace Terminus.DAL.Migrations
                     b.HasKey("Id")
                         .HasName("pk_service_calendars");
 
-                    b.HasIndex("AgencyId", "Code")
+                    b.HasIndex("Code")
                         .IsUnique()
-                        .HasDatabaseName("uq_service_calendars_agency_code");
+                        .HasDatabaseName("uq_service_calendars_code");
 
                     b.ToTable("service_calendars", null, t =>
                         {
@@ -288,10 +287,6 @@ namespace Terminus.DAL.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id")
                         .HasDefaultValueSql("gen_random_uuid()");
-
-                    b.Property<Guid>("AgencyId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("agency_id");
 
                     b.Property<string>("Code")
                         .IsRequired()
@@ -353,12 +348,12 @@ namespace Terminus.DAL.Migrations
                     b.HasKey("Id")
                         .HasName("pk_stops");
 
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_stops_code");
+
                     b.HasIndex("ParentStationId")
                         .HasDatabaseName("ix_stops_parent_station_id");
-
-                    b.HasIndex("AgencyId", "Code")
-                        .IsUnique()
-                        .HasDatabaseName("uq_stops_agency_code");
 
                     b.ToTable("stops", null, t =>
                         {
@@ -447,10 +442,6 @@ namespace Terminus.DAL.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("gen_random_uuid()");
 
-                    b.Property<Guid>("AgencyId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("agency_id");
-
                     b.Property<short>("BikesAllowed")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("smallint")
@@ -507,15 +498,15 @@ namespace Terminus.DAL.Migrations
                     b.HasKey("Id")
                         .HasName("pk_trips");
 
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_trips_code");
+
                     b.HasIndex("RouteId")
                         .HasDatabaseName("ix_trips_route_id");
 
                     b.HasIndex("ServiceCalendarId")
                         .HasDatabaseName("ix_trips_service_calendar_id");
-
-                    b.HasIndex("AgencyId", "Code")
-                        .IsUnique()
-                        .HasDatabaseName("uq_trips_agency_code");
 
                     b.ToTable("trips", null, t =>
                         {
@@ -544,41 +535,20 @@ namespace Terminus.DAL.Migrations
                     b.HasOne("Terminus.DAL.Entities.Agency", "Agency")
                         .WithMany("Routes")
                         .HasForeignKey("AgencyId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_routes_agencies_agency_id");
 
                     b.Navigation("Agency");
                 });
 
-            modelBuilder.Entity("Terminus.DAL.Entities.ServiceCalendar", b =>
-                {
-                    b.HasOne("Terminus.DAL.Entities.Agency", "Agency")
-                        .WithMany("ServiceCalendars")
-                        .HasForeignKey("AgencyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_service_calendars_agencies_agency_id");
-
-                    b.Navigation("Agency");
-                });
-
             modelBuilder.Entity("Terminus.DAL.Entities.Stop", b =>
                 {
-                    b.HasOne("Terminus.DAL.Entities.Agency", "Agency")
-                        .WithMany("Stops")
-                        .HasForeignKey("AgencyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_stops_agencies_agency_id");
-
                     b.HasOne("Terminus.DAL.Entities.Stop", "ParentStation")
                         .WithMany("ChildStops")
                         .HasForeignKey("ParentStationId")
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_stops_stops_parent_station_id");
-
-                    b.Navigation("Agency");
 
                     b.Navigation("ParentStation");
                 });
@@ -606,13 +576,6 @@ namespace Terminus.DAL.Migrations
 
             modelBuilder.Entity("Terminus.DAL.Entities.Trip", b =>
                 {
-                    b.HasOne("Terminus.DAL.Entities.Agency", "Agency")
-                        .WithMany("Trips")
-                        .HasForeignKey("AgencyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_trips_agencies_agency_id");
-
                     b.HasOne("Terminus.DAL.Entities.Route", "Route")
                         .WithMany("Trips")
                         .HasForeignKey("RouteId")
@@ -627,8 +590,6 @@ namespace Terminus.DAL.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_trips_service_calendars_service_calendar_id");
 
-                    b.Navigation("Agency");
-
                     b.Navigation("Route");
 
                     b.Navigation("ServiceCalendar");
@@ -637,12 +598,6 @@ namespace Terminus.DAL.Migrations
             modelBuilder.Entity("Terminus.DAL.Entities.Agency", b =>
                 {
                     b.Navigation("Routes");
-
-                    b.Navigation("ServiceCalendars");
-
-                    b.Navigation("Stops");
-
-                    b.Navigation("Trips");
                 });
 
             modelBuilder.Entity("Terminus.DAL.Entities.Route", b =>

@@ -6,9 +6,9 @@ namespace Terminus.Repository.Common;
 
 public interface IServiceCalendarRepository
 {
-    Task<IServiceCalendarModel?> GetAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default);
+    Task<IServiceCalendarModel?> GetAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<PagedResult<IServiceCalendarModel>> FindAsync(Guid agencyId, ServiceCalendarFilter filter, CancellationToken cancellationToken = default);
+    Task<PagedResult<IServiceCalendarModel>> FindAsync(ServiceCalendarFilter filter, CancellationToken cancellationToken = default);
 
     Task<IServiceCalendarModel> InsertAsync(IServiceCalendarModel calendar, CancellationToken cancellationToken = default);
 
@@ -16,5 +16,5 @@ public interface IServiceCalendarRepository
     Task<IServiceCalendarModel?> UpdateAsync(IServiceCalendarModel calendar, CancellationToken cancellationToken = default);
 
     /// <returns>false ako kalendar ne postoji.</returns>
-    Task<bool> DeleteAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default);
+    Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }

@@ -13,60 +13,57 @@ public class ServiceCalendarService(
     IServiceCalendarRepository calendarRepository,
     ICalendarDateRepository calendarDateRepository) : IServiceCalendarService
 {
-    public async Task<IServiceCalendarModel> GetAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default) =>
-        await calendarRepository.GetAsync(agencyId, id, cancellationToken) ?? throw CalendarNotFound(id);
+    public async Task<IServiceCalendarModel> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
+        await calendarRepository.GetAsync(id, cancellationToken) ?? throw CalendarNotFound(id);
 
-    public Task<PagedResult<IServiceCalendarModel>> FindAsync(Guid agencyId, ServiceCalendarFilter filter, CancellationToken cancellationToken = default)
+    public Task<PagedResult<IServiceCalendarModel>> FindAsync(ServiceCalendarFilter filter, CancellationToken cancellationToken = default)
     {
         var errors = new ValidationErrors();
         errors.AddPagingErrors(filter.Page, filter.PageSize);
         errors.ThrowIfAny();
 
-        return calendarRepository.FindAsync(agencyId, filter, cancellationToken);
+        return calendarRepository.FindAsync(filter, cancellationToken);
     }
 
-    public async Task<IServiceCalendarModel> CreateAsync(Guid agencyId, IServiceCalendarModel calendar, CancellationToken cancellationToken = default)
+    public async Task<IServiceCalendarModel> CreateAsync(IServiceCalendarModel calendar, CancellationToken cancellationToken = default)
     {
         calendar.Id = Guid.Empty;
-        calendar.AgencyId = agencyId;
         Normalize(calendar);
         Validate(calendar);
 
         return await calendarRepository.InsertAsync(calendar, cancellationToken);
     }
 
-    public async Task<IServiceCalendarModel> UpdateAsync(Guid agencyId, Guid id, IServiceCalendarModel calendar, CancellationToken cancellationToken = default)
+    public async Task<IServiceCalendarModel> UpdateAsync(Guid id, IServiceCalendarModel calendar, CancellationToken cancellationToken = default)
     {
         calendar.Id = id;
-        calendar.AgencyId = agencyId;
         Normalize(calendar);
         Validate(calendar);
 
         return await calendarRepository.UpdateAsync(calendar, cancellationToken) ?? throw CalendarNotFound(id);
     }
 
-    public async Task DeleteAsync(Guid agencyId, Guid id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        if (!await calendarRepository.DeleteAsync(agencyId, id, cancellationToken))
+        if (!await calendarRepository.DeleteAsync(id, cancellationToken))
         {
             throw CalendarNotFound(id);
         }
     }
 
-    public async Task<IReadOnlyList<ICalendarDateModel>> GetDatesAsync(Guid agencyId, Guid calendarId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ICalendarDateModel>> GetDatesAsync(Guid calendarId, CancellationToken cancellationToken = default)
     {
-        await EnsureCalendarExistsAsync(agencyId, calendarId, cancellationToken);
+        await EnsureCalendarExistsAsync(calendarId, cancellationToken);
         return await calendarDateRepository.GetByCalendarAsync(calendarId, cancellationToken);
     }
 
     public async Task<ICalendarDateModel> SetDateAsync(
-        Guid agencyId,
         Guid calendarId,
         DateOnly date,
         CalendarExceptionType exceptionType,
         CancellationToken cancellationToken = default)
     {
-        await EnsureCalendarExistsAsync(agencyId, calendarId, cancellationToken);
+        await EnsureCalendarExistsAsync(calendarId, cancellationToken);
 
         if (!Enum.IsDefined(exceptionType))
         {
@@ -84,9 +81,9 @@ public class ServiceCalendarService(
         }, cancellationToken);
     }
 
-    public async Task RemoveDateAsync(Guid agencyId, Guid calendarId, DateOnly date, CancellationToken cancellationToken = default)
+    public async Task RemoveDateAsync(Guid calendarId, DateOnly date, CancellationToken cancellationToken = default)
     {
-        await EnsureCalendarExistsAsync(agencyId, calendarId, cancellationToken);
+        await EnsureCalendarExistsAsync(calendarId, cancellationToken);
 
         if (!await calendarDateRepository.DeleteAsync(calendarId, date, cancellationToken))
         {
@@ -94,10 +91,10 @@ public class ServiceCalendarService(
         }
     }
 
-    /// <summary>Iznimke se dohvaćaju samo po Id-u kalendara, pa ovdje provjeravamo da kalendar pripada agenciji.</summary>
-    private async Task EnsureCalendarExistsAsync(Guid agencyId, Guid calendarId, CancellationToken cancellationToken)
+    /// <summary>Nepostojeći kalendar je 404, a ne prazan popis iznimaka.</summary>
+    private async Task EnsureCalendarExistsAsync(Guid calendarId, CancellationToken cancellationToken)
     {
-        if (await calendarRepository.GetAsync(agencyId, calendarId, cancellationToken) is null)
+        if (await calendarRepository.GetAsync(calendarId, cancellationToken) is null)
         {
             throw CalendarNotFound(calendarId);
         }

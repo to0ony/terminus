@@ -3,9 +3,8 @@ namespace Terminus.Model.Common;
 public interface IServiceCalendarModel
 {
     Guid Id { get; set; }
-    Guid AgencyId { get; set; }
 
-    /// <summary>GTFS service_id, jedinstven unutar agencije.</summary>
+    /// <summary>GTFS service_id, jedinstven.</summary>
     string Code { get; set; }
 
     /// <summary>Naziv za prikaz, npr. "Radni dan" ili "Nedjelja i praznici".</summary>

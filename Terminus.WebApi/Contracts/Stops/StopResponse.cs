@@ -4,7 +4,6 @@ namespace Terminus.WebApi.Contracts.Stops;
 
 public record StopResponse(
     Guid Id,
-    Guid AgencyId,
     string Code,
     string Name,
     string? Description,
