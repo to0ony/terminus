@@ -288,7 +288,7 @@ lakše za dizajn, ali zahtjevnije za postavljanje na poslužitelju.
 
 | # | Korak | Ovisi o |
 |---|---|---|
-| 1 | Testni projekt (xUnit) i CI | — |
+| 1 | Testni projekt (xUnit) i CI ✅ | — |
 | 2 | Izračun aktivnih kalendara i polazaka, s testovima | 1 |
 | 3 | Javni endpoint polazaka | 2 |
 | 4 | Stranica zaslona, output caching i rate limiting | 3 |

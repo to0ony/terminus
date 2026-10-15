@@ -45,6 +45,19 @@ API je dostupan na `http://localhost:5183`. U okruženju `Development` OpenAPI
 opis je na `/openapi/v1.json`; može se uvesti u Bruno ili Postman.
 Primjeri zahtjeva nalaze se u `Terminus.WebApi/Terminus.WebApi.http`.
 
+## Testovi
+
+```sh
+dotnet test --solution Terminus.slnx
+```
+
+Testovi su u `Terminus.Tests` (xUnit v3, Microsoft Testing Platform; način
+pokretanja određuje `global.json`). Unit testovi ne trebaju bazu: servisi
+dobivaju lažne repozitorije iz `Terminus.Tests/Fakes`.
+
+GitHub Actions (`.github/workflows/ci.yml`) na svaki push i pull request na
+`master` radi restore, build u Release konfiguraciji i pokreće testove.
+
 ## Migracije
 
 Shema se mijenja isključivo kroz migracije:

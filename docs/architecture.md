@@ -17,7 +17,7 @@ s implementacijom.
 | `Terminus.Service.Common` | Sučelja servisa. |
 | `Terminus.Service` | Poslovna pravila i validacija. |
 | `Terminus.WebApi` | Kontroleri, request/response DTO-i, obrada grešaka, DI registracija. |
-| `Terminus.Tests` | Testovi (u pripremi). |
+| `Terminus.Tests` | Unit testovi (xUnit v3) servisa i pomoćnih klasa, uz lažne repozitorije u memoriji. |
 
 ## Ovisnosti
 
