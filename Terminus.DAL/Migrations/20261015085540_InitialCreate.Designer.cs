@@ -12,8 +12,8 @@ using Terminus.DAL;
 namespace Terminus.DAL.Migrations
 {
     [DbContext(typeof(TerminusDbContext))]
-    [Migration("20261015084844_RemoveTenancy")]
-    partial class RemoveTenancy
+    [Migration("20261015085540_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

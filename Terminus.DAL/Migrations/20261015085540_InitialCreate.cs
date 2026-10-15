@@ -31,6 +31,65 @@ namespace Terminus.DAL.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "service_calendars",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+                    code = table.Column<string>(type: "text", nullable: false),
+                    name = table.Column<string>(type: "text", nullable: false),
+                    monday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    tuesday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    wednesday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    thursday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    friday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    saturday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    sunday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    start_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    end_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_service_calendars", x => x.id);
+                    table.CheckConstraint("ck_service_calendars_dates", "end_date >= start_date");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "stops",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+                    code = table.Column<string>(type: "text", nullable: false),
+                    name = table.Column<string>(type: "text", nullable: false),
+                    description = table.Column<string>(type: "text", nullable: true),
+                    latitude = table.Column<double>(type: "double precision", nullable: false),
+                    longitude = table.Column<double>(type: "double precision", nullable: false),
+                    location_type = table.Column<short>(type: "smallint", nullable: false, defaultValue: (short)0),
+                    parent_station_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    platform_code = table.Column<string>(type: "text", nullable: true),
+                    wheelchair_boarding = table.Column<short>(type: "smallint", nullable: false, defaultValue: (short)0),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_stops", x => x.id);
+                    table.CheckConstraint("ck_stops_latitude", "latitude BETWEEN -90 AND 90");
+                    table.CheckConstraint("ck_stops_location_type", "location_type IN (0, 1)");
+                    table.CheckConstraint("ck_stops_longitude", "longitude BETWEEN -180 AND 180");
+                    table.CheckConstraint("ck_stops_not_own_parent", "parent_station_id IS NULL OR parent_station_id <> id");
+                    table.CheckConstraint("ck_stops_wheelchair", "wheelchair_boarding IN (0, 1, 2)");
+                    table.ForeignKey(
+                        name: "fk_stops_stops_parent_station_id",
+                        column: x => x.parent_station_id,
+                        principalTable: "stops",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "routes",
                 columns: table => new
                 {
@@ -59,80 +118,7 @@ namespace Terminus.DAL.Migrations
                         column: x => x.agency_id,
                         principalTable: "agencies",
                         principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "service_calendars",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
-                    agency_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    code = table.Column<string>(type: "text", nullable: false),
-                    name = table.Column<string>(type: "text", nullable: false),
-                    monday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    tuesday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    wednesday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    thursday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    friday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    saturday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    sunday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    start_date = table.Column<DateOnly>(type: "date", nullable: false),
-                    end_date = table.Column<DateOnly>(type: "date", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
-                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_service_calendars", x => x.id);
-                    table.CheckConstraint("ck_service_calendars_dates", "end_date >= start_date");
-                    table.ForeignKey(
-                        name: "fk_service_calendars_agencies_agency_id",
-                        column: x => x.agency_id,
-                        principalTable: "agencies",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "stops",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
-                    agency_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    code = table.Column<string>(type: "text", nullable: false),
-                    name = table.Column<string>(type: "text", nullable: false),
-                    description = table.Column<string>(type: "text", nullable: true),
-                    latitude = table.Column<double>(type: "double precision", nullable: false),
-                    longitude = table.Column<double>(type: "double precision", nullable: false),
-                    location_type = table.Column<short>(type: "smallint", nullable: false, defaultValue: (short)0),
-                    parent_station_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    platform_code = table.Column<string>(type: "text", nullable: true),
-                    wheelchair_boarding = table.Column<short>(type: "smallint", nullable: false, defaultValue: (short)0),
-                    is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
-                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_stops", x => x.id);
-                    table.CheckConstraint("ck_stops_latitude", "latitude BETWEEN -90 AND 90");
-                    table.CheckConstraint("ck_stops_location_type", "location_type IN (0, 1)");
-                    table.CheckConstraint("ck_stops_longitude", "longitude BETWEEN -180 AND 180");
-                    table.CheckConstraint("ck_stops_not_own_parent", "parent_station_id IS NULL OR parent_station_id <> id");
-                    table.CheckConstraint("ck_stops_wheelchair", "wheelchair_boarding IN (0, 1, 2)");
-                    table.ForeignKey(
-                        name: "fk_stops_agencies_agency_id",
-                        column: x => x.agency_id,
-                        principalTable: "agencies",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "fk_stops_stops_parent_station_id",
-                        column: x => x.parent_station_id,
-                        principalTable: "stops",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -160,7 +146,6 @@ namespace Terminus.DAL.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
-                    agency_id = table.Column<Guid>(type: "uuid", nullable: false),
                     route_id = table.Column<Guid>(type: "uuid", nullable: false),
                     service_calendar_id = table.Column<Guid>(type: "uuid", nullable: false),
                     code = table.Column<string>(type: "text", nullable: false),
@@ -179,12 +164,6 @@ namespace Terminus.DAL.Migrations
                     table.CheckConstraint("ck_trips_bikes", "bikes_allowed IN (0, 1, 2)");
                     table.CheckConstraint("ck_trips_direction", "direction_id IS NULL OR direction_id IN (0, 1)");
                     table.CheckConstraint("ck_trips_wheelchair", "wheelchair_accessible IN (0, 1, 2)");
-                    table.ForeignKey(
-                        name: "fk_trips_agencies_agency_id",
-                        column: x => x.agency_id,
-                        principalTable: "agencies",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "fk_trips_routes_route_id",
                         column: x => x.route_id,
@@ -240,15 +219,20 @@ namespace Terminus.DAL.Migrations
                 column: "date");
 
             migrationBuilder.CreateIndex(
-                name: "uq_routes_agency_code",
+                name: "ix_routes_agency_id",
                 table: "routes",
-                columns: new[] { "agency_id", "code" },
+                column: "agency_id");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_routes_code",
+                table: "routes",
+                column: "code",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "uq_service_calendars_agency_code",
+                name: "uq_service_calendars_code",
                 table: "service_calendars",
-                columns: new[] { "agency_id", "code" },
+                column: "code",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -262,9 +246,9 @@ namespace Terminus.DAL.Migrations
                 column: "parent_station_id");
 
             migrationBuilder.CreateIndex(
-                name: "uq_stops_agency_code",
+                name: "uq_stops_code",
                 table: "stops",
-                columns: new[] { "agency_id", "code" },
+                column: "code",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -278,9 +262,9 @@ namespace Terminus.DAL.Migrations
                 column: "service_calendar_id");
 
             migrationBuilder.CreateIndex(
-                name: "uq_trips_agency_code",
+                name: "uq_trips_code",
                 table: "trips",
-                columns: new[] { "agency_id", "code" },
+                column: "code",
                 unique: true);
         }
 
