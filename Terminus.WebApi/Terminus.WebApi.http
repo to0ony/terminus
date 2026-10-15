@@ -259,3 +259,9 @@ DELETE {{Terminus.WebApi_HostAddress}}/api/trips/{{tripId}}
 GET {{Terminus.WebApi_HostAddress}}/api/gtfs
 
 ###
+
+### Sljedeći polasci sa stanice (javno; kod kolodvora uključuje sve perone)
+GET {{Terminus.WebApi_HostAddress}}/api/public/departures/OS-AK?limit=10
+Accept: application/json
+
+###

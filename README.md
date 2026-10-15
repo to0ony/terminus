@@ -43,6 +43,7 @@ i kao varijable okruženja (`Agency__Name`, `Agency__Url` …).
 | Kalendari i iznimke | `/api/calendars`, `/api/calendars/{id}/dates` |
 | Vožnje i vremena | `/api/trips`, `/api/trips/{id}/stop-times` |
 | GTFS izvoz | `/api/gtfs` |
+| Polasci sa stanice (javno) | `/api/public/departures/{stopCode}?limit=10` |
 
 ## Dokumentacija
 

@@ -47,6 +47,8 @@ builder.Services.AddScoped<ITripService, TripService>();
 builder.Services.AddScoped<IGtfsExportService, GtfsExportService>();
 builder.Services.AddScoped<IDepartureService, DepartureService>();
 
+builder.Services.AddSingleton(TimeProvider.System);
+
 var app = builder.Build();
 
 await app.SeedAgencyAsync();

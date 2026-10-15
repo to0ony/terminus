@@ -137,7 +137,12 @@ GET /api/public/departures/{stopCode}?limit=10
 ```
 
 - Javni endpoint, **bez prijave**.
-- `limit`: koliko polazaka vratiti (zadano 10, najviše npr. 30).
+- `limit`: koliko polazaka vratiti (zadano 10, najviše 30; inače 400).
+- Nepoznat kod stanice vraća 404, a instanca bez prijevoznika 422.
+- `routeName` je kratka oznaka linije, a ako je nema, puni naziv.
+- `minutesUntil` su cijele minute do polaska, zaokružene nadolje.
+- Implementacija: `PublicDeparturesController` (trenutno vrijeme daje
+  `TimeProvider`) poziva `DepartureService.GetNextAsync(stopCode, …)`.
 
 Primjer odgovora:
 
@@ -151,7 +156,7 @@ Primjer odgovora:
   "now": "2026-12-23T06:58:12+01:00",
   "departures": [
     {
-      "routeShortName": "12",
+      "routeName": "12",
       "routeColor": "1565C0",
       "routeTextColor": "FFFFFF",
       "headsign": "Đakovo",
@@ -160,7 +165,7 @@ Primjer odgovora:
       "minutesUntil": 6
     },
     {
-      "routeShortName": "7",
+      "routeName": "7",
       "routeColor": "2E7D32",
       "routeTextColor": "FFFFFF",
       "headsign": "Vukovar",
@@ -306,7 +311,7 @@ lakše za dizajn, ali zahtjevnije za postavljanje na poslužitelju.
 |---|---|---|
 | 1 | Testni projekt (xUnit) i CI ✅ | — |
 | 2 | Izračun aktivnih kalendara i polazaka, s testovima ✅ | 1 |
-| 3 | Javni endpoint polazaka | 2 |
+| 3 | Javni endpoint polazaka ✅ | 2 |
 | 4 | Stranica zaslona, output caching i rate limiting | 3 |
 | 5 | PDF za jednu stanicu | 2 |
 | 6 | PDF za sve stanice i QR kod na zaslon | 4, 5 |
