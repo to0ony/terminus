@@ -22,22 +22,36 @@ public class DepartureService(IDepartureRepository departureRepository, IStopRep
 
     public async Task<StopDepartures> GetNextAsync(Guid stopId, DateTimeOffset now, int limit, CancellationToken cancellationToken = default)
     {
-        var errors = new ValidationErrors();
-        if (limit is < 1 or > MaxLimit)
-        {
-            errors.Add("Limit", $"Broj polazaka mora biti između 1 i {MaxLimit}.");
-        }
-        errors.ThrowIfAny();
+        ValidateLimit(limit);
 
         var stop = await stopRepository.GetAsync(stopId, cancellationToken)
             ?? throw new NotFoundException($"Stanica {stopId} ne postoji.");
 
+        return await GetNextAsync(stop, now, limit, cancellationToken);
+    }
+
+    public async Task<StopDepartures> GetNextAsync(string stopCode, DateTimeOffset now, int limit, CancellationToken cancellationToken = default)
+    {
+        ValidateLimit(limit);
+
+        var stop = await stopRepository.GetByCodeAsync(stopCode, cancellationToken)
+            ?? throw new NotFoundException($"Stanica '{stopCode}' ne postoji.");
+
+        return await GetNextAsync(stop, now, limit, cancellationToken);
+    }
+
+    private async Task<StopDepartures> GetNextAsync(IStopModel stop, DateTimeOffset now, int limit, CancellationToken cancellationToken)
+    {
         // Vožnje staju na peronima, ne na kolodvoru.
         IReadOnlyList<Guid> stopIds = stop.LocationType == LocationType.Station
             ? (await departureRepository.GetPlatformsAsync(stop.Id, cancellationToken)).Select(p => p.Id).ToList()
             : [stop.Id];
 
-        var timeZone = await GetTimeZoneAsync(cancellationToken);
+        var agency = await departureRepository.GetPrimaryAgencyAsync(cancellationToken)
+            ?? throw new UnprocessableException("Polasci se ne mogu izračunati.", ["Nije unesen nijedan prijevoznik."]);
+
+        // Svi prijevoznici imaju istu zonu (GTFS; provjerava AgencyService).
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById(agency.Timezone);
         var until = now + LookAhead;
 
         var firstDay = LocalDate(now, timeZone).AddDays(-ServiceDaysBack);
@@ -78,16 +92,17 @@ public class DepartureService(IDepartureRepository departureRepository, IStopRep
             .Take(limit)
             .ToList();
 
-        return new StopDepartures(stop, TimeZoneInfo.ConvertTime(now, timeZone), next);
+        return new StopDepartures(stop, agency.Name, TimeZoneInfo.ConvertTime(now, timeZone), next);
     }
 
-    /// <summary>Svi prijevoznici imaju istu zonu (GTFS), pa se uzima zona prvog.</summary>
-    private async Task<TimeZoneInfo> GetTimeZoneAsync(CancellationToken cancellationToken)
+    private static void ValidateLimit(int limit)
     {
-        var timezone = await departureRepository.GetTimezoneAsync(cancellationToken)
-            ?? throw new UnprocessableException("Polasci se ne mogu izračunati.", ["Nije unesen nijedan prijevoznik."]);
-
-        return TimeZoneInfo.FindSystemTimeZoneById(timezone);
+        var errors = new ValidationErrors();
+        if (limit is < 1 or > MaxLimit)
+        {
+            errors.Add("Limit", $"Broj polazaka mora biti između 1 i {MaxLimit}.");
+        }
+        errors.ThrowIfAny();
     }
 
     private static DateOnly LocalDate(DateTimeOffset instant, TimeZoneInfo timeZone) =>

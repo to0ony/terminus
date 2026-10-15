@@ -5,13 +5,16 @@ using Terminus.Repository.Common;
 
 namespace Terminus.Tests.Fakes;
 
-/// <summary>Stanice u memoriji; dovoljno za dohvat po Id-u.</summary>
+/// <summary>Stanice u memoriji; dovoljno za dohvat po Id-u i kodu.</summary>
 internal sealed class FakeStopRepository(IEnumerable<IStopModel> stops) : IStopRepository
 {
     private readonly List<IStopModel> _stops = [.. stops];
 
     public Task<IStopModel?> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(_stops.FirstOrDefault(s => s.Id == id));
+
+    public Task<IStopModel?> GetByCodeAsync(string code, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_stops.FirstOrDefault(s => s.Code == code));
 
     public Task<IReadOnlyList<IStopModel>> GetManyAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<IStopModel>>(_stops.Where(s => ids.Contains(s.Id)).ToList());

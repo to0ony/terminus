@@ -8,6 +8,9 @@ public interface IStopRepository
 {
     Task<IStopModel?> GetAsync(Guid id, CancellationToken cancellationToken = default);
 
+    /// <returns>Stanica s GTFS kodom (stop_id) ili null.</returns>
+    Task<IStopModel?> GetByCodeAsync(string code, CancellationToken cancellationToken = default);
+
     /// <returns>Stanice s traženim Id-evima; nepostojeći Id-evi se izostavljaju.</returns>
     Task<IReadOnlyList<IStopModel>> GetManyAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default);
 

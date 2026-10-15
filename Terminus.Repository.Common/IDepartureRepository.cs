@@ -5,8 +5,8 @@ namespace Terminus.Repository.Common;
 /// <summary>Čitanje voznog reda za izračun polazaka. Koje kalendare uključiti odlučuje servis.</summary>
 public interface IDepartureRepository
 {
-    /// <returns>Vremenska zona prvog unesenog prijevoznika ili null ako prijevoznika nema.</returns>
-    Task<string?> GetTimezoneAsync(CancellationToken cancellationToken = default);
+    /// <returns>Prvi uneseni prijevoznik (njegova zona vrijedi za sve) ili null ako prijevoznika nema.</returns>
+    Task<IAgencyModel?> GetPrimaryAgencyAsync(CancellationToken cancellationToken = default);
 
     /// <returns>Peroni kolodvora.</returns>
     Task<IReadOnlyList<IStopModel>> GetPlatformsAsync(Guid stationId, CancellationToken cancellationToken = default);

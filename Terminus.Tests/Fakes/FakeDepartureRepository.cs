@@ -1,3 +1,4 @@
+using Terminus.Model;
 using Terminus.Model.Common;
 using Terminus.Repository.Common;
 
@@ -10,14 +11,21 @@ namespace Terminus.Tests.Fakes;
 /// </summary>
 internal sealed class FakeDepartureRepository : IDepartureRepository
 {
-    public string? Timezone { get; set; } = "Europe/Zagreb";
+    public IAgencyModel? Agency { get; set; } = new AgencyModel
+    {
+        Id = Guid.NewGuid(),
+        Name = "Test prijevoznik d.o.o.",
+        Url = "https://example.com",
+        Timezone = "Europe/Zagreb",
+        Lang = "hr"
+    };
     public List<IStopModel> Stops { get; } = [];
     public List<IServiceCalendarModel> Calendars { get; } = [];
     public List<ICalendarDateModel> CalendarDates { get; } = [];
     public List<ScheduledDeparture> Departures { get; } = [];
 
-    public Task<string?> GetTimezoneAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult(Timezone);
+    public Task<IAgencyModel?> GetPrimaryAgencyAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(Agency);
 
     public Task<IReadOnlyList<IStopModel>> GetPlatformsAsync(Guid stationId, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<IStopModel>>(Stops.Where(s => s.ParentStationId == stationId).ToList());

@@ -22,6 +22,15 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
         return entity is null ? null : StopMapper.ToModel(entity);
     }
 
+    public async Task<IStopModel?> GetByCodeAsync(string code, CancellationToken cancellationToken = default)
+    {
+        var entity = await context.Stops
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Code == code, cancellationToken);
+
+        return entity is null ? null : StopMapper.ToModel(entity);
+    }
+
     public async Task<IReadOnlyList<IStopModel>> GetManyAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default)
     {
         var entities = await context.Stops

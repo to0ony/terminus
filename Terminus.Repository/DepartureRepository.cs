@@ -9,13 +9,16 @@ namespace Terminus.Repository;
 
 public class DepartureRepository(TerminusDbContext context) : IDepartureRepository
 {
-    public Task<string?> GetTimezoneAsync(CancellationToken cancellationToken = default) =>
-        context.Agencies
+    public async Task<IAgencyModel?> GetPrimaryAgencyAsync(CancellationToken cancellationToken = default)
+    {
+        var entity = await context.Agencies
             .AsNoTracking()
             .OrderBy(a => a.CreatedAt)
             .ThenBy(a => a.Id)
-            .Select(a => a.Timezone)
             .FirstOrDefaultAsync(cancellationToken);
+
+        return entity is null ? null : AgencyMapper.ToModel(entity);
+    }
 
     public async Task<IReadOnlyList<IStopModel>> GetPlatformsAsync(Guid stationId, CancellationToken cancellationToken = default)
     {

@@ -11,10 +11,14 @@ public interface IDepartureService
     /// </summary>
     /// <param name="limit">Najviše polazaka (1 do <c>DepartureService.MaxLimit</c>).</param>
     Task<StopDepartures> GetNextAsync(Guid stopId, DateTimeOffset now, int limit, CancellationToken cancellationToken = default);
+
+    /// <summary>Isto kao <see cref="GetNextAsync(Guid, DateTimeOffset, int, CancellationToken)"/>, za stanicu zadanu GTFS kodom.</summary>
+    Task<StopDepartures> GetNextAsync(string stopCode, DateTimeOffset now, int limit, CancellationToken cancellationToken = default);
 }
 
+/// <param name="AgencyName">Naziv prvog unesenog prijevoznika.</param>
 /// <param name="Now">Trenutak upita u zoni prijevoznika.</param>
-public sealed record StopDepartures(IStopModel Stop, DateTimeOffset Now, IReadOnlyList<Departure> Departures);
+public sealed record StopDepartures(IStopModel Stop, string AgencyName, DateTimeOffset Now, IReadOnlyList<Departure> Departures);
 
 /// <summary>Jedan polazak sa stvarnim datumom i vremenom.</summary>
 /// <param name="ServiceDate">Dan voznog reda kojem vožnja pripada (za vožnje iza ponoći dan ranije).</param>

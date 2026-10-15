@@ -148,6 +148,28 @@ public class DepartureServiceTests
     }
 
     [Fact]
+    public async Task GetNextAsync_ByCode_ReturnsDeparturesAndAgencyName()
+    {
+        AddDeparture(_stop, _workdays, "07:05:00");
+        var service = new DepartureService(_repository, new FakeStopRepository([_stop]));
+
+        var result = await service.GetNextAsync(_stop.Code, At(2026, 12, 23, 6, 58), 10, TestContext.Current.CancellationToken);
+
+        Assert.Equal(_stop.Id, result.Stop.Id);
+        Assert.Equal("Test prijevoznik d.o.o.", result.AgencyName);
+        Assert.Equal(At(2026, 12, 23, 7, 5), result.Departures[0].DepartureTime);
+    }
+
+    [Fact]
+    public async Task GetNextAsync_UnknownStopCode_ThrowsNotFound()
+    {
+        var service = new DepartureService(_repository, new FakeStopRepository([_stop]));
+
+        await Assert.ThrowsAsync<NotFoundException>(
+            () => service.GetNextAsync("NEPOSTOJECA", At(2026, 12, 23, 7, 0), 10, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task GetNextAsync_UnknownStop_ThrowsNotFound()
     {
         var service = new DepartureService(_repository, new FakeStopRepository([]));
@@ -159,7 +181,7 @@ public class DepartureServiceTests
     [Fact]
     public async Task GetNextAsync_NoAgency_ThrowsUnprocessable()
     {
-        _repository.Timezone = null;
+        _repository.Agency = null;
 
         await Assert.ThrowsAsync<UnprocessableException>(() => GetNextAsync(_stop, At(2026, 12, 23, 7, 0)));
     }
