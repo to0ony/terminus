@@ -6,6 +6,9 @@
 - PostgreSQL 13 ili noviji
 - EF Core CLI: `dotnet tool install --global dotnet-ef`
 
+Sve naredbe u nastavku pokreću se iz mape `backend/` (`cd backend`), gdje su
+`Terminus.slnx` i `global.json`.
+
 ## Baza i konfiguracija
 
 Aplikacija čita connection string `ConnectionStrings:Default`. U razvoju se
@@ -43,7 +46,8 @@ dotnet run --project Terminus.WebApi --launch-profile http
 
 API je dostupan na `http://localhost:5183`. U okruženju `Development` OpenAPI
 opis je na `/openapi/v1.json`; može se uvesti u Bruno ili Postman.
-Primjeri zahtjeva nalaze se u `Terminus.WebApi/Terminus.WebApi.http`.
+Primjeri zahtjeva nalaze se u `backend/Terminus.WebApi/Terminus.WebApi.http`.
+U Visual Studiju se otvara `backend/Terminus.slnx`.
 
 ## Testovi
 
@@ -56,7 +60,8 @@ pokretanja određuje `global.json`). Unit testovi ne trebaju bazu: servisi
 dobivaju lažne repozitorije iz `Terminus.Tests/Fakes`.
 
 GitHub Actions (`.github/workflows/ci.yml`) na svaki push i pull request na
-`master` radi restore, build u Release konfiguraciji i pokreće testove.
+`master` u mapi `backend/` radi restore, build u Release konfiguraciji i
+pokreće testove.
 
 ## Migracije
 

@@ -2,7 +2,8 @@
 
 Terminus je ASP.NET Core Web API (.NET 10) nad PostgreSQL bazom, organiziran
 u slojeve. Svaki sloj ima zaseban projekt sa sučeljima (`*.Common`) i projekt
-s implementacijom.
+s implementacijom. Svi projekti su u mapi `backend/`; frontend aplikacija bit
+će u `frontend/`.
 
 ## Projekti
 
@@ -77,7 +78,7 @@ se zapisuju u log; postojeći prijevoznici se nikad ne mijenjaju.
 
 ## Baza podataka
 
-- Shema se vodi **code-first** kroz EF Core migracije u `Terminus.DAL/Migrations`.
+- Shema se vodi **code-first** kroz EF Core migracije u `backend/Terminus.DAL/Migrations`.
   [`terminus_schema.sql`](terminus_schema.sql) je referentni prikaz sheme.
 - Nazivi su u snake_case (`EFCore.NamingConventions`); ključevi, indeksi i CHECK
   ograničenja imaju eksplicitna imena koja repozitoriji koriste za prevođenje grešaka.

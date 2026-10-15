@@ -15,7 +15,16 @@ Planirane dodatne mogućnosti:
 
 ## Tehnologije
 
-ASP.NET Core Web API (.NET 10), Entity Framework Core, PostgreSQL
+ASP.NET Core Web API (.NET 10), Entity Framework Core, PostgreSQL. Frontend
+aplikacija (React, TypeScript, Vite) je u planu.
+
+## Struktura repozitorija
+
+| Mapa | Sadržaj |
+|---|---|
+| `backend/` | .NET rješenje `Terminus.slnx`: API, slojevi i testovi |
+| `frontend/` | frontend aplikacija: dashboard i zaslon na stanici (u planu) |
+| `docs/` | dokumentacija |
 
 ## Konfiguracija instance
 
