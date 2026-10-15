@@ -19,6 +19,9 @@ public interface IAgencyRepository
     /// <exception cref="Terminus.Common.Exceptions.ConflictException">Agencija ima linije.</exception>
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 
+    /// <returns>Vremenska zona nekog drugog prijevoznika koja se razlikuje od zadane, ili null.</returns>
+    Task<string?> GetOtherTimezoneAsync(Guid exceptId, string timezone, CancellationToken cancellationToken = default);
+
     /// <returns>true ako postoji barem jedna agencija.</returns>
     Task<bool> AnyAsync(CancellationToken cancellationToken = default);
 }

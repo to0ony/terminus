@@ -30,7 +30,7 @@ public class AgencyService(IAgencyRepository repository) : IAgencyService
     {
         agency.Id = Guid.Empty;
         Normalize(agency);
-        Validate(agency);
+        await ValidateAsync(agency, cancellationToken);
 
         return await repository.InsertAsync(agency, cancellationToken);
     }
@@ -39,7 +39,7 @@ public class AgencyService(IAgencyRepository repository) : IAgencyService
     {
         agency.Id = id;
         Normalize(agency);
-        Validate(agency);
+        await ValidateAsync(agency, cancellationToken);
 
         return await repository.UpdateAsync(agency, cancellationToken) ?? throw AgencyNotFound(id);
     }
@@ -62,9 +62,15 @@ public class AgencyService(IAgencyRepository repository) : IAgencyService
         agency.Email = NullIfBlank(agency.Email);
     }
 
-    private static void Validate(IAgencyModel agency)
+    private async Task ValidateAsync(IAgencyModel agency, CancellationToken cancellationToken)
     {
         var errors = new ValidationErrors();
+
+        // GTFS: svi prijevoznici u feedu moraju imati istu zonu; polasci se računaju u njoj.
+        if (await repository.GetOtherTimezoneAsync(agency.Id, agency.Timezone, cancellationToken) is { } otherTimezone)
+        {
+            errors.Add(nameof(agency.Timezone), $"Svi prijevoznici moraju imati istu vremensku zonu; postojeći koriste '{otherTimezone}'.");
+        }
 
         if (agency.Name.Length == 0)
         {

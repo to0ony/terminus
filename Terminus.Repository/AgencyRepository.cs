@@ -95,6 +95,13 @@ public class AgencyRepository(TerminusDbContext context) : IAgencyRepository
         }
     }
 
+    public Task<string?> GetOtherTimezoneAsync(Guid exceptId, string timezone, CancellationToken cancellationToken = default) =>
+        context.Agencies
+            .AsNoTracking()
+            .Where(a => a.Id != exceptId && a.Timezone != timezone)
+            .Select(a => a.Timezone)
+            .FirstOrDefaultAsync(cancellationToken);
+
     public Task<bool> AnyAsync(CancellationToken cancellationToken = default) =>
         context.Agencies.AnyAsync(cancellationToken);
 }

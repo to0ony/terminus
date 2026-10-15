@@ -63,7 +63,9 @@ Pravila koja zahtijevaju upit nad drugim recima provodi servisni sloj:
 - vremena ne idu unatrag: dolazak na stanicu nije prije polaska s prethodne;
 - redne brojeve (`stop_sequence`) dodjeljuje aplikacija prema redoslijedu
   stanica (1, 2, 3 …), a vremena vožnje spremaju se uvijek kao cjelina;
-- `agencies.url` i `agencies.timezone` (IANA naziv) obavezni su jer ih GTFS traži.
+- `agencies.url` i `agencies.timezone` (IANA naziv) obavezni su jer ih GTFS traži;
+- svi prijevoznici imaju istu vremensku zonu (GTFS to traži za feed, a polasci
+  se računaju u toj zoni).
 
 ## Brisanje
 
