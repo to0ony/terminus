@@ -60,16 +60,20 @@ HTTP ─► Controller ─► Service ─► Repository ─► DbContext ─► 
 | `UnprocessableException` | 422 (s popisom problema, npr. kod GTFS izvoza) |
 | ostalo | 500 |
 
-## Višekorisnički rad (tenanti)
+## Jedna tvrtka po instanci
 
-Agencija (`agencies`) je tenant. Svi ostali podaci pripadaju jednoj agenciji,
-a svaki upit repozitorija filtrira po `agency_id`. Za sada se agencija čita iz
-rute (`/api/agencies/{agencyId}/...`); nakon uvođenja autentikacije dolazit će
-iz identiteta korisnika.
+Terminus je single-tenant: svaka tvrtka dobiva vlastitu instancu i bazu, pa
+podaci nemaju tenant ključ i upiti ne filtriraju po tvrtki. URL-ovi su
+`/api/stops`, `/api/routes`, `/api/calendars`, `/api/trips` i `/api/gtfs`.
 
-Tablice bez vlastitog `agency_id` (`calendar_dates`, `stop_times`) dohvaćaju se
-preko roditelja, a servis prije svake operacije provjerava da roditelj pripada
-agenciji iz zahtjeva.
+`agencies` su GTFS prijevoznici (operateri). Instanca ih može imati više, a
+jedina veza s njima je `routes.agency_id`: linija mora imati postojećeg
+prijevoznika, a prijevoznik koji ima linije ne može se obrisati (409).
+
+Ako je tablica `agencies` prazna, `AgencySeeder` pri pokretanju stvara
+prijevoznika iz konfiguracije (`Agency:Name`, `Agency:Url`, `Agency:Timezone`,
+`Agency:Lang`). Nedostajuća ili neispravna konfiguracija i nedostupna baza samo
+se zapisuju u log; postojeći prijevoznici se nikad ne mijenjaju.
 
 ## Baza podataka
 

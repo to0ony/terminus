@@ -11,7 +11,7 @@ Planirane su dvije funkcije za putnike:
 
 1. **Zaslon na stanici.** Svaka stanica ima javni URL. Otvoren na ekranu na stanici
    (ili na mobitelu putnika), prikazuje trenutno vrijeme i nadolazeće polaske.
-2. **PDF vozni red.** Administrator agencije generira vozni red za jednu stanicu ili
+2. **PDF vozni red.** Administrator generira vozni red za jednu stanicu ili
    za sve stanice odjednom. PDF se ispisuje i postavlja na stanicu.
 
 Obje funkcije počivaju na istom temelju, izračunu polazaka, pa se on radi prvi i
@@ -65,8 +65,8 @@ dva dana voznog reda:
 
 ### 1.3 Vremenska zona
 
-"Sada" je uvijek trenutno vrijeme u zoni agencije (`agencies.timezone`, npr.
-`Europe/Zagreb`), a ne vrijeme poslužitelja (koji je često u UTC-u). Pretvorba
+"Sada" je uvijek trenutno vrijeme u zoni prijevoznika (`agencies.timezone`, npr.
+`Europe/Zagreb`; GTFS traži da svi prijevoznici u feedu imaju istu zonu), a ne vrijeme poslužitelja (koji je često u UTC-u). Pretvorba
 "dan voznog reda + sekunde od ponoći" u stvarni trenutak mora ispravno obraditi
 prijelaze na ljetno i zimsko računanje vremena (GTFS vremena računaju se od
 "podneva minus 12 h", što je bitno upravo za te dane).
@@ -91,7 +91,7 @@ prikazuju se samo njezini polasci.
 | Linija | `routes.short_name` (ako ga nema, `long_name`) |
 | Boja linije | `routes.color` i `routes.text_color` |
 | Smjer | `stop_times.stop_headsign`; ako ga nema, `trips.trip_headsign`; ako ni toga nema, naziv zadnje stanice vožnje |
-| Vrijeme polaska | stvarni datum i vrijeme u zoni agencije |
+| Vrijeme polaska | stvarni datum i vrijeme u zoni prijevoznika |
 | Peron | `stops.platform_code` (kod kolodvora) |
 
 Upit koristi postojeći indeks `ix_stop_times_stop_departure (stop_id, departure_time)`,
@@ -106,23 +106,18 @@ koji je za ovu namjenu i napravljen.
 Svaka stanica dobiva stalnu javnu adresu, primjerice:
 
 ```
-https://<domena>/board/pp-osijek/OS-AK
-                       └───┬───┘ └─┬─┘
-                     agencija   stanica
+https://<domena>/board/OS-AK
+                       └─┬─┘
+                      stanica
 ```
 
-`stops.code` jedinstven je samo unutar agencije, a agencija trenutno nema kratki
-javni identifikator. Zato se agenciji dodaje novi stupac:
-
-- `agencies.slug`: kratki, jedinstveni, URL-prijateljski naziv (npr. `pp-osijek`),
-  uz novu migraciju.
-
-Isti `slug` kasnije služi i za javni URL GTFS feeda.
+Svaka tvrtka ima vlastitu instancu (i domenu), a `stops.code` je jedinstven u
+bazi, pa kod stanice sam određuje adresu. Nova migracija nije potrebna.
 
 ### 2.2 API
 
 ```
-GET /api/public/departures/{agencySlug}/{stopCode}?limit=10
+GET /api/public/departures/{stopCode}?limit=10
 ```
 
 - Javni endpoint, **bez prijave**.
@@ -253,11 +248,11 @@ Jedna stranica po stanici (A4, uspravno), klasičan oblik voznog reda na stanica
 - **QR kod** vodi na zaslon te stanice (poglavlje 2), pa putnik na mobitelu vidi
   sljedeće polaske.
 
-### 3.3 API (samo administrator agencije)
+### 3.3 API (samo administrator)
 
 ```
-GET /api/agencies/{agencyId}/stops/{stopId}/timetable.pdf
-GET /api/agencies/{agencyId}/timetables.pdf
+GET /api/stops/{stopId}/timetable.pdf
+GET /api/timetables.pdf
 ```
 
 - Prvi vraća PDF za jednu stanicu.
@@ -286,7 +281,7 @@ lakše za dizajn, ali zahtjevnije za postavljanje na poslužitelju.
 - **Testovi.** Izračun aktivnih kalendara i polazaka sadrži rubne slučajeve (ponoć,
   ljetno računanje vremena, iznimke, kolodvori), pa se pokriva unit i
   integracijskim testovima **prije** izrade zaslona i PDF-a.
-- **Autentikacija.** PDF endpointi dostupni su samo administratoru agencije. Javni
+- **Autentikacija.** PDF endpointi dostupni su samo administratoru. Javni
   endpointi zaslona ostaju bez prijave.
 
 ## 5. Redoslijed implementacije
@@ -295,7 +290,7 @@ lakše za dizajn, ali zahtjevnije za postavljanje na poslužitelju.
 |---|---|---|
 | 1 | Testni projekt (xUnit) i CI | — |
 | 2 | Izračun aktivnih kalendara i polazaka, s testovima | 1 |
-| 3 | `agencies.slug` (migracija) i javni endpoint polazaka | 2 |
+| 3 | Javni endpoint polazaka | 2 |
 | 4 | Stranica zaslona, output caching i rate limiting | 3 |
 | 5 | PDF za jednu stanicu | 2 |
 | 6 | PDF za sve stanice i QR kod na zaslon | 4, 5 |
@@ -303,7 +298,6 @@ lakše za dizajn, ali zahtjevnije za postavljanje na poslužitelju.
 
 ## 6. Otvorena pitanja
 
-- **Format `slug`-a**: unosi ga administrator ili se generira iz naziva agencije?
 - **Format PDF-a**: samo A4 ili i veći formati (A3) za kolodvore s mnogo linija?
 - **Dolasci**: prikazuje li zaslon i dolaske na zadnju stanicu (npr. na kolodvoru),
   ili samo polaske?

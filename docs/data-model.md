@@ -8,7 +8,7 @@ uređivanje podataka u aplikaciji.
 
 | Tablica | GTFS datoteka | GTFS ID | Napomena |
 |---|---|---|---|
-| `agencies` | `agency.txt` | — | Prijevoznik; ujedno tenant. |
+| `agencies` | `agency.txt` | `id` → `agency_id` | Prijevoznici (operateri linija). |
 | `stops` | `stops.txt` | `code` → `stop_id` | Stajališta, peroni i stanice (`location_type` 0/1). |
 | `routes` | `routes.txt` | `code` → `route_id` | Linije. |
 | `service_calendars` | `calendar.txt` | `code` → `service_id` | Tjedni obrazac vožnje u razdoblju. |
@@ -18,7 +18,7 @@ uređivanje podataka u aplikaciji.
 
 Veze:
 
-- `agencies` 1 → N `stops`, `routes`, `service_calendars`, `trips`
+- `agencies` 1 → N `routes` (prijevoznik koji vozi liniju)
 - `stops` 1 → N `stops` (peroni preko `parent_station_id`)
 - `service_calendars` 1 → N `calendar_dates`
 - `routes` 1 → N `trips`, `service_calendars` 1 → N `trips`
@@ -28,7 +28,11 @@ Veze:
 
 **Surogat ključevi.** Svaka tablica ima `uuid` ključ, a GTFS identifikator
 čuva se u stupcu `code`. GTFS ID se tako može mijenjati bez diranja veza, a
-jedinstven je samo unutar agencije (`uq_<tablica>_agency_code`).
+jedinstven je unutar tablice (`uq_<tablica>_code`). Prijevoznici nemaju `code`;
+njihov GTFS `agency_id` je `id`.
+
+**Jedna tvrtka po bazi.** Terminus je single-tenant, pa tablice nemaju tenant
+ključ. `routes.agency_id` nije tenant nego GTFS operater linije.
 
 **Vremena u sekundama.** `arrival_time` i `departure_time` spremaju se kao broj
 sekundi od ponoći dana vožnje, umjesto teksta `HH:MM:SS`. Vožnje koje prelaze
@@ -49,12 +53,13 @@ Ograničenja koja se mogu izraziti u bazi (raspon koordinata, dopuštene
 vrijednosti enuma, redoslijed vremena …) postoje kao CHECK ograničenja.
 Pravila koja zahtijevaju upit nad drugim recima provodi servisni sloj:
 
-- nadređena stanica (`parent_station_id`) mora pripadati istoj agenciji i biti
-  stanica (`location_type = 1`); stanica sama ne smije imati nadređenu;
+- nadređena stanica (`parent_station_id`) mora postojati i biti stanica
+  (`location_type = 1`); stanica sama ne smije imati nadređenu;
 - stanica koja ima perone ne može se pretvoriti u stajalište;
-- linija i kalendar vožnje moraju pripadati istoj agenciji kao i vožnja;
-- vožnja ima barem dvije stanice; sve su iz iste agencije i nijedna nije
-  kolodvor (`location_type = 1`), nego stajalište ili peron;
+- linija mora imati postojećeg prijevoznika (`agency_id`);
+- linija i kalendar vožnje moraju postojati;
+- vožnja ima barem dvije stanice; sve postoje i nijedna nije kolodvor
+  (`location_type = 1`), nego stajalište ili peron;
 - vremena ne idu unatrag: dolazak na stanicu nije prije polaska s prethodne;
 - redne brojeve (`stop_sequence`) dodjeljuje aplikacija prema redoslijedu
   stanica (1, 2, 3 …), a vremena vožnje spremaju se uvijek kao cjelina;
@@ -64,7 +69,7 @@ Pravila koja zahtijevaju upit nad drugim recima provodi servisni sloj:
 
 | Brisanje | Posljedica |
 |---|---|
-| agencije | Kaskadno briše sve njezine podatke. |
+| prijevoznika | Odbija se (409) ako prijevoznik ima linije (`RESTRICT`). |
 | stanice | Peroni ostaju bez nadređene stanice (`SET NULL`); odbija se (409) ako se stanica koristi u `stop_times`. |
 | linije | Kaskadno briše njezine vožnje i njihova vremena. |
 | kalendara | Kaskadno briše iznimke; odbija se (409) ako ga koriste vožnje. |

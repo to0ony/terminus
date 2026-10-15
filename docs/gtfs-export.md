@@ -1,18 +1,19 @@
 # GTFS izvoz
 
 ```
-GET /api/agencies/{agencyId}/gtfs
+GET /api/gtfs
 ```
 
-Vraća GTFS Schedule feed agencije kao ZIP (`gtfs-<agencija>-<YYYYMMDD>.zip`).
+Vraća GTFS Schedule feed instance kao ZIP (`gtfs-<prijevoznik>-<YYYYMMDD>.zip`,
+prema prvom unesenom prijevozniku).
 Ako podaci nisu spremni za izvoz, vraća `422` s popisom problema umjesto
 neispravnog feeda.
 
 ## Postupak
 
-1. Učitavaju se svi podaci agencije (samo čitanje).
+1. Učitavaju se svi podaci (samo čitanje).
 2. Odabire se sadržaj feeda:
-   - aktivne linije (`is_active = true`);
+   - aktivne linije (`is_active = true`) i njihovi prijevoznici;
    - vožnje tih linija;
    - kalendari koje te vožnje koriste i njihove iznimke;
    - stanice koje te vožnje koriste, uključujući nadređene stanice perona.
@@ -26,14 +27,14 @@ nekoliko MB.
 
 | Datoteka | Sadržaj |
 |---|---|
-| `agency.txt` | agencija (bez `agency_id`, jer feed sadrži jednu agenciju) |
+| `agency.txt` | prijevoznici aktivnih linija; `agency_id` je `id` prijevoznika |
 | `stops.txt` | stanice; `parent_station` je `code` nadređene stanice |
-| `routes.txt` | aktivne linije |
+| `routes.txt` | aktivne linije, s `agency_id` prijevoznika |
 | `trips.txt` | vožnje aktivnih linija |
 | `stop_times.txt` | vremena vožnji |
 | `calendar.txt` | korišteni kalendari |
 | `calendar_dates.txt` | iznimke korištenih kalendara (samo ako postoje) |
-| `feed_info.txt` | izdavač, jezik, razdoblje važenja i verzija feeda |
+| `feed_info.txt` | izdavač, jezik, razdoblje važenja i verzija feeda; izdavač je zasad prvi uneseni prijevoznik |
 
 GTFS identifikatori (`stop_id`, `route_id`, `service_id`, `trip_id`) su vrijednosti
 stupaca `code`. `feed_start_date` i `feed_end_date` obuhvaćaju razdoblja svih
@@ -53,6 +54,7 @@ kalendara i dodane datume iz iznimki. `feed_version` je vrijeme generiranja (UTC
 
 Izvoz se odbija (`422`) ako:
 
+- nije unesen nijedan prijevoznik;
 - feed nema nijednu vožnju na aktivnoj liniji;
 - vožnja nema postavljena vremena ili ima manje od dvije stanice;
 - vožnja koristi neaktivnu stanicu;

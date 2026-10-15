@@ -20,6 +20,15 @@ dotnet user-secrets set "ConnectionStrings:Default" \
 
 Bez connection stringa aplikacija se ne pokreće.
 
+Prvi prijevoznik stvara se pri pokretanju iz sekcije `Agency` ako je tablica
+`agencies` prazna (vidi [README](../README.md#konfiguracija-instance)). Lokalno
+se može postaviti isto kroz User Secrets:
+
+```sh
+dotnet user-secrets set "Agency:Name" "Test prijevoznik" --project Terminus.WebApi
+dotnet user-secrets set "Agency:Url" "https://example.com" --project Terminus.WebApi
+```
+
 Stvaranje sheme u praznoj bazi:
 
 ```sh
