@@ -1,9 +1,9 @@
 # Polasci, zasloni na stanicama i PDF vozni redovi
 
 > [!IMPORTANT]
-> **Ništa iz ovog dokumenta još nije implementirano.** Ovo je plan: opisuje kako
-> funkcije trebaju raditi i izgledati te redoslijed kojim ih treba izraditi.
-> Kad se pojedini dio implementira, dokument se ažurira.
+> Ovo je plan: opisuje kako funkcije trebaju raditi i izgledati te redoslijed
+> kojim ih treba izraditi. Kad se pojedini dio implementira, dokument se
+> ažurira. Stanje po koracima je u [poglavlju 5](#5-redoslijed-implementacije).
 
 ## Pregled
 
@@ -179,9 +179,11 @@ Primjer odgovora:
 
 ### 2.3 Izgled zaslona
 
-Statična HTML/JS stranica koju poslužuje sam API (`wwwroot`), bez zasebnog
-frontenda. Optimizirana za velike ekrane u vodoravnom položaju, čitljiva i na
-mobitelu.
+Zaslon je javna ruta `/board/{stopCode}` u frontend aplikaciji (React, TypeScript,
+Vite; ista aplikacija kao dashboard). Ruta se učitava zasebno (lazy loading), bez
+koda dashboarda i bez prijave. Radi na velikim ekranima u vodoravnom i okomitom
+položaju (monitori na ugibalištima) i čitljiva je na mobitelu. Logo i boje
+dolaze iz postavki instance (`GET /api/public/settings`).
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -204,6 +206,11 @@ mobitelu.
   sljedeći polazak.
 - Ako dohvat ne uspije (nema mreže), prikazuju se zadnji poznati podaci uz
   diskretnu oznaku da nisu osvježeni.
+- Sat i "za N min" računaju se prema `now` iz odgovora API-ja, a ne prema satu
+  uređaja (ekrani na stanicama često imaju krivo podešen sat).
+- Monitor radi danima bez restarta: stranica se povremeno (npr. jednom dnevno)
+  sama potpuno osvježi, a dohvat ne smije gomilati memoriju.
+- Opcije u URL-u, npr. `/board/OS-AK?limit=8`.
 
 ### 2.4 Opterećenje i zaštita
 
@@ -297,13 +304,21 @@ lakše za dizajn, ali zahtjevnije za postavljanje na poslužitelju.
 
 ---
 
-## 4. Preduvjeti
+## 4. Preduvjeti i arhitektura
 
-- **Testovi.** Izračun aktivnih kalendara i polazaka sadrži rubne slučajeve (ponoć,
-  ljetno računanje vremena, iznimke, kolodvori), pa se pokriva unit i
-  integracijskim testovima **prije** izrade zaslona i PDF-a.
-- **Autentikacija.** PDF endpointi dostupni su samo administratoru. Javni
-  endpointi zaslona ostaju bez prijave.
+- **Testovi.** Izračun aktivnih kalendara i polazaka pokriven je unit testovima
+  (rubni slučajevi: ponoć, ljetno računanje vremena, iznimke, kolodvori).
+- **Frontend aplikacija.** Prijevoznik upravlja svime kroz dashboard (stanice,
+  linije, kalendari, vožnje, postavke, pokretanje izrade PDF-a). Ista aplikacija
+  sadrži i javni zaslon stanice. Frontend je u istom repozitoriju kao backend
+  (`frontend/` uz `backend/`) i koristi TypeScript klijent generiran iz
+  OpenAPI opisa API-ja (`/openapi/v1.json`).
+- **Autentikacija.** Sve osim `/api/public/*` traži prijavu. Predviđa se više
+  administratora po instanci; uloge se mogu proširiti kasnije.
+- **CORS / isti origin.** U razvoju frontend radi na vlastitoj adresi (Vite), pa
+  API mora dopustiti tu adresu. U produkciji su frontend i API iza iste domene.
+- **Postavke instance.** Logo, boje i podaci za `feed_info.txt` (izdavač, kontakt)
+  čuvaju se u bazi (jedan redak, tablica `settings`) i uređuju u dashboardu.
 
 ## 5. Redoslijed implementacije
 
@@ -312,10 +327,13 @@ lakše za dizajn, ali zahtjevnije za postavljanje na poslužitelju.
 | 1 | Testni projekt (xUnit) i CI ✅ | — |
 | 2 | Izračun aktivnih kalendara i polazaka, s testovima ✅ | 1 |
 | 3 | Javni endpoint polazaka ✅ | 2 |
-| 4 | Stranica zaslona, output caching i rate limiting | 3 |
-| 5 | PDF za jednu stanicu | 2 |
-| 6 | PDF za sve stanice i QR kod na zaslon | 4, 5 |
-| 7 | Autentikacija; PDF endpointi samo za administratora | 5 |
+| 4 | Autentikacija (više administratora) i CORS | — |
+| 5 | Postavke instance (`settings`: logo, boje, `feed_info`) | 4 |
+| 6 | Output caching i rate limiting za `/api/public/*` | 3 |
+| 7 | Frontend: kostur aplikacije, prijava, generirani API klijent | 4 |
+| 8 | Dashboard: stanice, linije, kalendari, vožnje | 7 |
+| 9 | Zaslon na stanici `/board/{stopCode}` | 5, 6, 7 |
+| 10 | PDF za jednu i za sve stanice, pokretanje iz dashboarda, QR kod na zaslon | 8, 9 |
 
 ## 6. Otvorena pitanja
 
