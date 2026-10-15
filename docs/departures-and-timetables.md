@@ -97,6 +97,22 @@ prikazuju se samo njezini polasci.
 Upit koristi postojeći indeks `ix_stop_times_stop_departure (stop_id, departure_time)`,
 koji je za ovu namjenu i napravljen.
 
+### 1.7 Implementacija
+
+| Dio | Gdje |
+|---|---|
+| Vozi li kalendar na datum (1.1) | `ServiceCalendarRules` (Terminus.Service) |
+| Dan voznog reda → stvarno vrijeme, "podne minus 12 h" (1.2, 1.3) | `ServiceDay` (Terminus.Common) |
+| Upit polazaka, filteri iz 1.5, smjer iz 1.6 | `DepartureRepository.ScheduledQuery` |
+| Sljedeći polasci sa stanice ili kolodvora (1.4) | `DepartureService.GetNextAsync` |
+
+`DepartureService.GetNextAsync(stopId, now, limit)` traži polaske u idućih 24 h
+(najviše 30). Gleda dane voznog reda od prekjučer (vremena do 48 h) do dana na
+koji pada kraj tog razdoblja. Za svaki dan određuje aktivne kalendare i raspon
+GTFS vremena koji pada u traženi period, a zatim spaja i sortira rezultate.
+Vremenska zona je zona prvog unesenog prijevoznika; servis za prijevoznike ne
+dopušta različite zone.
+
 ---
 
 ## 2. Zaslon na stanici
@@ -289,7 +305,7 @@ lakše za dizajn, ali zahtjevnije za postavljanje na poslužitelju.
 | # | Korak | Ovisi o |
 |---|---|---|
 | 1 | Testni projekt (xUnit) i CI ✅ | — |
-| 2 | Izračun aktivnih kalendara i polazaka, s testovima | 1 |
+| 2 | Izračun aktivnih kalendara i polazaka, s testovima ✅ | 1 |
 | 3 | Javni endpoint polazaka | 2 |
 | 4 | Stranica zaslona, output caching i rate limiting | 3 |
 | 5 | PDF za jednu stanicu | 2 |

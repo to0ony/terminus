@@ -36,6 +36,7 @@ builder.Services.AddScoped<ICalendarDateRepository, CalendarDateRepository>();
 builder.Services.AddScoped<ITripRepository, TripRepository>();
 builder.Services.AddScoped<IStopTimeRepository, StopTimeRepository>();
 builder.Services.AddScoped<IGtfsExportRepository, GtfsExportRepository>();
+builder.Services.AddScoped<IDepartureRepository, DepartureRepository>();
 
 // Servisi
 builder.Services.AddScoped<IAgencyService, AgencyService>();
@@ -44,6 +45,7 @@ builder.Services.AddScoped<IRouteService, RouteService>();
 builder.Services.AddScoped<IServiceCalendarService, ServiceCalendarService>();
 builder.Services.AddScoped<ITripService, TripService>();
 builder.Services.AddScoped<IGtfsExportService, GtfsExportService>();
+builder.Services.AddScoped<IDepartureService, DepartureService>();
 
 var app = builder.Build();
 
