@@ -47,6 +47,8 @@ builder.Services.AddScoped<IGtfsExportService, GtfsExportService>();
 
 var app = builder.Build();
 
+await app.SeedAgencyAsync();
+
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
 
