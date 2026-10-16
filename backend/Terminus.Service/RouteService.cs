@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Terminus.Common;
 using Terminus.Common.Exceptions;
 using Terminus.Model.Common;
@@ -8,7 +7,7 @@ using Terminus.Service.Common;
 
 namespace Terminus.Service;
 
-public partial class RouteService(IRouteRepository repository, IAgencyRepository agencyRepository) : IRouteService
+public class RouteService(IRouteRepository repository, IAgencyRepository agencyRepository) : IRouteService
 {
     public async Task<IRouteModel> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
         await repository.GetAsync(id, cancellationToken) ?? throw RouteNotFound(id);
@@ -56,8 +55,8 @@ public partial class RouteService(IRouteRepository repository, IAgencyRepository
         route.Description = NullIfBlank(route.Description);
         route.Url = NullIfBlank(route.Url);
         route.NetworkId = NullIfBlank(route.NetworkId);
-        route.Color = NormalizeColor(route.Color);
-        route.TextColor = NormalizeColor(route.TextColor);
+        route.Color = Validators.NormalizeColor(route.Color);
+        route.TextColor = Validators.NormalizeColor(route.TextColor);
     }
 
     private async Task ValidateAsync(IRouteModel route, CancellationToken cancellationToken)
@@ -101,12 +100,12 @@ public partial class RouteService(IRouteRepository repository, IAgencyRepository
             errors.Add(nameof(route.ContinuousDropOff), "Nepoznata vrijednost za iskrcavanje duž trase.");
         }
 
-        if (route.Color is not null && !HexColorRegex().IsMatch(route.Color))
+        if (route.Color is not null && !Validators.IsHexColor(route.Color))
         {
             errors.Add(nameof(route.Color), "Boja mora biti hex vrijednost od 6 znakova, npr. FF0000.");
         }
 
-        if (route.TextColor is not null && !HexColorRegex().IsMatch(route.TextColor))
+        if (route.TextColor is not null && !Validators.IsHexColor(route.TextColor))
         {
             errors.Add(nameof(route.TextColor), "Boja teksta mora biti hex vrijednost od 6 znakova, npr. FFFFFF.");
         }
@@ -119,15 +118,8 @@ public partial class RouteService(IRouteRepository repository, IAgencyRepository
         errors.ThrowIfAny();
     }
 
-    /// <summary>"#ff0000" postaje "FF0000" (GTFS traži hex bez #).</summary>
-    private static string? NormalizeColor(string? value) =>
-        NullIfBlank(value)?.TrimStart('#').ToUpperInvariant();
-
     private static string? NullIfBlank(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static NotFoundException RouteNotFound(Guid id) => new($"Linija {id} ne postoji.");
-
-    [GeneratedRegex("^[0-9A-F]{6}$")]
-    private static partial Regex HexColorRegex();
 }

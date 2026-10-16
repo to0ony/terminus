@@ -1,10 +1,11 @@
 using System.Globalization;
 using System.Net.Mail;
+using System.Text.RegularExpressions;
 
 namespace Terminus.Service;
 
 /// <summary>Provjere formata zajedničke više servisa.</summary>
-internal static class Validators
+internal static partial class Validators
 {
     /// <returns>true za potpunu http ili https adresu.</returns>
     public static bool IsHttpUrl(string value) =>
@@ -36,4 +37,14 @@ internal static class Validators
 
     public static string? NullIfBlank(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    /// <summary>"#ff0000" postaje "FF0000" (GTFS traži hex bez #).</summary>
+    public static string? NormalizeColor(string? value) =>
+        NullIfBlank(value)?.TrimStart('#').ToUpperInvariant();
+
+    /// <returns>true za hex boju od 6 znakova bez #, velikim slovima (nakon <see cref="NormalizeColor"/>).</returns>
+    public static bool IsHexColor(string value) => HexColorRegex().IsMatch(value);
+
+    [GeneratedRegex("^[0-9A-F]{6}$")]
+    private static partial Regex HexColorRegex();
 }
