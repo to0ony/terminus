@@ -60,6 +60,7 @@ i kao varijable okruženja (`Agency__Name`, `Agency__Url` …).
 
 ## Dokumentacija
 
+- [Roadmap](docs/roadmap.md)
 - [Lokalni razvoj](docs/development.md)
 - [Arhitektura](docs/architecture.md)
 - [Model podataka i GTFS](docs/data-model.md)
