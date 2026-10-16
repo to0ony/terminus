@@ -150,6 +150,7 @@ prije prvog pilota.
 | Endpointi za prijavu | Vlastiti (`/api/auth/login`, `logout`, `me`) preko `SignInManager` | `MapIdentityApi` otvara javnu registraciju, a ovdje administratore dodaje samo drugi administrator. |
 | CORS | Nije potreban | U razvoju Vite proxy šalje `/api` na backend; u produkciji je isti origin. |
 | Frontend | React, TypeScript, Vite, React Router, TanStack Query, `openapi-typescript` + `openapi-fetch` | Tipovi iz OpenAPI opisa, cache i stanja učitavanja bez ručnog koda. |
+| UI i karta | Mantine; MapLibre GL s OpenStreetMap podlogom | Mantine ima gotove tablice, forme, upload, obavijesti i datume za dashboard. MapLibre je besplatan, bez API ključa, i brz s tisućama stanica. Zaslon na stanici ne koristi Mantine (lagan CSS). |
 | UI biblioteka | Mantine | Bogate forme i tablice, brz razvoj dashboarda. Alternativa: shadcn/ui. |
 | Karta | Leaflet s OpenStreetMapom | Besplatno; prikaz stanica i trasa, kasnije i odabir koordinata. |
 | PDF | QuestPDF i QRCoder | Vidi [departures-and-timetables.md](departures-and-timetables.md#34-biblioteke). |

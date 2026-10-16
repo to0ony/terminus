@@ -55,7 +55,8 @@ editor voznog reda; vidi [roadmap](docs/roadmap.md).
 | Baza | PostgreSQL (Npgsql, snake_case nazivi) |
 | Testovi | xUnit v3, Microsoft Testing Platform |
 | CI | GitHub Actions |
-| Frontend (u planu) | React, TypeScript, Vite |
+| Frontend (u izradi) | React, TypeScript, Vite, Mantine, React Router, TanStack Query, MapLibre GL |
+| Testovi frontenda | Vitest, Testing Library |
 
 ## Struktura repozitorija
 
@@ -70,7 +71,7 @@ terminus/
 │   ├── Terminus.Common/       zajednički tipovi (GTFS vrijeme i datum, iznimke)
 │   └── Terminus.Tests/        unit testovi
 ├── docs/                      dokumentacija
-└── frontend/                  dashboard i zaslon na stanici (u planu)
+└── frontend/                  dashboard i zaslon na stanici (React, u izradi)
 ```
 
 Uz `Service`, `Repository` i `Model` postoji i projekt `*.Common` sa sučeljima
@@ -79,7 +80,8 @@ tog sloja. Slojevi su opisani u [arhitekturi](docs/architecture.md).
 ## Pokretanje
 
 **Preduvjeti:** [.NET 10 SDK](https://dotnet.microsoft.com/download),
-PostgreSQL 13+ i EF Core CLI (`dotnet tool install --global dotnet-ef`).
+PostgreSQL 13+, EF Core CLI (`dotnet tool install --global dotnet-ef`) i
+[Node.js](https://nodejs.org) 22+ za frontend.
 
 ```sh
 cd backend
@@ -97,6 +99,12 @@ dotnet run --project Terminus.WebApi --launch-profile http
 
 # testovi
 dotnet test --solution Terminus.slnx
+```
+
+```sh
+cd frontend
+npm install
+npm run dev    # http://localhost:5173, /api ide na backend preko Vite proxyja
 ```
 
 Nakon prve prijave instanca još nema prijevoznika; njega stvara čarobnjak

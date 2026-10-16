@@ -5,9 +5,10 @@
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - PostgreSQL 13 ili noviji
 - EF Core CLI: `dotnet tool install --global dotnet-ef`
+- [Node.js](https://nodejs.org) 22 ili noviji (za frontend)
 
-Sve naredbe u nastavku pokreću se iz mape `backend/` (`cd backend`), gdje su
-`Terminus.slnx` i `global.json`.
+Naredbe za backend pokreću se iz mape `backend/` (`cd backend`), gdje su
+`Terminus.slnx` i `global.json`; za frontend vidi [Frontend](#frontend).
 
 ## Baza i konfiguracija
 
@@ -89,3 +90,43 @@ Prije commita treba pregledati generiranu migraciju. EF ponekad doda
 vrijednosti koje nisu poželjne, npr. `defaultValue: ""` kod pretvaranja
 stupca u `NOT NULL`. Nakon promjene sheme ažurira se i
 [`terminus_schema.sql`](terminus_schema.sql).
+
+## Frontend
+
+Dashboard i javni zaslon stanice su jedna aplikacija u mapi `frontend/`:
+React, TypeScript, Vite, Mantine, React Router, TanStack Query, MapLibre GL.
+Naredbe se pokreću iz `frontend/`:
+
+```sh
+npm install
+npm run dev            # http://localhost:5173
+```
+
+Backend mora raditi na profilu `http` (`http://localhost:5183`). Vite proxy
+prosljeđuje `/api`, `/health` i `/openapi` na backend, pa su frontend i API na
+istom originu: kolačić za prijavu radi, a CORS nije potreban. Drugu adresu
+backenda postavlja varijabla `TERMINUS_API_URL`.
+
+| Naredba | Što radi |
+|---|---|
+| `npm run build` | provjera tipova i produkcijski build u `dist/` |
+| `npm run lint` | oxlint |
+| `npm run format` / `format:check` | Prettier |
+| `npm test` | Vitest i Testing Library (jsdom) |
+| `npm run api:generate` | TypeScript tipovi API-ja iz OpenAPI opisa |
+
+**API tipovi.** `src/api/schema.d.ts` generira se iz `/openapi/v1.json`
+pokrenutog backenda i commita se, pa build ne treba backend. Nakon promjene
+API-ja pokreće se `npm run api:generate`; `src/api/client.ts` (`openapi-fetch`)
+tada odmah javlja neusklađene pozive kao greške tipova.
+
+```
+frontend/src/
+  api/        generirani tipovi, klijent, QueryClient
+  app/        providers, router, tema
+  features/   po području: auth, setup, import, stops, routes, timetables, settings, board
+  test/       postavke testova i render s providerima
+```
+
+GitHub Actions za `frontend/` radi `npm ci`, lint, provjeru formata, testove i
+build.
