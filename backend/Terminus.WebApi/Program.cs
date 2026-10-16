@@ -47,6 +47,7 @@ builder.Services.AddScoped<IServiceCalendarService, ServiceCalendarService>();
 builder.Services.AddScoped<ITripService, TripService>();
 builder.Services.AddScoped<IGtfsExportService, GtfsExportService>();
 builder.Services.AddScoped<IDepartureService, DepartureService>();
+builder.Services.AddScoped<IShapeService, ShapeService>();
 
 builder.Services.AddSingleton(TimeProvider.System);
 
