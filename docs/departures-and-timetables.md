@@ -3,7 +3,7 @@
 > [!IMPORTANT]
 > Ovo je plan: opisuje kako funkcije trebaju raditi i izgledati te redoslijed
 > kojim ih treba izraditi. Kad se pojedini dio implementira, dokument se
-> ažurira. Stanje po koracima je u [poglavlju 5](#5-redoslijed-implementacije).
+> ažurira. Stanje po koracima je u [roadmapu](roadmap.md).
 
 ## Pregled
 
@@ -315,25 +315,16 @@ lakše za dizajn, ali zahtjevnije za postavljanje na poslužitelju.
   OpenAPI opisa API-ja (`/openapi/v1.json`).
 - **Autentikacija.** Sve osim `/api/public/*` traži prijavu. Predviđa se više
   administratora po instanci; uloge se mogu proširiti kasnije.
-- **CORS / isti origin.** U razvoju frontend radi na vlastitoj adresi (Vite), pa
-  API mora dopustiti tu adresu. U produkciji su frontend i API iza iste domene.
+- **Isti origin.** U razvoju Vite proxy šalje `/api` na backend, pa CORS nije
+  potreban. U produkciji su frontend i API iza iste domene.
 - **Postavke instance.** Logo, boje i podaci za `feed_info.txt` (izdavač, kontakt)
   čuvaju se u bazi (jedan redak, tablica `settings`) i uređuju u dashboardu.
 
 ## 5. Redoslijed implementacije
 
-| # | Korak | Ovisi o |
-|---|---|---|
-| 1 | Testni projekt (xUnit) i CI ✅ | — |
-| 2 | Izračun aktivnih kalendara i polazaka, s testovima ✅ | 1 |
-| 3 | Javni endpoint polazaka ✅ | 2 |
-| 4 | Autentikacija (više administratora) i CORS | — |
-| 5 | Postavke instance (`settings`: logo, boje, `feed_info`) | 4 |
-| 6 | Output caching i rate limiting za `/api/public/*` | 3 |
-| 7 | Frontend: kostur aplikacije, prijava, generirani API klijent | 4 |
-| 8 | Dashboard: stanice, linije, kalendari, vožnje | 7 |
-| 9 | Zaslon na stanici `/board/{stopCode}` | 5, 6, 7 |
-| 10 | PDF za jednu i za sve stanice, pokretanje iz dashboarda, QR kod na zaslon | 8, 9 |
+Izračun polazaka (poglavlje 1) i javni endpoint (2.2) su gotovi. Redoslijed
+ostalih koraka, zajedno s ostatkom aplikacije, vodi se u
+[roadmapu](roadmap.md) (faza 4).
 
 ## 6. Otvorena pitanja
 

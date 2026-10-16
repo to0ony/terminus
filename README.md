@@ -33,6 +33,7 @@ aplikacija (React, TypeScript, Vite) je u planu.
 | `ConnectionStrings:Default` | da | Connection string za PostgreSQL. |
 | `Agency:Name` | za seed | Naziv prijevoznika. |
 | `Agency:Url` | za seed | Web adresa prijevoznika (GTFS `agency_url`). |
+| `Agency:Code` | ne | GTFS `agency_id`; zadano se izvodi iz naziva (npr. `gpp`). |
 | `Agency:Timezone` | ne | IANA vremenska zona, zadano `Europe/Zagreb`. |
 | `Agency:Lang` | ne | Oznaka jezika, zadano `hr`. |
 
@@ -51,6 +52,9 @@ i kao varijable okruženja (`Agency__Name`, `Agency__Url` …).
 | Linije | `/api/routes` (prijevoznik u tijelu zahtjeva: `agencyId`) |
 | Kalendari i iznimke | `/api/calendars`, `/api/calendars/{id}/dates` |
 | Vožnje i vremena | `/api/trips`, `/api/trips/{id}/stop-times` |
+| Trase | `/api/shapes` |
+| Cijene karata | `/api/fares` |
+| Izdavač feeda | `/api/feed-info` |
 | GTFS izvoz | `/api/gtfs` |
 | Polasci sa stanice (javno) | `/api/public/departures/{stopCode}?limit=10` |
 

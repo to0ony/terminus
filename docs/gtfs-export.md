@@ -4,8 +4,9 @@
 GET /api/gtfs
 ```
 
-Vraća GTFS Schedule feed instance kao ZIP (`gtfs-<prijevoznik>-<YYYYMMDD>.zip`,
-prema prvom unesenom prijevozniku).
+Vraća GTFS Schedule feed instance kao ZIP (`gtfs-<izdavač>-<YYYYMMDD>.zip`).
+Izdavač je iz `feed_info` (`/api/feed-info`), a dok on nije unesen, prvi uneseni
+prijevoznik.
 Ako podaci nisu spremni za izvoz, vraća `422` s popisom problema umjesto
 neispravnog feeda.
 
@@ -15,8 +16,12 @@ neispravnog feeda.
 2. Odabire se sadržaj feeda:
    - aktivne linije (`is_active = true`) i njihovi prijevoznici;
    - vožnje tih linija;
-   - kalendari koje te vožnje koriste i njihove iznimke;
-   - stanice koje te vožnje koriste, uključujući nadređene stanice perona.
+   - kalendari i trase koje te vožnje koriste, s iznimkama i točkama;
+   - stanice koje te vožnje koriste, nadređene stanice perona te aktivni ulazi
+     i čvorovi tih stanica i mjesta ukrcavanja tih perona;
+   - cijene bez prijevoznika ili s izvezenim prijevoznikom. Pravila za linije
+     koje se ne izvoze izostavljaju se; cijena kojoj tako ne ostane nijedno
+     pravilo izostavlja se cijela, jer bi bez pravila vrijedila za sve vožnje.
 3. Provjerava se ispravnost (vidi dolje).
 4. Podaci se pretvaraju u GTFS retke i zapisuju u ZIP.
 
@@ -27,17 +32,19 @@ nekoliko MB.
 
 | Datoteka | Sadržaj |
 |---|---|
-| `agency.txt` | prijevoznici aktivnih linija; `agency_id` je `id` prijevoznika |
+| `agency.txt` | prijevoznici aktivnih linija |
 | `stops.txt` | stanice; `parent_station` je `code` nadređene stanice |
 | `routes.txt` | aktivne linije, s `agency_id` prijevoznika |
-| `trips.txt` | vožnje aktivnih linija |
+| `trips.txt` | vožnje aktivnih linija, s `shape_id` trase |
 | `stop_times.txt` | vremena vožnji |
 | `calendar.txt` | korišteni kalendari |
 | `calendar_dates.txt` | iznimke korištenih kalendara (samo ako postoje) |
-| `feed_info.txt` | izdavač, jezik, razdoblje važenja i verzija feeda; izdavač je zasad prvi uneseni prijevoznik |
+| `shapes.txt` | korištene trase (samo ako postoje) |
+| `fare_attributes.txt`, `fare_rules.txt` | cijene i pravila (samo ako postoje) |
+| `feed_info.txt` | izdavač, jezik, kontakt, razdoblje važenja i verzija feeda |
 
-GTFS identifikatori (`stop_id`, `route_id`, `service_id`, `trip_id`) su vrijednosti
-stupaca `code`. `feed_start_date` i `feed_end_date` obuhvaćaju razdoblja svih
+GTFS identifikatori (`agency_id`, `stop_id`, `route_id`, `service_id`, `trip_id`,
+`shape_id`, `fare_id`) su vrijednosti stupaca `code`. `feed_start_date` i `feed_end_date` obuhvaćaju razdoblja svih
 kalendara i dodane datume iz iznimki. `feed_version` je vrijeme generiranja (UTC).
 
 ## Format
@@ -58,7 +65,9 @@ Izvoz se odbija (`422`) ako:
 - feed nema nijednu vožnju na aktivnoj liniji;
 - vožnja nema postavljena vremena ili ima manje od dvije stanice;
 - vožnja koristi neaktivnu stanicu;
-- kalendar nikad ne vozi (nema označenih dana u tjednu ni dodanih datuma).
+- kalendar nikad ne vozi (nema označenih dana u tjednu ni dodanih datuma);
+- cijena nema prijevoznika, a feed ih ima više;
+- pravilo cijene koristi zonu koju nema nijedna izvezena stanica.
 
 Odgovor sadrži sve pronađene probleme:
 

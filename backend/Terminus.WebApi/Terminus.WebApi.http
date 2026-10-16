@@ -18,6 +18,7 @@ POST {{Terminus.WebApi_HostAddress}}/api/agencies
 Content-Type: application/json
 
 {
+  "code": "TEST",
   "name": "Test prijevoznik",
   "url": "https://example.com",
   "phone": "+385 31 000 000",
@@ -252,6 +253,55 @@ Content-Type: application/json
 
 ### Brisanje vožnje (briše i njezina vremena)
 DELETE {{Terminus.WebApi_HostAddress}}/api/trips/{{tripId}}
+
+###
+
+### Nova trasa (redni brojevi točaka prema redoslijedu)
+POST {{Terminus.WebApi_HostAddress}}/api/shapes
+Content-Type: application/json
+
+{
+  "code": "OS-DJ-1",
+  "points": [
+    { "latitude": 45.5531, "longitude": 18.6955, "distTraveled": 0 },
+    { "latitude": 45.4500, "longitude": 18.5500, "distTraveled": 18200 },
+    { "latitude": 45.3100, "longitude": 18.4100, "distTraveled": 36500 }
+  ]
+}
+
+### Popis trasa (bez točaka)
+GET {{Terminus.WebApi_HostAddress}}/api/shapes
+Accept: application/json
+
+###
+
+### Nova cijena karte s pravilom za liniju i zone
+POST {{Terminus.WebApi_HostAddress}}/api/fares
+Content-Type: application/json
+
+{
+  "code": "OS-DJ-JEDNOKRATNA",
+  "price": 4.5,
+  "currencyType": "EUR",
+  "paymentMethod": 0,
+  "agencyId": "{{agencyId}}",
+  "rules": [
+    { "originId": "Z1", "destinationId": "Z3" }
+  ]
+}
+
+###
+
+### Izdavač feeda (feed_info)
+PUT {{Terminus.WebApi_HostAddress}}/api/feed-info
+Content-Type: application/json
+
+{
+  "publisherName": "Test prijevoznik d.o.o.",
+  "publisherUrl": "https://example.com",
+  "lang": "hr",
+  "contactEmail": "gtfs@example.com"
+}
 
 ###
 

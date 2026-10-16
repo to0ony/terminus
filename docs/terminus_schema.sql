@@ -7,8 +7,9 @@
 -- Skripta se ne koristi za stvaranje baze.
 --
 -- Model prati GTFS Static uz vlastite surogat ključeve (uuid). GTFS
--- identifikatori (stop_id, route_id, service_id, trip_id) spremaju se u
--- stupce `code` i jedinstveni su unutar tablice.
+-- identifikatori (agency_id, stop_id, route_id, service_id, trip_id,
+-- shape_id, fare_id) spremaju se u stupce `code` i jedinstveni su unutar
+-- tablice.
 --
 -- Terminus je single-tenant: svaka tvrtka ima vlastitu instancu i bazu,
 -- pa podaci nemaju tenant ključ.
@@ -29,11 +30,13 @@
 -- ---------------------------------------------------------------------
 CREATE TABLE agencies (
     id          uuid        NOT NULL DEFAULT gen_random_uuid(),
+    code        text        NOT NULL,                       -- GTFS agency_id
     name        text        NOT NULL,
     url         text        NOT NULL,                       -- GTFS agency_url (obavezan)
     timezone    text        NOT NULL DEFAULT 'Europe/Zagreb', -- IANA naziv zone
     lang        text        NOT NULL DEFAULT 'hr',          -- BCP 47 oznaka jezika
     phone       text,
+    fare_url    text,                                       -- GTFS agency_fare_url
     email       text,
     created_at  timestamptz NOT NULL DEFAULT now(),
     updated_at  timestamptz NOT NULL DEFAULT now(),
@@ -41,20 +44,32 @@ CREATE TABLE agencies (
     CONSTRAINT pk_agencies PRIMARY KEY (id)
 );
 
+CREATE UNIQUE INDEX uq_agencies_code ON agencies (code);
+
 -- ---------------------------------------------------------------------
--- stops: stajališta, perone i stanice (kolodvore). GTFS: stops.txt
---   location_type:       0 = stajalište/peron, 1 = stanica (roditelj perona)
+-- stops: stajališta, peroni, stanice (kolodvori) i njihovi dijelovi.
+-- GTFS: stops.txt
+--   location_type:       0 = stajalište/peron (samo na njima vožnje staju)
+--                        1 = stanica (roditelj perona, ulaza i čvorova)
+--                        2 = ulaz/izlaz, 3 = čvor (roditelj: stanica)
+--                        4 = mjesto ukrcavanja (roditelj: peron)
 --   wheelchair_boarding: 0 = nepoznato, 1 = pristupačno, 2 = nepristupačno
+--   koordinate su obavezne osim za location_type 3 i 4
 -- ---------------------------------------------------------------------
 CREATE TABLE stops (
     id                  uuid             NOT NULL DEFAULT gen_random_uuid(),
     code                text             NOT NULL,           -- GTFS stop_id
+    public_code         text,                                -- GTFS stop_code (oznaka za putnike)
     name                text             NOT NULL,
+    tts_name            text,                                -- GTFS tts_stop_name
     description         text,
-    latitude            double precision NOT NULL,
-    longitude           double precision NOT NULL,
+    latitude            double precision,
+    longitude           double precision,
+    zone_id             text,                                -- tarifna zona (fare_rules)
+    url                 text,                                -- GTFS stop_url
     location_type       smallint         NOT NULL DEFAULT 0,
     parent_station_id   uuid,
+    timezone            text,                                -- GTFS stop_timezone
     platform_code       text,                                -- oznaka perona, npr. "3" ili "A"
     wheelchair_boarding smallint         NOT NULL DEFAULT 0,
     is_active           boolean          NOT NULL DEFAULT true,
@@ -66,7 +81,8 @@ CREATE TABLE stops (
         FOREIGN KEY (parent_station_id) REFERENCES stops (id) ON DELETE SET NULL,
     CONSTRAINT ck_stops_latitude       CHECK (latitude  BETWEEN -90  AND 90),
     CONSTRAINT ck_stops_longitude      CHECK (longitude BETWEEN -180 AND 180),
-    CONSTRAINT ck_stops_location_type  CHECK (location_type IN (0, 1)),
+    CONSTRAINT ck_stops_coordinates    CHECK (location_type IN (3, 4) OR (latitude IS NOT NULL AND longitude IS NOT NULL)),
+    CONSTRAINT ck_stops_location_type  CHECK (location_type IN (0, 1, 2, 3, 4)),
     CONSTRAINT ck_stops_wheelchair     CHECK (wheelchair_boarding IN (0, 1, 2)),
     CONSTRAINT ck_stops_not_own_parent CHECK (parent_station_id IS NULL OR parent_station_id <> id)
 );
@@ -78,30 +94,40 @@ CREATE INDEX        ix_stops_parent_station_id ON stops (parent_station_id);
 -- routes: linije. GTFS: routes.txt
 --   agency_id: prijevoznik koji vozi liniju (GTFS routes.agency_id);
 --              prijevoznik koji ima linije ne može se obrisati
---   route_type: GTFS vrijednost (3 = autobus)
+--   route_type: osnovna GTFS vrijednost (3 = autobus) ili proširena
+--               (100–1799, npr. 700 = autobus, 200 = međugradski autobus)
 --   color, text_color: hex bez znaka #, npr. 'FF0000'
+--   continuous_pickup, continuous_drop_off: 0 = bilo gdje na trasi,
+--               1 = samo na stanicama, 2 = nazvati, 3 = dogovor s vozačem;
+--               NULL = nije zadano (u GTFS-u isto kao 1)
 -- ---------------------------------------------------------------------
 CREATE TABLE routes (
-    id          uuid        NOT NULL DEFAULT gen_random_uuid(),
-    agency_id   uuid        NOT NULL,
-    code        text        NOT NULL,                  -- GTFS route_id
-    short_name  text,                                  -- npr. "12"
-    long_name   text,                                  -- npr. "Osijek - Đakovo"
-    description text,
-    route_type  smallint    NOT NULL DEFAULT 3,
-    color       char(6),
-    text_color  char(6),
-    sort_order  integer,                               -- GTFS route_sort_order
-    is_active   boolean     NOT NULL DEFAULT true,
-    created_at  timestamptz NOT NULL DEFAULT now(),
-    updated_at  timestamptz NOT NULL DEFAULT now(),
+    id                  uuid        NOT NULL DEFAULT gen_random_uuid(),
+    agency_id           uuid        NOT NULL,
+    code                text        NOT NULL,          -- GTFS route_id
+    short_name          text,                          -- npr. "12"
+    long_name           text,                          -- npr. "Osijek - Đakovo"
+    description         text,
+    route_type          smallint    NOT NULL DEFAULT 3,
+    url                 text,                          -- GTFS route_url
+    color               char(6),
+    text_color          char(6),
+    sort_order          integer,                       -- GTFS route_sort_order
+    continuous_pickup   smallint,
+    continuous_drop_off smallint,
+    network_id          text,                          -- GTFS network_id
+    is_active           boolean     NOT NULL DEFAULT true,
+    created_at          timestamptz NOT NULL DEFAULT now(),
+    updated_at          timestamptz NOT NULL DEFAULT now(),
 
     CONSTRAINT pk_routes PRIMARY KEY (id),
     CONSTRAINT fk_routes_agencies_agency_id
         FOREIGN KEY (agency_id) REFERENCES agencies (id) ON DELETE RESTRICT,
-    CONSTRAINT ck_routes_name       CHECK (short_name IS NOT NULL OR long_name IS NOT NULL),
-    CONSTRAINT ck_routes_color      CHECK (color      IS NULL OR color      ~ '^[0-9A-Fa-f]{6}$'),
-    CONSTRAINT ck_routes_text_color CHECK (text_color IS NULL OR text_color ~ '^[0-9A-Fa-f]{6}$')
+    CONSTRAINT ck_routes_name                CHECK (short_name IS NOT NULL OR long_name IS NOT NULL),
+    CONSTRAINT ck_routes_color               CHECK (color      IS NULL OR color      ~ '^[0-9A-Fa-f]{6}$'),
+    CONSTRAINT ck_routes_text_color          CHECK (text_color IS NULL OR text_color ~ '^[0-9A-Fa-f]{6}$'),
+    CONSTRAINT ck_routes_continuous_pickup   CHECK (continuous_pickup   IS NULL OR continuous_pickup   IN (0, 1, 2, 3)),
+    CONSTRAINT ck_routes_continuous_drop_off CHECK (continuous_drop_off IS NULL OR continuous_drop_off IN (0, 1, 2, 3))
 );
 
 CREATE UNIQUE INDEX uq_routes_code      ON routes (code);
@@ -152,11 +178,43 @@ CREATE TABLE calendar_dates (
 CREATE INDEX ix_calendar_dates_date ON calendar_dates (date);
 
 -- ---------------------------------------------------------------------
+-- shapes, shape_points: trasa vožnje na karti. GTFS: shapes.txt
+--   dist_traveled: prijeđena udaljenost od početka trase, u jedinicama
+--                  po izboru (iste kao stop_times.shape_dist_traveled)
+-- ---------------------------------------------------------------------
+CREATE TABLE shapes (
+    id          uuid        NOT NULL DEFAULT gen_random_uuid(),
+    code        text        NOT NULL,                  -- GTFS shape_id
+    created_at  timestamptz NOT NULL DEFAULT now(),
+    updated_at  timestamptz NOT NULL DEFAULT now(),
+
+    CONSTRAINT pk_shapes PRIMARY KEY (id)
+);
+
+CREATE UNIQUE INDEX uq_shapes_code ON shapes (code);
+
+CREATE TABLE shape_points (
+    shape_id      uuid             NOT NULL,
+    sequence      integer          NOT NULL,           -- 1, 2, 3 ...
+    latitude      double precision NOT NULL,
+    longitude     double precision NOT NULL,
+    dist_traveled double precision,
+
+    CONSTRAINT pk_shape_points PRIMARY KEY (shape_id, sequence),
+    CONSTRAINT fk_shape_points_shapes_shape_id
+        FOREIGN KEY (shape_id) REFERENCES shapes (id) ON DELETE CASCADE,
+    CONSTRAINT ck_shape_points_sequence  CHECK (sequence >= 0),
+    CONSTRAINT ck_shape_points_latitude  CHECK (latitude  BETWEEN -90  AND 90),
+    CONSTRAINT ck_shape_points_longitude CHECK (longitude BETWEEN -180 AND 180),
+    CONSTRAINT ck_shape_points_dist      CHECK (dist_traveled IS NULL OR dist_traveled >= 0)
+);
+
+-- ---------------------------------------------------------------------
 -- trips: pojedinačna vožnja linije, npr. Osijek -> Đakovo u 06:15.
 -- GTFS: trips.txt
 --
 -- service_calendar_id koristi NO ACTION: kalendar koji koriste vožnje ne
--- može se obrisati.
+-- može se obrisati. Brisanje trase ostavlja vožnje bez nje (SET NULL).
 -- ---------------------------------------------------------------------
 CREATE TABLE trips (
     id                    uuid        NOT NULL DEFAULT gen_random_uuid(),
@@ -167,6 +225,7 @@ CREATE TABLE trips (
     short_name            text,
     direction_id          smallint,                     -- 0 ili 1 (smjer tamo/natrag)
     block_id              text,                         -- vožnje istog vozila
+    shape_id              uuid,                         -- GTFS shape_id
     wheelchair_accessible smallint    NOT NULL DEFAULT 0,
     bikes_allowed         smallint    NOT NULL DEFAULT 0,
     created_at            timestamptz NOT NULL DEFAULT now(),
@@ -177,6 +236,8 @@ CREATE TABLE trips (
         FOREIGN KEY (route_id) REFERENCES routes (id) ON DELETE CASCADE,
     CONSTRAINT fk_trips_service_calendars_service_calendar_id
         FOREIGN KEY (service_calendar_id) REFERENCES service_calendars (id) ON DELETE NO ACTION,
+    CONSTRAINT fk_trips_shapes_shape_id
+        FOREIGN KEY (shape_id) REFERENCES shapes (id) ON DELETE SET NULL,
     CONSTRAINT ck_trips_direction  CHECK (direction_id IS NULL OR direction_id IN (0, 1)),
     CONSTRAINT ck_trips_wheelchair CHECK (wheelchair_accessible IN (0, 1, 2)),
     CONSTRAINT ck_trips_bikes      CHECK (bikes_allowed IN (0, 1, 2))
@@ -185,44 +246,129 @@ CREATE TABLE trips (
 CREATE UNIQUE INDEX uq_trips_code                 ON trips (code);
 CREATE INDEX        ix_trips_route_id             ON trips (route_id);
 CREATE INDEX        ix_trips_service_calendar_id  ON trips (service_calendar_id);
+CREATE INDEX        ix_trips_shape_id             ON trips (shape_id);
 
 -- ---------------------------------------------------------------------
 -- stop_times: dolazak i polazak vožnje na svakoj stanici. GTFS: stop_times.txt
 --
 -- Vremena su u sekundama od ponoći dana vožnje. GTFS dopušta vrijednosti
 -- iznad 24 h za vožnje koje prelaze ponoć (25:30:00 = 91800); gornja
--- granica je 48 h.
+-- granica je 48 h. Vremena su obavezna na svakoj stanici; okvirna vremena
+-- označava timepoint = false.
 --   pickup_type, drop_off_type: 0 = redovno, 1 = nema, 2 = nazvati
 --                               prijevoznika, 3 = dogovor s vozačem
+--   continuous_pickup, continuous_drop_off: kao kod routes; NULL znači
+--                               vrijednost linije
 --   timepoint: true = točno vrijeme, false = okvirno
 --
 -- stop_id koristi NO ACTION: stanica koja se koristi u voznom redu ne može
 -- se obrisati.
 -- ---------------------------------------------------------------------
 CREATE TABLE stop_times (
-    trip_id         uuid     NOT NULL,
-    stop_sequence   integer  NOT NULL,                 -- redni broj na vožnji, raste
-    stop_id         uuid     NOT NULL,
-    arrival_time    integer  NOT NULL,
-    departure_time  integer  NOT NULL,
-    stop_headsign   text,
-    pickup_type     smallint NOT NULL DEFAULT 0,
-    drop_off_type   smallint NOT NULL DEFAULT 0,
-    timepoint       boolean  NOT NULL DEFAULT true,
+    trip_id             uuid             NOT NULL,
+    stop_sequence       integer          NOT NULL,     -- redni broj na vožnji, raste
+    stop_id             uuid             NOT NULL,
+    arrival_time        integer          NOT NULL,
+    departure_time      integer          NOT NULL,
+    stop_headsign       text,
+    pickup_type         smallint         NOT NULL DEFAULT 0,
+    drop_off_type       smallint         NOT NULL DEFAULT 0,
+    continuous_pickup   smallint,
+    continuous_drop_off smallint,
+    shape_dist_traveled double precision,
+    timepoint           boolean          NOT NULL DEFAULT true,
 
     CONSTRAINT pk_stop_times PRIMARY KEY (trip_id, stop_sequence),
     CONSTRAINT fk_stop_times_trips_trip_id
         FOREIGN KEY (trip_id) REFERENCES trips (id) ON DELETE CASCADE,
     CONSTRAINT fk_stop_times_stops_stop_id
         FOREIGN KEY (stop_id) REFERENCES stops (id) ON DELETE NO ACTION,
-    CONSTRAINT ck_stop_times_sequence  CHECK (stop_sequence >= 0),
-    CONSTRAINT ck_stop_times_arrival   CHECK (arrival_time   BETWEEN 0 AND 172800),
-    CONSTRAINT ck_stop_times_departure CHECK (departure_time BETWEEN 0 AND 172800),
-    CONSTRAINT ck_stop_times_order     CHECK (departure_time >= arrival_time),
-    CONSTRAINT ck_stop_times_pickup    CHECK (pickup_type   IN (0, 1, 2, 3)),
-    CONSTRAINT ck_stop_times_dropoff   CHECK (drop_off_type IN (0, 1, 2, 3))
+    CONSTRAINT ck_stop_times_sequence            CHECK (stop_sequence >= 0),
+    CONSTRAINT ck_stop_times_arrival             CHECK (arrival_time   BETWEEN 0 AND 172800),
+    CONSTRAINT ck_stop_times_departure           CHECK (departure_time BETWEEN 0 AND 172800),
+    CONSTRAINT ck_stop_times_order               CHECK (departure_time >= arrival_time),
+    CONSTRAINT ck_stop_times_pickup              CHECK (pickup_type   IN (0, 1, 2, 3)),
+    CONSTRAINT ck_stop_times_dropoff             CHECK (drop_off_type IN (0, 1, 2, 3)),
+    CONSTRAINT ck_stop_times_continuous_pickup   CHECK (continuous_pickup   IS NULL OR continuous_pickup   IN (0, 1, 2, 3)),
+    CONSTRAINT ck_stop_times_continuous_drop_off CHECK (continuous_drop_off IS NULL OR continuous_drop_off IN (0, 1, 2, 3)),
+    CONSTRAINT ck_stop_times_shape_dist          CHECK (shape_dist_traveled IS NULL OR shape_dist_traveled >= 0)
 );
 
 -- Polasci sa stanice poredani po vremenu (vozni red stanice, prikaz polazaka).
 -- Pokriva i strani ključ stop_id.
 CREATE INDEX ix_stop_times_stop_departure ON stop_times (stop_id, departure_time);
+
+-- ---------------------------------------------------------------------
+-- fares, fare_rules: cijene karata i pravila primjene (GTFS Fares v1:
+-- fare_attributes.txt, fare_rules.txt)
+--   payment_method: 0 = u vozilu, 1 = prije ukrcavanja
+--   transfers: 0, 1 ili 2 presjedanja; NULL = neograničeno
+--   transfer_duration: koliko sekundi karta vrijedi za presjedanja
+--   origin_id, destination_id, contains_id: vrijednosti stops.zone_id
+--
+-- Cijena bez pravila vrijedi za sve vožnje. Prijevoznik s cijenama ne može
+-- se obrisati; brisanje linije briše pravila koja se na nju odnose.
+-- ---------------------------------------------------------------------
+CREATE TABLE fares (
+    id                uuid          NOT NULL DEFAULT gen_random_uuid(),
+    code              text          NOT NULL,          -- GTFS fare_id
+    price             numeric(12,4) NOT NULL,
+    currency_type     char(3)       NOT NULL,          -- ISO 4217, npr. 'EUR'
+    payment_method    smallint      NOT NULL,
+    transfers         smallint,
+    agency_id         uuid,
+    transfer_duration integer,
+    created_at        timestamptz   NOT NULL DEFAULT now(),
+    updated_at        timestamptz   NOT NULL DEFAULT now(),
+
+    CONSTRAINT pk_fares PRIMARY KEY (id),
+    CONSTRAINT fk_fares_agencies_agency_id
+        FOREIGN KEY (agency_id) REFERENCES agencies (id) ON DELETE RESTRICT,
+    CONSTRAINT ck_fares_price             CHECK (price >= 0),
+    CONSTRAINT ck_fares_currency          CHECK (currency_type ~ '^[A-Z]{3}$'),
+    CONSTRAINT ck_fares_payment_method    CHECK (payment_method IN (0, 1)),
+    CONSTRAINT ck_fares_transfers         CHECK (transfers IS NULL OR transfers IN (0, 1, 2)),
+    CONSTRAINT ck_fares_transfer_duration CHECK (transfer_duration IS NULL OR transfer_duration >= 0)
+);
+
+CREATE UNIQUE INDEX uq_fares_code      ON fares (code);
+CREATE INDEX        ix_fares_agency_id ON fares (agency_id);
+
+CREATE TABLE fare_rules (
+    id             uuid    NOT NULL DEFAULT gen_random_uuid(),
+    fare_id        uuid    NOT NULL,
+    sequence       integer NOT NULL,                   -- redoslijed unutar cijene
+    route_id       uuid,
+    origin_id      text,
+    destination_id text,
+    contains_id    text,
+
+    CONSTRAINT pk_fare_rules PRIMARY KEY (id),
+    CONSTRAINT fk_fare_rules_fares_fare_id
+        FOREIGN KEY (fare_id) REFERENCES fares (id) ON DELETE CASCADE,
+    CONSTRAINT fk_fare_rules_routes_route_id
+        FOREIGN KEY (route_id) REFERENCES routes (id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX uq_fare_rules_fare_sequence ON fare_rules (fare_id, sequence);
+CREATE INDEX        ix_fare_rules_route_id      ON fare_rules (route_id);
+
+-- ---------------------------------------------------------------------
+-- feed_info: izdavač feeda (GTFS feed_info.txt). Najviše jedan redak.
+-- Razdoblje važenja i verzija izračunavaju se pri izvozu. Bez retka
+-- izvoz kao izdavača koristi prvog prijevoznika.
+-- ---------------------------------------------------------------------
+CREATE TABLE feed_info (
+    id             smallint    NOT NULL,
+    publisher_name text        NOT NULL,
+    publisher_url  text        NOT NULL,
+    lang           text        NOT NULL,               -- npr. 'hr' ili 'mul'
+    default_lang   text,
+    contact_email  text,
+    contact_url    text,
+    created_at     timestamptz NOT NULL DEFAULT now(),
+    updated_at     timestamptz NOT NULL DEFAULT now(),
+
+    CONSTRAINT pk_feed_info PRIMARY KEY (id),
+    CONSTRAINT ck_feed_info_single_row CHECK (id = 1)
+);
