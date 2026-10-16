@@ -24,6 +24,9 @@ public interface ISettingsModel
     /// <summary>Vrijeme zadnje promjene loga ili null ako logo nije postavljen. Samo za čitanje.</summary>
     DateTime? LogoUpdatedAt { get; set; }
 
+    /// <summary>Kad je instanca postavljena (uvoz GTFS-a ili početak od nule); null dok nije. Samo za čitanje.</summary>
+    DateTime? SetupCompletedAt { get; set; }
+
     DateTime CreatedAt { get; set; }
     DateTime UpdatedAt { get; set; }
 }

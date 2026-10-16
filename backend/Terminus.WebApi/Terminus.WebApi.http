@@ -1,5 +1,5 @@
 @Terminus.WebApi_HostAddress = http://localhost:5183
-# Id prijevoznika (GET /api/agencies; prvi se stvara iz konfiguracije Agency:*)
+# Id prijevoznika (GET /api/agencies; prvog stvara čarobnjak prvog pokretanja)
 @agencyId = 00000000-0000-0000-0000-000000000000
 @stopId = 00000000-0000-0000-0000-000000000000
 @routeId = 00000000-0000-0000-0000-000000000000
@@ -34,6 +34,19 @@ Content-Type: application/json
 
 ### Odjava
 POST {{Terminus.WebApi_HostAddress}}/api/auth/logout
+
+### Prvo pokretanje: je li instanca postavljena
+GET {{Terminus.WebApi_HostAddress}}/api/setup
+Accept: application/json
+
+### Prvo pokretanje od nule: prvi prijevoznik (kod se izvodi iz naziva, zona i jezik su zadani)
+POST {{Terminus.WebApi_HostAddress}}/api/setup/blank
+Content-Type: application/json
+
+{
+  "name": "Test prijevoznik",
+  "url": "https://example.com"
+}
 
 ### Stanje aplikacije i baze (javno)
 GET {{Terminus.WebApi_HostAddress}}/health

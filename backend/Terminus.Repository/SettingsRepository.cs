@@ -28,6 +28,7 @@ public class SettingsRepository(TerminusDbContext context, TimeProvider timeProv
                 PublicUrl = s.PublicUrl,
                 PublicGtfsEnabled = s.PublicGtfsEnabled,
                 LogoUpdatedAt = s.LogoUpdatedAt,
+                SetupCompletedAt = s.SetupCompletedAt,
                 CreatedAt = s.CreatedAt,
                 UpdatedAt = s.UpdatedAt
             })
@@ -108,6 +109,23 @@ public class SettingsRepository(TerminusDbContext context, TimeProvider timeProv
                 cancellationToken);
 
         return updated > 0;
+    }
+
+    public async Task MarkSetupCompletedAsync(DateTime completedAt, CancellationToken cancellationToken = default)
+    {
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+
+        var updated = await context.Settings
+            .Where(s => s.Id == InstanceSettings.SingletonId)
+            .ExecuteUpdateAsync(set => set
+                .SetProperty(s => s.SetupCompletedAt, s => s.SetupCompletedAt ?? completedAt)
+                .SetProperty(s => s.UpdatedAt, now),
+                cancellationToken);
+
+        if (updated == 0)
+        {
+            await InsertAsync(new InstanceSettings { SetupCompletedAt = completedAt }, cancellationToken);
+        }
     }
 
     private async Task InsertAsync(InstanceSettings entity, CancellationToken cancellationToken)

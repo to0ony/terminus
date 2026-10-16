@@ -35,6 +35,13 @@ internal sealed class FakeSettingsRepository : ISettingsRepository
         return Task.CompletedTask;
     }
 
+    public Task MarkSetupCompletedAsync(DateTime completedAt, CancellationToken cancellationToken = default)
+    {
+        Settings ??= new SettingsModel();
+        Settings.SetupCompletedAt ??= completedAt;
+        return Task.CompletedTask;
+    }
+
     public Task<bool> DeleteLogoAsync(CancellationToken cancellationToken = default)
     {
         var existed = Logo is not null;

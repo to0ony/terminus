@@ -111,6 +111,7 @@ builder.Services.AddScoped<IFareRepository, FareRepository>();
 builder.Services.AddScoped<IFeedInfoRepository, FeedInfoRepository>();
 builder.Services.AddScoped<ISettingsRepository, SettingsRepository>();
 builder.Services.AddScoped<ITimetableRepository, TimetableRepository>();
+builder.Services.AddScoped<ISetupRepository, SetupRepository>();
 
 // Servisi
 builder.Services.AddScoped<IAgencyService, AgencyService>();
@@ -125,12 +126,12 @@ builder.Services.AddScoped<IFareService, FareService>();
 builder.Services.AddScoped<IFeedInfoService, FeedInfoService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<ITimetableService, TimetableService>();
+builder.Services.AddScoped<ISetupService, SetupService>();
 
 builder.Services.AddSingleton(TimeProvider.System);
 
 var app = builder.Build();
 
-await app.SeedAgencyAsync();
 await app.SeedAdminAsync();
 
 // Configure the HTTP request pipeline.

@@ -532,6 +532,10 @@ namespace Terminus.DAL.Migrations
                         .HasColumnType("text")
                         .HasColumnName("public_url");
 
+                    b.Property<DateTime?>("SetupCompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("setup_completed_at");
+
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")

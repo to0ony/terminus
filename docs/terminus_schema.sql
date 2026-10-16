@@ -25,8 +25,8 @@
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
--- agencies: prijevoznici (operateri linija). Ako je tablica prazna, prvi
--- se stvara pri pokretanju iz konfiguracije (Agency:*). GTFS: agency.txt
+-- agencies: prijevoznici (operateri linija). Prvog stvara čarobnjak prvog
+-- pokretanja (uvoz GTFS-a ili početak od nule). GTFS: agency.txt
 -- ---------------------------------------------------------------------
 CREATE TABLE agencies (
     id          uuid        NOT NULL DEFAULT gen_random_uuid(),
@@ -388,6 +388,7 @@ CREATE TABLE settings (
     logo                bytea,
     logo_content_type   text,
     logo_updated_at     timestamptz,
+    setup_completed_at  timestamptz,                    -- kad je čarobnjak prvog pokretanja završen
     created_at          timestamptz NOT NULL DEFAULT now(),
     updated_at          timestamptz NOT NULL DEFAULT now(),
 

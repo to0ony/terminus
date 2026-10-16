@@ -132,6 +132,7 @@ namespace Terminus.DAL.Migrations
                     logo = table.Column<byte[]>(type: "bytea", nullable: true),
                     logo_content_type = table.Column<string>(type: "text", nullable: true),
                     logo_updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    setup_completed_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
                 },

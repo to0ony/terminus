@@ -17,6 +17,9 @@ public class InstanceSettings : IAuditable
     public byte[]? Logo { get; set; }
     public string? LogoContentType { get; set; }
     public DateTime? LogoUpdatedAt { get; set; }
+
+    /// <summary>Kad je čarobnjak prvog pokretanja završen (uvoz GTFS-a ili početak od nule).</summary>
+    public DateTime? SetupCompletedAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

@@ -26,7 +26,7 @@ API za ručni unos (CRUD) već postoji i čeka editor iz faze 5.
 |---|---|
 | API za prijevoznike, stanice, linije, kalendare, vožnje i vremena | ✅ |
 | GTFS izvoz s provjerama (`GET /api/gtfs`) | ✅ |
-| Single-tenant: jedna tvrtka po instanci, seed prijevoznika iz konfiguracije | ✅ |
+| Single-tenant: jedna tvrtka po instanci | ✅ |
 | Unit testovi i CI | ✅ |
 | Izračun polazaka (kalendari, ponoć, ljetno vrijeme, kolodvori) | ✅ |
 | Javni endpoint polazaka `GET /api/public/departures/{stopCode}` | ✅ |
@@ -38,6 +38,7 @@ API za ručni unos (CRUD) već postoji i čeka editor iz faze 5.
 | 1.1 | Autentikacija: više administratora, prijava i odjava, promjena lozinke, prvi administrator iz konfiguracije ✅ | — |
 | 1.2 | Postavke instance: tablica `settings` (naziv, boje, logo, javni URL, objava GTFS-a); podaci za `feed_info.txt` su u `/api/feed-info` ✅ | 1.1 |
 | 1.3 | Health check `/health` (aplikacija i baza) ✅ | — |
+| 1.4 | Čarobnjak prvog pokretanja: stanje (`GET /api/setup`) i početak od nule (`POST /api/setup/blank`) ✅; uvoz GTFS-a kao drugi izbor dolazi s 2.2 | 1.1 |
 
 Sve osim `/api/public/*`, prijave i `/health` traži prijavu. Upravljanje
 administratorima kroz dashboard dolazi u fazi 5; do tada se dodatni
@@ -50,7 +51,7 @@ pokretanjem.
 |---|---|---|
 | 2.0 | Proširen GTFS model: sva polja osnovnih datoteka, `location_type` 0–4, prošireni `route_type`, trase (`shapes`), cijene (Fares v1), `feed_info`; API i izvoz za sve ✅ | — |
 | 2.1 | `agencies.code` (GTFS `agency_id`), da se ID-evi prijevoznika sačuvaju pri uvozu i ponovnom izvozu ✅ | — |
-| 2.2 | Uvoz GTFS ZIP-a: čitanje, provjera, prijevod GTFS ID-eva u `code`, zamjena podataka instance u jednoj transakciji | 1.1, 2.1 |
+| 2.2 | Uvoz GTFS ZIP-a: čitanje, provjera, prijevod GTFS ID-eva u `code`, zamjena podataka instance u jednoj transakciji; pregled pa potvrda; završava čarobnjak prvog pokretanja | 1.1, 1.4, 2.1 |
 | 2.3 | Izvještaj o uvozu: broj uvezenih zapisa, greške koje zaustavljaju uvoz, upozorenja i preskočene datoteke | 2.2 |
 | 2.4 | Uvoz `shapes.txt` i cijena (Fares v1); `frequencies.txt` se pretvara u pojedinačne vožnje | 2.2 |
 
@@ -134,7 +135,8 @@ prije prvog pilota.
 | Tema | Odluka |
 |---|---|
 | Redoslijed | Prvo uvoz GTFS-a, dashboard za pregled, PDF i javne stranice stanica; editor i izrada od nule nakon toga. |
-| Prvi administrator | Stvara se pri pokretanju iz konfiguracije (`Admin:Email`, `Admin:Password` u User Secrets ili varijablama okruženja), isto kao prijevoznik iz `Agency:*`. Nema zaslona "prvo pokretanje": na javnoj instanci tko ga prvi otvori, postao bi administrator. |
+| Prvi administrator | Stvara se pri pokretanju iz konfiguracije (`Admin:Email`, `Admin:Password` u User Secrets ili varijablama okruženja). Nema zaslona za stvaranje administratora: na javnoj instanci tko ga prvi otvori, postao bi administrator. |
+| Prvi prijevoznik | Ne dolazi iz konfiguracije. Nakon prve prijave čarobnjak nudi uvoz postojećeg GTFS-a (prijevoznici iz `agency.txt`) ili početak od nule (unos prijevoznika). Uvoz prvo prikazuje izvještaj, a upisuje tek nakon potvrde. Postavke instance uređuju se naknadno, ne u čarobnjaku. |
 | Zaboravljena lozinka | Za početak lozinku resetira drugi administrator. |
 
 ## Prijedlozi koje treba potvrditi

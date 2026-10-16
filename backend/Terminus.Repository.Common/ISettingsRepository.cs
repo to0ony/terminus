@@ -19,4 +19,10 @@ public interface ISettingsRepository
 
     /// <returns>false ako logo nije bio postavljen.</returns>
     Task<bool> DeleteLogoAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Bilježi da je instanca postavljena; ako postavke ne postoje, stvara ih sa
+    /// zadanim vrijednostima. Ranije zabilježeno vrijeme se ne mijenja.
+    /// </summary>
+    Task MarkSetupCompletedAsync(DateTime completedAt, CancellationToken cancellationToken = default);
 }

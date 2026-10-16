@@ -71,10 +71,11 @@ podaci nemaju tenant ključ i upiti ne filtriraju po tvrtki. URL-ovi su
 jedina veza s njima je `routes.agency_id`: linija mora imati postojećeg
 prijevoznika, a prijevoznik koji ima linije ne može se obrisati (409).
 
-Ako je tablica `agencies` prazna, `AgencySeeder` pri pokretanju stvara
-prijevoznika iz konfiguracije (`Agency:Name`, `Agency:Url`, `Agency:Timezone`,
-`Agency:Lang`). Nedostajuća ili neispravna konfiguracija i nedostupna baza samo
-se zapisuju u log; postojeći prijevoznici se nikad ne mijenjaju.
+Prijevoznik se ne stvara pri pokretanju: nova instanca ga nema dok ga ne
+stvori čarobnjak prvog pokretanja (`SetupService`: uvoz GTFS-a ili
+`POST /api/setup/blank`). Pri pokretanju se stvara samo administrator iz
+konfiguracije (`AdminSeeder`, `Admin:Email` i `Admin:Password`); nedostajuća
+konfiguracija i nedostupna baza samo se zapisuju u log.
 
 ## Baza podataka
 

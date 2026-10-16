@@ -23,7 +23,7 @@ Tablice izvan GTFS-a:
 
 | Tablica | Namjena |
 |---|---|
-| `settings` | Postavke instance (naziv, boje, logo, javni URL, objava GTFS-a); najviše jedan redak. |
+| `settings` | Postavke instance (naziv, boje, logo, javni URL, objava GTFS-a) i vrijeme završetka čarobnjaka prvog pokretanja; najviše jedan redak. |
 | `admin_users`, `admin_user_claims`, `admin_user_logins`, `admin_user_tokens` | Administratori (ASP.NET Core Identity, bez uloga). Korisničko ime je e-mail. |
 | `data_protection_keys` | Ključevi za šifriranje kolačića prijave (ASP.NET Core Data Protection). |
 

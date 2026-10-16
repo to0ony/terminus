@@ -83,8 +83,6 @@ cd backend
 
 # konfiguracija (User Secrets, izvan repozitorija)
 dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Database=terminus;Username=postgres;Password=<lozinka>" --project Terminus.WebApi
-dotnet user-secrets set "Agency:Name" "Test prijevoznik" --project Terminus.WebApi
-dotnet user-secrets set "Agency:Url" "https://example.com" --project Terminus.WebApi
 dotnet user-secrets set "Admin:Email" "admin@example.com" --project Terminus.WebApi
 dotnet user-secrets set "Admin:Password" "<barem 10 znakova>" --project Terminus.WebApi
 
@@ -98,32 +96,41 @@ dotnet run --project Terminus.WebApi --launch-profile http
 dotnet test --solution Terminus.slnx
 ```
 
-Primjeri zahtjeva su u [`Terminus.WebApi.http`](backend/Terminus.WebApi/Terminus.WebApi.http);
-prvi je prijava. Više o lokalnom razvoju i migracijama u
+Nakon prve prijave instanca još nema prijevoznika; njega stvara čarobnjak
+prvog pokretanja (vidi [Prvo pokretanje](#prvo-pokretanje)). Primjeri zahtjeva su u
+[`Terminus.WebApi.http`](backend/Terminus.WebApi/Terminus.WebApi.http); prvi je prijava. Više o lokalnom razvoju i migracijama u
 [development.md](docs/development.md).
 
 ## Konfiguracija
 
 Ključevi se zadaju kroz User Secrets, `appsettings` ili varijable okruženja
-(`Agency__Name`, `Admin__Email` …).
+(`Admin__Email`, `ConnectionStrings__Default` …).
 
 | Ključ | Obavezno | Opis |
 |---|---|---|
 | `ConnectionStrings:Default` | da | Connection string za PostgreSQL. |
-| `Agency:Name` | za seed | Naziv prijevoznika. |
-| `Agency:Url` | za seed | Web adresa prijevoznika (GTFS `agency_url`). |
-| `Agency:Code` | ne | GTFS `agency_id`; zadano se izvodi iz naziva (npr. `gpp`). |
-| `Agency:Timezone` | ne | IANA vremenska zona, zadano `Europe/Zagreb`. |
-| `Agency:Lang` | ne | Oznaka jezika, zadano `hr`. |
 | `Admin:Email` | za seed | E-mail (korisničko ime) administratora. |
 | `Admin:Password` | za seed | Početna lozinka administratora, barem 10 znakova. |
 
-**Seed pri pokretanju.** Ako nema nijednog prijevoznika, stvara se iz sekcije
-`Agency`. Ako administrator s e-mailom `Admin:Email` ne postoji, stvara se s
-lozinkom `Admin:Password`. Postojeći zapisi se nikad ne mijenjaju: promjena
-`Admin:Password` ne mijenja lozinku, a novi administrator se dodaje promjenom
-`Admin:Email` i ponovnim pokretanjem. Nepotpuna konfiguracija samo se zapisuje
-u log; aplikacija se normalno pokreće.
+**Administrator pri pokretanju.** Ako administrator s e-mailom `Admin:Email`
+ne postoji, stvara se s lozinkom `Admin:Password`. Postojeći administratori se
+nikad ne mijenjaju: promjena `Admin:Password` ne mijenja lozinku, a novi
+administrator se dodaje promjenom `Admin:Email` i ponovnim pokretanjem.
+Nepotpuna konfiguracija samo se zapisuje u log; aplikacija se normalno pokreće.
+
+## Prvo pokretanje
+
+Konfiguracija daje samo administratora. Nakon prve prijave dashboard prikazuje
+čarobnjak (`GET /api/setup` vraća `completed: false`) s dva izbora:
+
+- **uvoz postojećeg GTFS-a** – prijevoznici, stanice, linije i vozni red dolaze
+  iz feeda; prvo se prikaže izvještaj provjere, a podaci se upisuju tek nakon
+  potvrde (u izradi);
+- **početak od nule** – `POST /api/setup/blank` stvara prvog prijevoznika
+  (naziv i web adresa; kod, zona i jezik imaju zadane vrijednosti).
+
+Kad je čarobnjak završen, ne prikazuje se ponovno ni ako se podaci kasnije
+obrišu. Postavke instance (naziv, logo, boje) uređuju se naknadno.
 
 ## Prijava
 
@@ -141,6 +148,7 @@ Sve osim `/api/public/*`, `/api/auth/login` i `/health` traži prijavu
 | Resurs | Endpointi |
 |---|---|
 | Prijava | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `PUT /api/auth/password` |
+| Prvo pokretanje | `GET /api/setup`, `POST /api/setup/blank` |
 | Postavke instance | `/api/settings`, `/api/settings/logo` |
 | Prijevoznici | `/api/agencies` |
 | Stanice | `/api/stops`, `/api/stops/area`, `/api/stops/{id}/routes`, `/api/stops/{id}/departures?date=` |
