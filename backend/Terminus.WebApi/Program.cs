@@ -38,6 +38,7 @@ builder.Services.AddScoped<IStopTimeRepository, StopTimeRepository>();
 builder.Services.AddScoped<IGtfsExportRepository, GtfsExportRepository>();
 builder.Services.AddScoped<IDepartureRepository, DepartureRepository>();
 builder.Services.AddScoped<IShapeRepository, ShapeRepository>();
+builder.Services.AddScoped<IFareRepository, FareRepository>();
 
 // Servisi
 builder.Services.AddScoped<IAgencyService, AgencyService>();
@@ -48,6 +49,7 @@ builder.Services.AddScoped<ITripService, TripService>();
 builder.Services.AddScoped<IGtfsExportService, GtfsExportService>();
 builder.Services.AddScoped<IDepartureService, DepartureService>();
 builder.Services.AddScoped<IShapeService, ShapeService>();
+builder.Services.AddScoped<IFareService, FareService>();
 
 builder.Services.AddSingleton(TimeProvider.System);
 
