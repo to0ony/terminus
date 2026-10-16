@@ -15,11 +15,10 @@ public class TripRepository(TerminusDbContext context) : ITripRepository
 {
     public async Task<ITripModel?> GetAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var entity = await context.Trips
-            .AsNoTracking()
-            .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+        var row = await WithSummary(context.Trips.AsNoTracking().Where(t => t.Id == id))
+            .FirstOrDefaultAsync(cancellationToken);
 
-        return entity is null ? null : TripMapper.ToModel(entity);
+        return row is null ? null : ToModel(row);
     }
 
     public async Task<PagedResult<ITripModel>> FindAsync(TripFilter filter, CancellationToken cancellationToken = default)
@@ -54,15 +53,16 @@ public class TripRepository(TerminusDbContext context) : ITripRepository
         var totalCount = await query.CountAsync(cancellationToken);
 
         // Po prvom polasku; vožnje bez vremena (NULL) idu na kraj.
-        var entities = await query
+        var page = query
             .OrderBy(t => t.StopTimes.Min(st => (int?)st.DepartureTime))
             .ThenBy(t => t.Code)
             .Skip((filter.Page - 1) * filter.PageSize)
-            .Take(filter.PageSize)
-            .ToListAsync(cancellationToken);
+            .Take(filter.PageSize);
+
+        var rows = await WithSummary(page).ToListAsync(cancellationToken);
 
         return new PagedResult<ITripModel>(
-            entities.Select(TripMapper.ToModel).ToList(),
+            rows.Select(ToModel).ToList(),
             filter.Page,
             filter.PageSize,
             totalCount);
@@ -76,8 +76,10 @@ public class TripRepository(TerminusDbContext context) : ITripRepository
         context.Trips.Add(entity);
         await SaveChangesAsync(trip, cancellationToken);
 
-        // Id, CreatedAt i UpdatedAt je vratila baza (RETURNING).
-        return TripMapper.ToModel(entity);
+        // Id, CreatedAt i UpdatedAt je vratila baza (RETURNING). Nova vožnja još nema stanica.
+        var created = TripMapper.ToModel(entity);
+        created.Summary = new TripSummary(0, null, null, null, null);
+        return created;
     }
 
     public async Task<ITripModel?> UpdateAsync(ITripModel trip, CancellationToken cancellationToken = default)
@@ -93,7 +95,8 @@ public class TripRepository(TerminusDbContext context) : ITripRepository
         TripMapper.Apply(trip, entity);
         await SaveChangesAsync(trip, cancellationToken);
 
-        return TripMapper.ToModel(entity);
+        // Ponovno čitanje zbog sažetka (vremena se ovdje ne mijenjaju).
+        return await GetAsync(entity.Id, cancellationToken);
     }
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
@@ -104,6 +107,43 @@ public class TripRepository(TerminusDbContext context) : ITripRepository
             .ExecuteDeleteAsync(cancellationToken);
 
         return deleted > 0;
+    }
+
+    /// <summary>Vožnja s brojem stanica te prvom i zadnjom stanicom (za popise u dashboardu).</summary>
+    private static IQueryable<TripRow> WithSummary(IQueryable<Trip> trips) =>
+        trips.Select(t => new TripRow
+        {
+            Trip = t,
+            StopCount = t.StopTimes.Count,
+            First = t.StopTimes
+                .OrderBy(st => st.StopSequence)
+                .Select(st => new StopTimeEnd { Time = st.DepartureTime, StopName = st.Stop.Name })
+                .FirstOrDefault(),
+            Last = t.StopTimes
+                .OrderByDescending(st => st.StopSequence)
+                .Select(st => new StopTimeEnd { Time = st.ArrivalTime, StopName = st.Stop.Name })
+                .FirstOrDefault()
+        });
+
+    private static ITripModel ToModel(TripRow row)
+    {
+        var model = TripMapper.ToModel(row.Trip);
+        model.Summary = new TripSummary(row.StopCount, row.First?.Time, row.First?.StopName, row.Last?.Time, row.Last?.StopName);
+        return model;
+    }
+
+    private sealed class TripRow
+    {
+        public required Trip Trip { get; init; }
+        public int StopCount { get; init; }
+        public StopTimeEnd? First { get; init; }
+        public StopTimeEnd? Last { get; init; }
+    }
+
+    private sealed class StopTimeEnd
+    {
+        public int Time { get; init; }
+        public required string StopName { get; init; }
     }
 
     private async Task SaveChangesAsync(ITripModel trip, CancellationToken cancellationToken)

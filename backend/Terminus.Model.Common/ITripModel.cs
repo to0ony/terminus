@@ -25,6 +25,9 @@ public interface ITripModel
 
     WheelchairAccessible WheelchairAccessible { get; set; }
     BikesAllowed BikesAllowed { get; set; }
+    /// <summary>Prva i zadnja stanica s vremenima; puni se samo pri čitanju, null kod upisa.</summary>
+    TripSummary? Summary { get; set; }
+
     DateTime CreatedAt { get; set; }
     DateTime UpdatedAt { get; set; }
 }

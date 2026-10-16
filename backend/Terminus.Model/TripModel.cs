@@ -16,6 +16,7 @@ public class TripModel : ITripModel
     public Guid? ShapeId { get; set; }
     public WheelchairAccessible WheelchairAccessible { get; set; }
     public BikesAllowed BikesAllowed { get; set; }
+    public TripSummary? Summary { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

@@ -35,8 +35,18 @@ public static class TripMappings
         model.ShapeId,
         model.WheelchairAccessible,
         model.BikesAllowed,
+        model.Summary.ToResponse(),
         model.CreatedAt,
         model.UpdatedAt);
+
+    private static TripSummaryResponse ToResponse(this TripSummary? summary) => summary is null
+        ? new(0, null, null, null, null)
+        : new(
+            summary.StopCount,
+            summary.FirstDepartureTime is { } first ? GtfsTime.Format(first) : null,
+            summary.FirstStopName,
+            summary.LastArrivalTime is { } last ? GtfsTime.Format(last) : null,
+            summary.LastStopName);
 
     public static TripFilter ToFilter(this TripListQuery query) => new()
     {
