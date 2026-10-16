@@ -72,7 +72,7 @@ Uvoz se testira krugom uvoz → izvoz → uvoz, uz stvarne feedove i
 | # | Korak | Ovisi o |
 |---|---|---|
 | 3.1 | Kostur aplikacije u `frontend/`: routing, prijava, API klijent generiran iz OpenAPI-ja ✅ | 1.1 |
-| 3.2 | Zaslon za uvoz GTFS-a s izvještajem; preuzimanje GTFS izvoza | 2.3, 3.1 |
+| 3.2 | Zaslon za uvoz GTFS-a s izvještajem (u čarobnjaku prvog pokretanja ✅); stranica GTFS uvoza i izvoza s preuzimanjem izvoza | 2.3, 3.1 |
 | 3.3 | Stanice: popis, pretraga, karta, detalj stanice s linijama i polascima | 3.1, 3.6 |
 | 3.4 | Linije: popis, detalj s trasom na karti i stanicama na liniji | 3.1, 3.6 |
 | 3.5 | Vozni red linije: tablica vožnje × stanice za odabrani dan ili kalendar | 3.4, 3.6 |
