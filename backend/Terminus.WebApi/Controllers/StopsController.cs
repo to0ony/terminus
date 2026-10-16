@@ -3,6 +3,7 @@ using Terminus.Common;
 using Terminus.Service.Common;
 using Terminus.WebApi.Contracts.Routes;
 using Terminus.WebApi.Contracts.Stops;
+using Terminus.WebApi.Contracts.Timetables;
 
 namespace Terminus.WebApi.Controllers;
 
@@ -11,7 +12,9 @@ namespace Terminus.WebApi.Controllers;
 [Produces("application/json")]
 public class StopsController(
     IStopService stopService,
-    ITimetableService timetableService) : ControllerBase
+    ITimetableService timetableService,
+    IDepartureService departureService,
+    TimeProvider timeProvider) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType<PagedResult<StopResponse>>(StatusCodes.Status200OK)]
@@ -32,6 +35,23 @@ public class StopsController(
     {
         var routes = await timetableService.GetStopRoutesAsync(id, cancellationToken);
         return Ok(routes.Select(r => r.ToResponse()).ToList());
+    }
+
+    /// <summary>
+    /// Svi polasci sa stanice jednog dana voznog reda (za kolodvor sa svih
+    /// perona), prema kalendarima koji tog dana voze. Vožnje iza ponoći
+    /// pripadaju danu na koji su krenule.
+    /// </summary>
+    [HttpGet("{id:guid}/departures")]
+    [ProducesResponseType<StopDayDeparturesResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<StopDayDeparturesResponse>> GetDepartures(
+        Guid id,
+        [FromQuery] StopDayDeparturesQuery query,
+        CancellationToken cancellationToken)
+    {
+        var result = await departureService.GetForDayAsync(id, query.Date, timeProvider.GetUtcNow(), cancellationToken);
+        return Ok(result.ToResponse());
     }
 
     [HttpGet("{id:guid}")]

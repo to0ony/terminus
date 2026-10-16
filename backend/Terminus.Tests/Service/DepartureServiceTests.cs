@@ -179,6 +179,50 @@ public class DepartureServiceTests
     }
 
     [Fact]
+    public async Task GetForDayAsync_ReturnsWholeServiceDayIncludingAfterMidnight()
+    {
+        AddDeparture(_stop, _workdays, "05:30:00");
+        AddDeparture(_stop, _workdays, "24:20:00");
+        AddDeparture(_stop, _workdays, "12:00:00");
+        var service = new DepartureService(_repository, new FakeStopRepository([_stop]));
+
+        // Dan ranije u 23:00; traži se srijeda 23.12.2026.
+        var result = await service.GetForDayAsync(
+            _stop.Id, new DateOnly(2026, 12, 23), At(2026, 12, 22, 23, 0), TestContext.Current.CancellationToken);
+
+        Assert.Equal(new DateOnly(2026, 12, 23), result.Date);
+        Assert.Equal(
+            [At(2026, 12, 23, 5, 30), At(2026, 12, 23, 12, 0), At(2026, 12, 24, 0, 20)],
+            result.Departures.Select(d => d.DepartureTime));
+    }
+
+    [Fact]
+    public async Task GetForDayAsync_DayWithoutService_IsEmpty()
+    {
+        AddDeparture(_stop, _workdays, "07:05:00");
+        var service = new DepartureService(_repository, new FakeStopRepository([_stop]));
+
+        // Subota 26.12.2026.
+        var result = await service.GetForDayAsync(
+            _stop.Id, new DateOnly(2026, 12, 26), At(2026, 12, 23, 7, 0), TestContext.Current.CancellationToken);
+
+        Assert.Empty(result.Departures);
+    }
+
+    [Fact]
+    public async Task GetForDayAsync_WithoutDate_UsesLocalToday()
+    {
+        AddDeparture(_stop, _workdays, "07:05:00");
+        var service = new DepartureService(_repository, new FakeStopRepository([_stop]));
+
+        // 23:30 UTC u utorak je već srijeda 00:30 u Zagrebu.
+        var now = new DateTimeOffset(2026, 12, 22, 23, 30, 0, TimeSpan.Zero);
+        var result = await service.GetForDayAsync(_stop.Id, null, now, TestContext.Current.CancellationToken);
+
+        Assert.Equal(new DateOnly(2026, 12, 23), result.Date);
+    }
+
+    [Fact]
     public async Task GetNextAsync_NoAgency_ThrowsUnprocessable()
     {
         _repository.Agency = null;

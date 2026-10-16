@@ -70,6 +70,31 @@ public record TimetableTripResponse(
 /// <param name="Timepoint">false za okvirna vremena.</param>
 public record TimetableTimeResponse(string ArrivalTime, string DepartureTime, bool Timepoint, PickupDropOffType PickupType, PickupDropOffType DropOffType);
 
+/// <summary>Query parametri za polaske sa stanice jednog dana.</summary>
+public class StopDayDeparturesQuery
+{
+    /// <summary>Dan voznog reda (YYYY-MM-DD); bez njega današnji.</summary>
+    public DateOnly? Date { get; set; }
+}
+
+public record StopDayDeparturesResponse(
+    TimetableStopResponse Stop,
+    DateOnly Date,
+    IReadOnlyList<StopDayDepartureResponse> Departures);
+
+/// <param name="RouteName">Kratka oznaka linije, a ako je nema, puni naziv.</param>
+/// <param name="DepartureTime">Stvarni trenutak polaska u zoni prijevoznika.</param>
+public record StopDayDepartureResponse(
+    Guid TripId,
+    Guid RouteId,
+    string? RouteName,
+    string? RouteColor,
+    string? RouteTextColor,
+    string Headsign,
+    Guid StopId,
+    string? Platform,
+    DateTimeOffset DepartureTime);
+
 public static class TimetableMappings
 {
     public static TimetableStopResponse ToTimetableResponse(this IStopModel stop) => new(
@@ -116,4 +141,18 @@ public static class TimetableMappings
                     st.Timepoint,
                     st.PickupType,
                     st.DropOffType)).ToList())).ToList());
+
+    public static StopDayDeparturesResponse ToResponse(this StopDayDepartures result) => new(
+        result.Stop.ToTimetableResponse(),
+        result.Date,
+        result.Departures.Select(d => new StopDayDepartureResponse(
+            d.TripId,
+            d.RouteId,
+            d.RouteShortName ?? d.RouteLongName,
+            d.RouteColor,
+            d.RouteTextColor,
+            d.Headsign,
+            d.StopId,
+            d.PlatformCode,
+            d.DepartureTime)).ToList());
 }

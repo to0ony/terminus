@@ -11,6 +11,9 @@ public class DepartureService(IDepartureRepository departureRepository, IStopRep
 {
     public const int MaxLimit = 30;
 
+    /// <summary>Gornja granica polazaka u jednom danu, zaštita od pogrešnih podataka.</summary>
+    public const int MaxDayDepartures = 5000;
+
     /// <summary>Koliko se unaprijed traže polasci.</summary>
     private static readonly TimeSpan LookAhead = TimeSpan.FromHours(24);
 
@@ -40,12 +43,36 @@ public class DepartureService(IDepartureRepository departureRepository, IStopRep
         return await GetNextAsync(stop, now, limit, cancellationToken);
     }
 
+    public async Task<StopDayDepartures> GetForDayAsync(Guid stopId, DateOnly? date, DateTimeOffset now, CancellationToken cancellationToken = default)
+    {
+        var stop = await stopRepository.GetAsync(stopId, cancellationToken)
+            ?? throw new NotFoundException($"Stanica {stopId} ne postoji.");
+
+        var stopIds = await GetServedStopIdsAsync(stop, cancellationToken);
+        var timeZone = await GetTimeZoneAsync(cancellationToken);
+        var day = date ?? LocalDate(now, timeZone);
+
+        var calendars = await departureRepository.GetCalendarsAsync(cancellationToken);
+        var calendarDates = await departureRepository.GetCalendarDatesAsync(day, day, cancellationToken);
+        var calendarIds = ServiceCalendarRules.ActiveOn(calendars, calendarDates, day);
+
+        var scheduled = stopIds.Count == 0 || calendarIds.Count == 0
+            ? []
+            : await departureRepository.GetScheduledAsync(
+                stopIds, calendarIds, 0, GtfsTime.MaxSeconds, MaxDayDepartures, cancellationToken);
+
+        var departures = scheduled
+            .Select(s => ToDeparture(s, day, timeZone))
+            .OrderBy(d => d.DepartureTime)
+            .ThenBy(d => d.RouteShortName ?? d.RouteLongName)
+            .ToList();
+
+        return new StopDayDepartures(stop, day, departures);
+    }
+
     private async Task<StopDepartures> GetNextAsync(IStopModel stop, DateTimeOffset now, int limit, CancellationToken cancellationToken)
     {
-        // Vožnje staju na peronima, ne na kolodvoru.
-        IReadOnlyList<Guid> stopIds = stop.LocationType == LocationType.Station
-            ? (await departureRepository.GetPlatformsAsync(stop.Id, cancellationToken)).Select(p => p.Id).ToList()
-            : [stop.Id];
+        var stopIds = await GetServedStopIdsAsync(stop, cancellationToken);
 
         var agency = await departureRepository.GetPrimaryAgencyAsync(cancellationToken)
             ?? throw new UnprocessableException("Polasci se ne mogu izračunati.", ["Nije unesen nijedan prijevoznik."]);
@@ -93,6 +120,21 @@ public class DepartureService(IDepartureRepository departureRepository, IStopRep
             .ToList();
 
         return new StopDepartures(stop, agency.Name, TimeZoneInfo.ConvertTime(now, timeZone), next);
+    }
+
+    /// <summary>Vožnje staju na peronima, ne na kolodvoru.</summary>
+    private async Task<IReadOnlyList<Guid>> GetServedStopIdsAsync(IStopModel stop, CancellationToken cancellationToken) =>
+        stop.LocationType == LocationType.Station
+            ? (await departureRepository.GetPlatformsAsync(stop.Id, cancellationToken)).Select(p => p.Id).ToList()
+            : [stop.Id];
+
+    /// <summary>Svi prijevoznici imaju istu zonu (GTFS; provjerava AgencyService).</summary>
+    private async Task<TimeZoneInfo> GetTimeZoneAsync(CancellationToken cancellationToken)
+    {
+        var agency = await departureRepository.GetPrimaryAgencyAsync(cancellationToken)
+            ?? throw new UnprocessableException("Polasci se ne mogu izračunati.", ["Nije unesen nijedan prijevoznik."]);
+
+        return TimeZoneInfo.FindSystemTimeZoneById(agency.Timezone);
     }
 
     private static void ValidateLimit(int limit)

@@ -14,7 +14,17 @@ public interface IDepartureService
 
     /// <summary>Isto kao <see cref="GetNextAsync(Guid, DateTimeOffset, int, CancellationToken)"/>, za stanicu zadanu GTFS kodom.</summary>
     Task<StopDepartures> GetNextAsync(string stopCode, DateTimeOffset now, int limit, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Svi polasci sa stanice jednog dana voznog reda, poredani po vremenu. Vožnje
+    /// iza ponoći pripadaju danu na koji su krenule (kao u PDF voznom redu). Bez
+    /// datuma vrijedi današnji dan u zoni prijevoznika.
+    /// </summary>
+    Task<StopDayDepartures> GetForDayAsync(Guid stopId, DateOnly? date, DateTimeOffset now, CancellationToken cancellationToken = default);
 }
+
+/// <param name="Date">Dan voznog reda.</param>
+public sealed record StopDayDepartures(IStopModel Stop, DateOnly Date, IReadOnlyList<Departure> Departures);
 
 /// <param name="AgencyName">Naziv prvog unesenog prijevoznika.</param>
 /// <param name="Now">Trenutak upita u zoni prijevoznika.</param>
