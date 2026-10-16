@@ -9,6 +9,68 @@
 @stopAId = 00000000-0000-0000-0000-000000000000
 @stopBId = 00000000-0000-0000-0000-000000000000
 
+### Prijava (prvo ovo: kolačić se šalje uz sve sljedeće zahtjeve; Admin:Email i Admin:Password iz konfiguracije)
+POST {{Terminus.WebApi_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "promijeni-me",
+  "rememberMe": true
+}
+
+### Prijavljeni administrator
+GET {{Terminus.WebApi_HostAddress}}/api/auth/me
+Accept: application/json
+
+### Promjena lozinke (barem 10 znakova)
+PUT {{Terminus.WebApi_HostAddress}}/api/auth/password
+Content-Type: application/json
+
+{
+  "currentPassword": "promijeni-me",
+  "newPassword": "nova-duga-lozinka"
+}
+
+### Odjava
+POST {{Terminus.WebApi_HostAddress}}/api/auth/logout
+
+### Stanje aplikacije i baze (javno)
+GET {{Terminus.WebApi_HostAddress}}/health
+
+### Postavke instance
+GET {{Terminus.WebApi_HostAddress}}/api/settings
+Accept: application/json
+
+### Izmjena postavki (publicGtfsEnabled objavljuje feed na /api/public/gtfs)
+PUT {{Terminus.WebApi_HostAddress}}/api/settings
+Content-Type: application/json
+
+{
+  "displayName": "Vozni red GPP",
+  "primaryColor": "#1565C0",
+  "primaryTextColor": "#FFFFFF",
+  "publicUrl": "https://voznired.example.com",
+  "publicGtfsEnabled": false
+}
+
+### Logo (PNG, JPEG, WebP ili SVG, najviše 512 KB)
+PUT {{Terminus.WebApi_HostAddress}}/api/settings/logo
+Content-Type: multipart/form-data; boundary=logo
+
+--logo
+Content-Disposition: form-data; name="file"; filename="logo.png"
+Content-Type: image/png
+
+< ./logo.png
+--logo--
+
+### Javne postavke (naziv, boje, logo)
+GET {{Terminus.WebApi_HostAddress}}/api/public/settings
+Accept: application/json
+
+###
+
 ### Popis agencija
 GET {{Terminus.WebApi_HostAddress}}/api/agencies?search=&page=1&pageSize=20
 Accept: application/json
@@ -92,6 +154,18 @@ Content-Type: application/json
   "isActive": true
 }
 
+### Stanice na području karte (najviše 2000; truncated = true ako ih ima više)
+GET {{Terminus.WebApi_HostAddress}}/api/stops/area?minLatitude=45.50&minLongitude=18.60&maxLatitude=45.60&maxLongitude=18.75
+Accept: application/json
+
+### Linije koje staju na stanici (kod kolodvora na svim peronima)
+GET {{Terminus.WebApi_HostAddress}}/api/stops/{{stopId}}/routes
+Accept: application/json
+
+### Svi polasci sa stanice jednog dana voznog reda (bez date: danas)
+GET {{Terminus.WebApi_HostAddress}}/api/stops/{{stopId}}/departures?date=2026-12-23
+Accept: application/json
+
 ### Brisanje stanice
 DELETE {{Terminus.WebApi_HostAddress}}/api/stops/{{stopId}}
 
@@ -131,6 +205,14 @@ Content-Type: application/json
   "sortOrder": 10,
   "isActive": true
 }
+
+### Stanice na liniji: obrasci vožnji po smjeru, od najčešćeg
+GET {{Terminus.WebApi_HostAddress}}/api/routes/{{routeId}}/patterns
+Accept: application/json
+
+### Vozni red linije kao tablica stanice × vožnje (date ili serviceCalendarId; directionId 0 ili 1)
+GET {{Terminus.WebApi_HostAddress}}/api/routes/{{routeId}}/timetable?date=2026-12-23&directionId=0
+Accept: application/json
 
 ### Brisanje linije (kaskadno briše i njezine vožnje)
 DELETE {{Terminus.WebApi_HostAddress}}/api/routes/{{routeId}}
@@ -313,5 +395,8 @@ GET {{Terminus.WebApi_HostAddress}}/api/gtfs
 ### Sljedeći polasci sa stanice (javno; kod kolodvora uključuje sve perone)
 GET {{Terminus.WebApi_HostAddress}}/api/public/departures/OS-AK?limit=10
 Accept: application/json
+
+### Javni GTFS feed (404 dok nije uključen u postavkama)
+GET {{Terminus.WebApi_HostAddress}}/api/public/gtfs
 
 ###

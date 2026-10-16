@@ -32,6 +32,14 @@ dotnet user-secrets set "Agency:Name" "Test prijevoznik" --project Terminus.WebA
 dotnet user-secrets set "Agency:Url" "https://example.com" --project Terminus.WebApi
 ```
 
+Bez administratora se nitko ne može prijaviti, pa lokalno treba postaviti i
+njega (stvara se pri pokretanju ako ne postoji):
+
+```sh
+dotnet user-secrets set "Admin:Email" "admin@example.com" --project Terminus.WebApi
+dotnet user-secrets set "Admin:Password" "<barem 10 znakova>" --project Terminus.WebApi
+```
+
 Stvaranje sheme u praznoj bazi:
 
 ```sh
@@ -46,7 +54,10 @@ dotnet run --project Terminus.WebApi --launch-profile http
 
 API je dostupan na `http://localhost:5183`. U okruženju `Development` OpenAPI
 opis je na `/openapi/v1.json`; može se uvesti u Bruno ili Postman.
-Primjeri zahtjeva nalaze se u `backend/Terminus.WebApi/Terminus.WebApi.http`.
+Primjeri zahtjeva nalaze se u `backend/Terminus.WebApi/Terminus.WebApi.http`;
+prvi je prijava, a klijent (VS Code REST Client, Visual Studio) kolačić šalje
+uz sljedeće zahtjeve. Za Bruno ili Postman isto vrijedi: prvo
+`POST /api/auth/login`.
 U Visual Studiju se otvara `backend/Terminus.slnx`.
 
 ## Testovi

@@ -317,8 +317,10 @@ lakše za dizajn, ali zahtjevnije za postavljanje na poslužitelju.
   administratora po instanci; uloge se mogu proširiti kasnije.
 - **Isti origin.** U razvoju Vite proxy šalje `/api` na backend, pa CORS nije
   potreban. U produkciji su frontend i API iza iste domene.
-- **Postavke instance.** Logo, boje i podaci za `feed_info.txt` (izdavač, kontakt)
-  čuvaju se u bazi (jedan redak, tablica `settings`) i uređuju u dashboardu.
+- **Postavke instance.** Naziv, logo, boje i javni URL (za QR kodove) čuvaju se
+  u bazi (jedan redak, tablica `settings`, `/api/settings`); javne stranice ih
+  čitaju s `/api/public/settings`. Podaci za `feed_info.txt` su zasebno
+  (`/api/feed-info`).
 
 ## 5. Redoslijed implementacije
 

@@ -19,6 +19,14 @@ uređivanje podataka u aplikaciji.
 | `fares`, `fare_rules` | `fare_attributes.txt`, `fare_rules.txt` | `code` → `fare_id` | Cijene karata i pravila primjene (Fares v1). |
 | `feed_info` | `feed_info.txt` | — | Izdavač feeda; najviše jedan redak. |
 
+Tablice izvan GTFS-a:
+
+| Tablica | Namjena |
+|---|---|
+| `settings` | Postavke instance (naziv, boje, logo, javni URL, objava GTFS-a); najviše jedan redak. |
+| `admin_users`, `admin_user_claims`, `admin_user_logins`, `admin_user_tokens` | Administratori (ASP.NET Core Identity, bez uloga). Korisničko ime je e-mail. |
+| `data_protection_keys` | Ključevi za šifriranje kolačića prijave (ASP.NET Core Data Protection). |
+
 Veze:
 
 - `agencies` 1 → N `routes` (prijevoznik koji vozi liniju), `agencies` 1 → N `fares`

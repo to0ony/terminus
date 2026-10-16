@@ -35,13 +35,14 @@ API za ručni unos (CRUD) već postoji i čeka editor iz faze 5.
 
 | # | Korak | Ovisi o |
 |---|---|---|
-| 1.1 | Autentikacija: više administratora, prijava i odjava, prvi administrator iz konfiguracije | — |
-| 1.2 | Postavke instance: tablica `settings` (logo, boje, podaci za `feed_info.txt`) | 1.1 |
-| 1.3 | Health check `/health` (aplikacija i baza) | — |
+| 1.1 | Autentikacija: više administratora, prijava i odjava, promjena lozinke, prvi administrator iz konfiguracije ✅ | — |
+| 1.2 | Postavke instance: tablica `settings` (naziv, boje, logo, javni URL, objava GTFS-a); podaci za `feed_info.txt` su u `/api/feed-info` ✅ | 1.1 |
+| 1.3 | Health check `/health` (aplikacija i baza) ✅ | — |
 
-Sve osim `/api/public/*` i `/health` traži prijavu. Upravljanje
+Sve osim `/api/public/*`, prijave i `/health` traži prijavu. Upravljanje
 administratorima kroz dashboard dolazi u fazi 5; do tada se dodatni
-administratori dodaju konfiguracijom.
+administrator dodaje promjenom `Admin:Email` (i `Admin:Password`) i ponovnim
+pokretanjem.
 
 ## Faza 2: uvoz GTFS-a
 
@@ -72,7 +73,7 @@ Uvoz se testira krugom uvoz → izvoz → uvoz, uz stvarne feedove i
 | 3.3 | Stanice: popis, pretraga, karta, detalj stanice s linijama i polascima | 3.1, 3.6 |
 | 3.4 | Linije: popis, detalj s trasom na karti i stanicama na liniji | 3.1, 3.6 |
 | 3.5 | Vozni red linije: tablica vožnje × stanice za odabrani dan ili kalendar | 3.4, 3.6 |
-| 3.6 | Backend za pregled: stanice na liniji, vozni red linije (matrica), polasci sa stanice za datum, sažetak vožnje u popisu, stanice unutar područja karte | — |
+| 3.6 | Backend za pregled: stanice na liniji, vozni red linije (matrica), polasci sa stanice za datum, linije stanice, sažetak vožnje u popisu, stanice unutar područja karte ✅ | — |
 | 3.7 | Kalendari s iznimkama i prijevoznici (samo pregled) | 3.1 |
 
 Dashboard je u ovoj fazi samo za pregled. Uređivanje dolazi u fazi 5.
@@ -86,7 +87,7 @@ Detaljno u [departures-and-timetables.md](departures-and-timetables.md).
 | 4.1 | Output caching i rate limiting za `/api/public/*` | — |
 | 4.2 | Javna stranica stanice `/board/{stopCode}`: sat i sljedeći polasci prema voznom redu | 1.2, 3.1, 4.1 |
 | 4.3 | PDF vozni red za jednu stanicu i za sve stanice, QR kod na stranicu stanice, preuzimanje iz dashboarda | 3.3, 3.6, 4.2 |
-| 4.4 | Javni GTFS feed `GET /api/public/gtfs` (za Google Maps i druge), uz caching | 4.1 |
+| 4.4 | Javni GTFS feed `GET /api/public/gtfs` (za Google Maps i druge), uključuje se u postavkama ✅; caching dolazi s 4.1 | 4.1 |
 
 ## Faza 5: editor
 
