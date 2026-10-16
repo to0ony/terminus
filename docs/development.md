@@ -122,11 +122,25 @@ tada odmah javlja neusklađene pozive kao greške tipova.
 
 ```
 frontend/src/
-  api/        generirani tipovi, klijent, QueryClient
-  app/        providers, router, tema
-  features/   po području: auth, setup, import, stops, routes, timetables, settings, board
-  test/       postavke testova i render s providerima
+  api/          generirani tipovi, klijent, greške (ApiError), QueryClient
+  app/          providers, router, layout s izbornikom, 404 i greške rute
+  components/   zajedničke komponente (učitavanje, greška upita, logo)
+  features/     po području: auth, setup, dashboard, routes, stops, calendars,
+                agencies, gtfs, settings, board
+  test/         postavke testova i render s providerima
 ```
+
+**Rute.** `/login` i javni `/board/:stopCode` su bez prijave. Ostalo je iza
+`RequireAuth` (bez prijave vodi na `/login` i nakon prijave vraća na traženu
+stranicu), a dashboard i iza `RequireSetup` (dok čarobnjak nije završen, vodi
+na `/setup`). Stranice se učitavaju lazy. Kad API vrati 401 (istekla prijava),
+klijent postavlja trenutnog korisnika na `null`, pa aplikacija prelazi na prijavu.
+
+**Pozivi API-ja** idu kroz TanStack Query: `queryFn: async () => unwrap(await
+api.GET(...))`. `unwrap` za neuspješan odgovor baca `ApiError` s porukom iz
+ProblemDetails (`detail`, pa `title`), a greške po poljima (400) su u
+`fieldErrors`. Greške upita i mutacija prikazuju se kao obavijest; forma koja
+ih prikazuje sama postavlja `meta: { handlesErrors: true }`.
 
 GitHub Actions za `frontend/` radi `npm ci`, lint, provjeru formata, testove i
 build.

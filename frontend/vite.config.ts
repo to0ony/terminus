@@ -13,6 +13,11 @@ export default defineConfig({
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
+  build: {
+    // Glavni paket (React, Mantine, router) ima ~200 kB gzip; stranice su
+    // zasebni lazy dijelovi.
+    chunkSizeWarningLimit: 800,
+  },
   server: {
     port: 5173,
     proxy: {
