@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Terminus.Service.Common;
 using Terminus.WebApi.Contracts.Departures;
@@ -7,6 +8,7 @@ namespace Terminus.WebApi.Controllers;
 /// <summary>Javni polasci za zaslone na stanicama i mobitele putnika; bez prijave.</summary>
 [ApiController]
 [Route("api/public/departures")]
+[AllowAnonymous]
 [Produces("application/json")]
 public class PublicDeparturesController(IDepartureService departureService, TimeProvider timeProvider) : ControllerBase
 {
