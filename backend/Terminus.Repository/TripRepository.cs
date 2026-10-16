@@ -109,26 +109,27 @@ public class TripRepository(TerminusDbContext context) : ITripRepository
         return deleted > 0;
     }
 
-    /// <summary>Vožnja s brojem stanica te prvom i zadnjom stanicom (za popise u dashboardu).</summary>
+    /// <summary>
+    /// Vožnja s brojem stanica te prvom i zadnjom stanicom (za popise u dashboardu).
+    /// Svako polje je zaseban skalarni podupit po vožnji (indeks stop_times po
+    /// trip_id i stop_sequence); projekcija cijelog retka s FirstOrDefault
+    /// prevela bi se u ROW_NUMBER() nad svim vremenima u bazi.
+    /// </summary>
     private static IQueryable<TripRow> WithSummary(IQueryable<Trip> trips) =>
         trips.Select(t => new TripRow
         {
             Trip = t,
             StopCount = t.StopTimes.Count,
-            First = t.StopTimes
-                .OrderBy(st => st.StopSequence)
-                .Select(st => new StopTimeEnd { Time = st.DepartureTime, StopName = st.Stop.Name })
-                .FirstOrDefault(),
-            Last = t.StopTimes
-                .OrderByDescending(st => st.StopSequence)
-                .Select(st => new StopTimeEnd { Time = st.ArrivalTime, StopName = st.Stop.Name })
-                .FirstOrDefault()
+            FirstDepartureTime = t.StopTimes.OrderBy(st => st.StopSequence).Select(st => (int?)st.DepartureTime).FirstOrDefault(),
+            FirstStopName = t.StopTimes.OrderBy(st => st.StopSequence).Select(st => st.Stop.Name).FirstOrDefault(),
+            LastArrivalTime = t.StopTimes.OrderByDescending(st => st.StopSequence).Select(st => (int?)st.ArrivalTime).FirstOrDefault(),
+            LastStopName = t.StopTimes.OrderByDescending(st => st.StopSequence).Select(st => st.Stop.Name).FirstOrDefault()
         });
 
     private static ITripModel ToModel(TripRow row)
     {
         var model = TripMapper.ToModel(row.Trip);
-        model.Summary = new TripSummary(row.StopCount, row.First?.Time, row.First?.StopName, row.Last?.Time, row.Last?.StopName);
+        model.Summary = new TripSummary(row.StopCount, row.FirstDepartureTime, row.FirstStopName, row.LastArrivalTime, row.LastStopName);
         return model;
     }
 
@@ -136,14 +137,10 @@ public class TripRepository(TerminusDbContext context) : ITripRepository
     {
         public required Trip Trip { get; init; }
         public int StopCount { get; init; }
-        public StopTimeEnd? First { get; init; }
-        public StopTimeEnd? Last { get; init; }
-    }
-
-    private sealed class StopTimeEnd
-    {
-        public int Time { get; init; }
-        public required string StopName { get; init; }
+        public int? FirstDepartureTime { get; init; }
+        public string? FirstStopName { get; init; }
+        public int? LastArrivalTime { get; init; }
+        public string? LastStopName { get; init; }
     }
 
     private async Task SaveChangesAsync(ITripModel trip, CancellationToken cancellationToken)
