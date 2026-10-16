@@ -102,10 +102,14 @@ npm install
 npm run dev            # http://localhost:5173
 ```
 
-Backend mora raditi na profilu `http` (`http://localhost:5183`). Vite proxy
-prosljeđuje `/api`, `/health` i `/openapi` na backend, pa su frontend i API na
-istom originu: kolačić za prijavu radi, a CORS nije potreban. Drugu adresu
-backenda postavlja varijabla `TERMINUS_API_URL`.
+Vite proxy prosljeđuje `/api`, `/health` i `/openapi` na backend, pa su
+frontend i API na istom originu: kolačić za prijavu radi, a CORS nije potreban.
+Adresa backenda zadaje se u `frontend/.env.local` (predložak `.env.example`);
+zadano je `http://localhost:5183`. Za IIS Express:
+
+```sh
+TERMINUS_API_URL=https://localhost:44376
+```
 
 | Naredba | Što radi |
 |---|---|
