@@ -24,6 +24,7 @@ public class TerminusDbContext(DbContextOptions<TerminusDbContext> options)
     public DbSet<Fare> Fares => Set<Fare>();
     public DbSet<FareRule> FareRules => Set<FareRule>();
     public DbSet<FeedInfo> FeedInfo => Set<FeedInfo>();
+    public DbSet<InstanceSettings> Settings => Set<InstanceSettings>();
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

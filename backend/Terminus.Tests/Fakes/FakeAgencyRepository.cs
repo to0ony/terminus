@@ -16,6 +16,9 @@ internal sealed class FakeAgencyRepository(params IAgencyModel[] agencies) : IAg
     public Task<string?> GetOtherTimezoneAsync(Guid exceptId, string timezone, CancellationToken cancellationToken = default) =>
         Task.FromResult(_agencies.FirstOrDefault(a => a.Id != exceptId && a.Timezone != timezone)?.Timezone);
 
+    public Task<IAgencyModel?> GetFirstAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(_agencies.FirstOrDefault());
+
     public Task<bool> AnyAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult(_agencies.Count > 0);
 

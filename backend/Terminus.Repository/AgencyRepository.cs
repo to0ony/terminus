@@ -22,6 +22,17 @@ public class AgencyRepository(TerminusDbContext context) : IAgencyRepository
         return entity is null ? null : AgencyMapper.ToModel(entity);
     }
 
+    public async Task<IAgencyModel?> GetFirstAsync(CancellationToken cancellationToken = default)
+    {
+        var entity = await context.Agencies
+            .AsNoTracking()
+            .OrderBy(a => a.CreatedAt)
+            .ThenBy(a => a.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return entity is null ? null : AgencyMapper.ToModel(entity);
+    }
+
     public async Task<PagedResult<IAgencyModel>> FindAsync(AgencyFilter filter, CancellationToken cancellationToken = default)
     {
         var query = context.Agencies.AsNoTracking();

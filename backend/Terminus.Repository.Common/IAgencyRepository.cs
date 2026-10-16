@@ -22,6 +22,9 @@ public interface IAgencyRepository
     /// <returns>Vremenska zona nekog drugog prijevoznika koja se razlikuje od zadane, ili null.</returns>
     Task<string?> GetOtherTimezoneAsync(Guid exceptId, string timezone, CancellationToken cancellationToken = default);
 
+    /// <returns>Prvi uneseni prijevoznik ili null ako ih nema.</returns>
+    Task<IAgencyModel?> GetFirstAsync(CancellationToken cancellationToken = default);
+
     /// <returns>true ako postoji barem jedna agencija.</returns>
     Task<bool> AnyAsync(CancellationToken cancellationToken = default);
 }
