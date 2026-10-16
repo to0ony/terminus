@@ -27,6 +27,21 @@ public class StopsController(
         return Ok(result.Map(s => s.ToResponse()));
     }
 
+    /// <summary>
+    /// Stanice s koordinatama unutar područja karte, najviše 2000. Ako ih ima
+    /// više, truncated je true i kartu treba približiti.
+    /// </summary>
+    [HttpGet("area")]
+    [ProducesResponseType<StopsInAreaResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<StopsInAreaResponse>> FindInArea(
+        [FromQuery] StopAreaQuery query,
+        CancellationToken cancellationToken)
+    {
+        var result = await stopService.FindInAreaAsync(query.ToBounds(), query.IsActive, cancellationToken);
+        return Ok(result.ToResponse());
+    }
+
     /// <summary>Linije koje staju na stanici; za kolodvor na bilo kojem peronu.</summary>
     [HttpGet("{id:guid}/routes")]
     [ProducesResponseType<IReadOnlyList<RouteResponse>>(StatusCodes.Status200OK)]

@@ -25,6 +25,15 @@ internal sealed class FakeStopRepository(IEnumerable<IStopModel> stops) : IStopR
     public Task<PagedResult<IStopModel>> FindAsync(StopFilter filter, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 
+    public Task<IReadOnlyList<IStopModel>> FindInAreaAsync(GeoBounds bounds, bool? isActive, int limit, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<IStopModel>>(_stops
+            .Where(s => s.Latitude >= bounds.MinLatitude && s.Latitude <= bounds.MaxLatitude
+                && s.Longitude >= bounds.MinLongitude && s.Longitude <= bounds.MaxLongitude
+                && (isActive is null || s.IsActive == isActive))
+            .OrderBy(s => s.Name)
+            .Take(limit)
+            .ToList());
+
     public Task<bool> HasChildStopsAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(_stops.Any(s => s.ParentStationId == id));
 

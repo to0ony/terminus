@@ -11,6 +11,8 @@ namespace Terminus.Service;
 
 public class StopService(IStopRepository repository) : IStopService
 {
+    public const int MaxAreaStops = 2000;
+
     public async Task<IStopModel> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
         await repository.GetAsync(id, cancellationToken) ?? throw StopNotFound(id);
 
@@ -21,6 +23,38 @@ public class StopService(IStopRepository repository) : IStopService
         errors.ThrowIfAny();
 
         return repository.FindAsync(filter, cancellationToken);
+    }
+
+    public async Task<StopsInArea> FindInAreaAsync(GeoBounds bounds, bool? isActive, CancellationToken cancellationToken = default)
+    {
+        var errors = new ValidationErrors();
+
+        if (bounds.MinLatitude is < -90 or > 90 || bounds.MaxLatitude is < -90 or > 90)
+        {
+            errors.Add(nameof(bounds.MinLatitude), "Geografska širina mora biti između -90 i 90.");
+        }
+        else if (bounds.MinLatitude > bounds.MaxLatitude)
+        {
+            errors.Add(nameof(bounds.MinLatitude), "Južni rub ne smije biti sjevernije od sjevernog.");
+        }
+
+        if (bounds.MinLongitude is < -180 or > 180 || bounds.MaxLongitude is < -180 or > 180)
+        {
+            errors.Add(nameof(bounds.MinLongitude), "Geografska dužina mora biti između -180 i 180.");
+        }
+        else if (bounds.MinLongitude > bounds.MaxLongitude)
+        {
+            errors.Add(nameof(bounds.MinLongitude), "Zapadni rub ne smije biti istočnije od istočnog.");
+        }
+
+        errors.ThrowIfAny();
+
+        // Jedna stanica više govori je li rezultat skraćen.
+        var stops = await repository.FindInAreaAsync(bounds, isActive, MaxAreaStops + 1, cancellationToken);
+
+        return stops.Count > MaxAreaStops
+            ? new StopsInArea(stops.Take(MaxAreaStops).ToList(), Truncated: true)
+            : new StopsInArea(stops, Truncated: false);
     }
 
     public async Task<IStopModel> CreateAsync(IStopModel stop, CancellationToken cancellationToken = default)

@@ -95,6 +95,27 @@ public record StopDayDepartureResponse(
     string? Platform,
     DateTimeOffset DepartureTime);
 
+/// <summary>Područje karte; rubovi su obavezni.</summary>
+public class StopAreaQuery
+{
+    [Required]
+    public double? MinLatitude { get; set; }
+
+    [Required]
+    public double? MinLongitude { get; set; }
+
+    [Required]
+    public double? MaxLatitude { get; set; }
+
+    [Required]
+    public double? MaxLongitude { get; set; }
+
+    public bool? IsActive { get; set; }
+}
+
+/// <param name="Truncated">true ako u području ima više stanica od vraćenih; treba približiti kartu.</param>
+public record StopsInAreaResponse(IReadOnlyList<TimetableStopResponse> Stops, bool Truncated);
+
 public static class TimetableMappings
 {
     public static TimetableStopResponse ToTimetableResponse(this IStopModel stop) => new(
@@ -155,4 +176,11 @@ public static class TimetableMappings
             d.StopId,
             d.PlatformCode,
             d.DepartureTime)).ToList());
+
+    // Rubovi su [Required], pa ih je model binding već provjerio.
+    public static GeoBounds ToBounds(this StopAreaQuery query) =>
+        new(query.MinLatitude!.Value, query.MinLongitude!.Value, query.MaxLatitude!.Value, query.MaxLongitude!.Value);
+
+    public static StopsInAreaResponse ToResponse(this StopsInArea result) =>
+        new(result.Stops.Select(s => s.ToTimetableResponse()).ToList(), result.Truncated);
 }

@@ -86,6 +86,29 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
             totalCount);
     }
 
+    public async Task<IReadOnlyList<IStopModel>> FindInAreaAsync(GeoBounds bounds, bool? isActive, int limit, CancellationToken cancellationToken = default)
+    {
+        var query = context.Stops
+            .AsNoTracking()
+            .Where(s => s.Latitude >= bounds.MinLatitude
+                && s.Latitude <= bounds.MaxLatitude
+                && s.Longitude >= bounds.MinLongitude
+                && s.Longitude <= bounds.MaxLongitude);
+
+        if (isActive is bool active)
+        {
+            query = query.Where(s => s.IsActive == active);
+        }
+
+        var entities = await query
+            .OrderBy(s => s.Name)
+            .ThenBy(s => s.Code)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+
+        return entities.Select(StopMapper.ToModel).ToList();
+    }
+
     public Task<bool> HasChildStopsAsync(Guid id, CancellationToken cancellationToken = default) =>
         context.Stops.AnyAsync(s => s.ParentStationId == id, cancellationToken);
 

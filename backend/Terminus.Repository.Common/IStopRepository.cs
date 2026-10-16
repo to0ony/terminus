@@ -16,6 +16,11 @@ public interface IStopRepository
 
     Task<PagedResult<IStopModel>> FindAsync(StopFilter filter, CancellationToken cancellationToken = default);
 
+    /// <summary>Stanice s koordinatama unutar područja, poredane po nazivu.</summary>
+    /// <param name="isActive">Samo aktivne ili neaktivne; null za sve.</param>
+    /// <returns>Najviše <paramref name="limit"/> stanica.</returns>
+    Task<IReadOnlyList<IStopModel>> FindInAreaAsync(GeoBounds bounds, bool? isActive, int limit, CancellationToken cancellationToken = default);
+
     Task<bool> HasChildStopsAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <returns>true ako na stanici staje barem jedna vožnja.</returns>

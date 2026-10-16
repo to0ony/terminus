@@ -1,5 +1,6 @@
 using Terminus.Common.Exceptions;
 using Terminus.Model;
+using Terminus.Model.Common;
 using Terminus.Model.Common.Enums;
 using Terminus.Service;
 using Terminus.Tests.Fakes;
@@ -143,6 +144,43 @@ public class StopServiceTests
 
         Assert.Equal("1042", created.PublicCode);
         Assert.Null(created.ZoneId);
+    }
+
+    [Fact]
+    public async Task FindInAreaAsync_ReturnsStopsInsideBounds()
+    {
+        var result = await _service.FindInAreaAsync(
+            new GeoBounds(45.5, 18.6, 45.6, 18.7), isActive: null, TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, result.Stops.Count);
+        Assert.False(result.Truncated);
+
+        var elsewhere = await _service.FindInAreaAsync(
+            new GeoBounds(45.0, 18.0, 45.1, 18.1), isActive: null, TestContext.Current.CancellationToken);
+        Assert.Empty(elsewhere.Stops);
+    }
+
+    [Fact]
+    public async Task FindInAreaAsync_InvertedBounds_IsRejected()
+    {
+        var ex = await Assert.ThrowsAsync<ValidationException>(() => _service.FindInAreaAsync(
+            new GeoBounds(45.6, 18.7, 45.5, 18.6), isActive: null, TestContext.Current.CancellationToken));
+
+        Assert.Equal(["MinLatitude", "MinLongitude"], ex.Errors.Keys.Order());
+    }
+
+    [Fact]
+    public async Task FindInAreaAsync_TooManyStops_IsTruncated()
+    {
+        var stops = Enumerable.Range(0, StopService.MaxAreaStops + 5)
+            .Select(i => new StopModel { Id = Guid.NewGuid(), Code = $"S{i}", Name = $"S{i}", Latitude = 45.5, Longitude = 18.6 });
+        var service = new StopService(new FakeStopRepository(stops));
+
+        var result = await service.FindInAreaAsync(
+            new GeoBounds(45, 18, 46, 19), isActive: null, TestContext.Current.CancellationToken);
+
+        Assert.True(result.Truncated);
+        Assert.Equal(StopService.MaxAreaStops, result.Stops.Count);
     }
 
     private static StopModel Stop(LocationType type, Guid? parent) => new()
