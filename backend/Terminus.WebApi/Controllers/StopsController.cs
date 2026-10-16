@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Terminus.Common;
 using Terminus.Service.Common;
+using Terminus.WebApi.Contracts.Routes;
 using Terminus.WebApi.Contracts.Stops;
 
 namespace Terminus.WebApi.Controllers;
@@ -8,7 +9,9 @@ namespace Terminus.WebApi.Controllers;
 [ApiController]
 [Route("api/stops")]
 [Produces("application/json")]
-public class StopsController(IStopService stopService) : ControllerBase
+public class StopsController(
+    IStopService stopService,
+    ITimetableService timetableService) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType<PagedResult<StopResponse>>(StatusCodes.Status200OK)]
@@ -19,6 +22,16 @@ public class StopsController(IStopService stopService) : ControllerBase
     {
         var result = await stopService.FindAsync(query.ToFilter(), cancellationToken);
         return Ok(result.Map(s => s.ToResponse()));
+    }
+
+    /// <summary>Linije koje staju na stanici; za kolodvor na bilo kojem peronu.</summary>
+    [HttpGet("{id:guid}/routes")]
+    [ProducesResponseType<IReadOnlyList<RouteResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<RouteResponse>>> GetRoutes(Guid id, CancellationToken cancellationToken)
+    {
+        var routes = await timetableService.GetStopRoutesAsync(id, cancellationToken);
+        return Ok(routes.Select(r => r.ToResponse()).ToList());
     }
 
     [HttpGet("{id:guid}")]

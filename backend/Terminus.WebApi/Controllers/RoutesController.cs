@@ -2,13 +2,17 @@ using Microsoft.AspNetCore.Mvc;
 using Terminus.Common;
 using Terminus.Service.Common;
 using Terminus.WebApi.Contracts.Routes;
+using Terminus.WebApi.Contracts.Timetables;
 
 namespace Terminus.WebApi.Controllers;
 
 [ApiController]
 [Route("api/routes")]
 [Produces("application/json")]
-public class RoutesController(IRouteService routeService) : ControllerBase
+public class RoutesController(
+    IRouteService routeService,
+    ITimetableService timetableService,
+    TimeProvider timeProvider) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType<PagedResult<RouteResponse>>(StatusCodes.Status200OK)]
@@ -54,6 +58,36 @@ public class RoutesController(IRouteService routeService) : ControllerBase
     {
         var updated = await routeService.UpdateAsync(id, request.ToModel(), cancellationToken);
         return Ok(updated.ToResponse());
+    }
+
+    /// <summary>
+    /// Redoslijedi stanica kojima vožnje linije prolaze, po smjeru i od najčešćeg.
+    /// Prvi obrazac smjera je glavni (npr. za prikaz linije na karti).
+    /// </summary>
+    [HttpGet("{id:guid}/patterns")]
+    [ProducesResponseType<IReadOnlyList<RoutePatternResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<RoutePatternResponse>>> GetPatterns(Guid id, CancellationToken cancellationToken)
+    {
+        var patterns = await timetableService.GetRoutePatternsAsync(id, cancellationToken);
+        return Ok(patterns.Select(p => p.ToResponse()).ToList());
+    }
+
+    /// <summary>
+    /// Vozni red linije kao tablica stanica × vožnji, za dan voznog reda (date)
+    /// ili jedan kalendar (serviceCalendarId); bez oboje za današnji dan.
+    /// </summary>
+    [HttpGet("{id:guid}/timetable")]
+    [ProducesResponseType<RouteTimetableResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RouteTimetableResponse>> GetTimetable(
+        Guid id,
+        [FromQuery] TimetableQuery query,
+        CancellationToken cancellationToken)
+    {
+        var timetable = await timetableService.GetRouteTimetableAsync(id, query.ToQuery(), timeProvider.GetUtcNow(), cancellationToken);
+        return Ok(timetable.ToResponse());
     }
 
     /// <summary>Briše liniju i (kaskadno) sve njezine vožnje.</summary>
