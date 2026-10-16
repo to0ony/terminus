@@ -84,7 +84,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.Configure<SecurityStampValidatorOptions>(options =>
     options.ValidationInterval = TimeSpan.FromMinutes(5));
 
-// Sve traži prijavu osim onoga što je označeno s [AllowAnonymous] (/api/public/*, prijava).
+// Sve traži prijavu osim onoga što je označeno s [AllowAnonymous] (/api/public/*, prijava, /health).
 builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
@@ -92,6 +92,9 @@ builder.Services.AddAuthorizationBuilder()
 builder.Services.AddDataProtection()
     .SetApplicationName("Terminus")
     .PersistKeysToDbContext<TerminusDbContext>();
+
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<TerminusDbContext>("database");
 
 // Repozitoriji
 builder.Services.AddScoped<IAgencyRepository, AgencyRepository>();
@@ -139,6 +142,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHealthChecks("/health").AllowAnonymous();
 app.MapControllers();
 
 app.Run();
