@@ -15,8 +15,8 @@ export interface paths {
             parameters: {
                 query?: {
                     Search?: string;
-                    Page?: number | string;
-                    PageSize?: number | string;
+                    Page?: number;
+                    PageSize?: number;
                 };
                 header?: never;
                 path?: never;
@@ -434,8 +434,8 @@ export interface paths {
                 query?: {
                     Search?: string;
                     AgencyId?: string;
-                    Page?: number | string;
-                    PageSize?: number | string;
+                    Page?: number;
+                    PageSize?: number;
                 };
                 header?: never;
                 path?: never;
@@ -915,7 +915,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    Limit?: number | string;
+                    Limit?: number;
                 };
                 header?: never;
                 path: {
@@ -1073,7 +1073,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    v?: number | string;
+                    v?: number;
                 };
                 header?: never;
                 path?: never;
@@ -1131,8 +1131,8 @@ export interface paths {
                     AgencyId?: string;
                     IsActive?: boolean;
                     RouteType?: components["schemas"]["RouteType"];
-                    Page?: number | string;
-                    PageSize?: number | string;
+                    Page?: number;
+                    PageSize?: number;
                 };
                 header?: never;
                 path?: never;
@@ -1457,8 +1457,8 @@ export interface paths {
             parameters: {
                 query?: {
                     Search?: string;
-                    Page?: number | string;
-                    PageSize?: number | string;
+                    Page?: number;
+                    PageSize?: number;
                 };
                 header?: never;
                 path?: never;
@@ -2076,8 +2076,8 @@ export interface paths {
             parameters: {
                 query?: {
                     Search?: string;
-                    Page?: number | string;
-                    PageSize?: number | string;
+                    Page?: number;
+                    PageSize?: number;
                 };
                 header?: never;
                 path?: never;
@@ -2300,8 +2300,8 @@ export interface paths {
                     IsActive?: boolean;
                     LocationType?: components["schemas"]["LocationType"];
                     ParentStationId?: string;
-                    Page?: number | string;
-                    PageSize?: number | string;
+                    Page?: number;
+                    PageSize?: number;
                 };
                 header?: never;
                 path?: never;
@@ -2390,10 +2390,10 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    MinLatitude?: number | string;
-                    MinLongitude?: number | string;
-                    MaxLatitude?: number | string;
-                    MaxLongitude?: number | string;
+                    MinLatitude?: number;
+                    MinLongitude?: number;
+                    MaxLatitude?: number;
+                    MaxLongitude?: number;
                     IsActive?: boolean;
                 };
                 header?: never;
@@ -2677,8 +2677,8 @@ export interface paths {
                     RouteId?: string;
                     ServiceCalendarId?: string;
                     DirectionId?: components["schemas"]["TripDirection"];
-                    Page?: number | string;
-                    PageSize?: number | string;
+                    Page?: number;
+                    PageSize?: number;
                 };
                 header?: never;
                 path?: never;
@@ -3050,7 +3050,7 @@ export interface components {
             /** Format: date-time */
             departureTime: string;
             /** Format: int32 */
-            minutesUntil: number | string;
+            minutesUntil: number;
         };
         DeparturesResponse: {
             stop: components["schemas"]["DepartureStopResponse"];
@@ -3071,14 +3071,14 @@ export interface components {
         FareRequest: {
             code: null | string;
             /** Format: double */
-            price: null | number | string;
+            price: null | number;
             currencyType: null | string;
             paymentMethod?: components["schemas"]["FarePaymentMethod"];
             transfers?: null | components["schemas"]["FareTransfers"];
             /** Format: uuid */
             agencyId?: null | string;
             /** Format: int32 */
-            transferDuration?: null | number | string;
+            transferDuration?: null | number;
             rules?: components["schemas"]["FareRuleRequest"][];
         };
         FareResponse: {
@@ -3086,14 +3086,14 @@ export interface components {
             id: string;
             code: string;
             /** Format: double */
-            price: number | string;
+            price: number;
             currencyType: string;
             paymentMethod: components["schemas"]["FarePaymentMethod"];
             transfers: null | components["schemas"]["FareTransfers"];
             /** Format: uuid */
             agencyId: null | string;
             /** Format: int32 */
-            transferDuration: null | number | string;
+            transferDuration: null | number;
             rules: components["schemas"]["FareRuleResponse"][];
             /** Format: date-time */
             createdAt: string;
@@ -3147,38 +3147,38 @@ export interface components {
         };
         GtfsImportCountsResponse: {
             /** Format: int32 */
-            agencies: number | string;
+            agencies: number;
             /** Format: int32 */
-            stops: number | string;
+            stops: number;
             /** Format: int32 */
-            routes: number | string;
+            routes: number;
             /** Format: int32 */
-            calendars: number | string;
+            calendars: number;
             /** Format: int32 */
-            calendarDates: number | string;
+            calendarDates: number;
             /** Format: int32 */
-            trips: number | string;
+            trips: number;
             /** Format: int32 */
-            stopTimes: number | string;
+            stopTimes: number;
             /** Format: int32 */
-            shapes: number | string;
+            shapes: number;
             /** Format: int32 */
-            shapePoints: number | string;
+            shapePoints: number;
             /** Format: int32 */
-            fares: number | string;
+            fares: number;
             /** Format: int32 */
-            fareRules: number | string;
+            fareRules: number;
             feedInfo: boolean;
             /** Format: int32 */
-            tripsFromFrequencies: number | string;
+            tripsFromFrequencies: number;
             /** Format: int32 */
-            interpolatedStopTimes: number | string;
+            interpolatedStopTimes: number;
         };
         GtfsImportIssueResponse: {
             file: null | string;
             message: string;
             /** Format: int32 */
-            count: number | string;
+            count: number;
             examples: string[];
         };
         GtfsImportReportResponse: {
@@ -3205,86 +3205,86 @@ export interface components {
         PagedResultOfAgencyResponse: {
             items: components["schemas"]["AgencyResponse"][];
             /** Format: int32 */
-            page: number | string;
+            page: number;
             /** Format: int32 */
-            pageSize: number | string;
+            pageSize: number;
             /** Format: int32 */
-            totalCount: number | string;
+            totalCount: number;
             /** Format: int32 */
-            totalPages?: number | string;
+            totalPages?: number;
         };
         PagedResultOfFareResponse: {
             items: components["schemas"]["FareResponse"][];
             /** Format: int32 */
-            page: number | string;
+            page: number;
             /** Format: int32 */
-            pageSize: number | string;
+            pageSize: number;
             /** Format: int32 */
-            totalCount: number | string;
+            totalCount: number;
             /** Format: int32 */
-            totalPages?: number | string;
+            totalPages?: number;
         };
         PagedResultOfRouteResponse: {
             items: components["schemas"]["RouteResponse"][];
             /** Format: int32 */
-            page: number | string;
+            page: number;
             /** Format: int32 */
-            pageSize: number | string;
+            pageSize: number;
             /** Format: int32 */
-            totalCount: number | string;
+            totalCount: number;
             /** Format: int32 */
-            totalPages?: number | string;
+            totalPages?: number;
         };
         PagedResultOfServiceCalendarResponse: {
             items: components["schemas"]["ServiceCalendarResponse"][];
             /** Format: int32 */
-            page: number | string;
+            page: number;
             /** Format: int32 */
-            pageSize: number | string;
+            pageSize: number;
             /** Format: int32 */
-            totalCount: number | string;
+            totalCount: number;
             /** Format: int32 */
-            totalPages?: number | string;
+            totalPages?: number;
         };
         PagedResultOfShapeSummaryResponse: {
             items: components["schemas"]["ShapeSummaryResponse"][];
             /** Format: int32 */
-            page: number | string;
+            page: number;
             /** Format: int32 */
-            pageSize: number | string;
+            pageSize: number;
             /** Format: int32 */
-            totalCount: number | string;
+            totalCount: number;
             /** Format: int32 */
-            totalPages?: number | string;
+            totalPages?: number;
         };
         PagedResultOfStopResponse: {
             items: components["schemas"]["StopResponse"][];
             /** Format: int32 */
-            page: number | string;
+            page: number;
             /** Format: int32 */
-            pageSize: number | string;
+            pageSize: number;
             /** Format: int32 */
-            totalCount: number | string;
+            totalCount: number;
             /** Format: int32 */
-            totalPages?: number | string;
+            totalPages?: number;
         };
         PagedResultOfTripResponse: {
             items: components["schemas"]["TripResponse"][];
             /** Format: int32 */
-            page: number | string;
+            page: number;
             /** Format: int32 */
-            pageSize: number | string;
+            pageSize: number;
             /** Format: int32 */
-            totalCount: number | string;
+            totalCount: number;
             /** Format: int32 */
-            totalPages?: number | string;
+            totalPages?: number;
         };
         PickupDropOffType: number;
         ProblemDetails: {
             type?: null | string;
             title?: null | string;
             /** Format: int32 */
-            status?: null | number | string;
+            status?: null | number;
             detail?: null | string;
             instance?: null | string;
         };
@@ -3304,7 +3304,7 @@ export interface components {
             /** Format: uuid */
             shapeId: null | string;
             /** Format: int32 */
-            tripCount: number | string;
+            tripCount: number;
             stops: components["schemas"]["TimetableStopResponse"][];
         };
         RouteRequest: {
@@ -3319,7 +3319,7 @@ export interface components {
             color?: null | string;
             textColor?: null | string;
             /** Format: int32 */
-            sortOrder?: null | number | string;
+            sortOrder?: null | number;
             continuousPickup?: null | components["schemas"]["ContinuousPickupDropOff"];
             continuousDropOff?: null | components["schemas"]["ContinuousPickupDropOff"];
             networkId?: null | string;
@@ -3339,7 +3339,7 @@ export interface components {
             color: null | string;
             textColor: null | string;
             /** Format: int32 */
-            sortOrder: null | number | string;
+            sortOrder: null | number;
             continuousPickup: null | components["schemas"]["ContinuousPickupDropOff"];
             continuousDropOff: null | components["schemas"]["ContinuousPickupDropOff"];
             networkId: null | string;
@@ -3418,13 +3418,13 @@ export interface components {
         };
         SetupCountsResponse: {
             /** Format: int32 */
-            agencies: number | string;
+            agencies: number;
             /** Format: int32 */
-            stops: number | string;
+            stops: number;
             /** Format: int32 */
-            routes: number | string;
+            routes: number;
             /** Format: int32 */
-            trips: number | string;
+            trips: number;
         };
         SetupStatusResponse: {
             completed: boolean;
@@ -3434,21 +3434,21 @@ export interface components {
         };
         ShapePointRequest: {
             /** Format: double */
-            latitude: null | number | string;
+            latitude: null | number;
             /** Format: double */
-            longitude: null | number | string;
+            longitude: null | number;
             /** Format: double */
-            distTraveled?: null | number | string;
+            distTraveled?: null | number;
         };
         ShapePointResponse: {
             /** Format: int32 */
-            sequence: number | string;
+            sequence: number;
             /** Format: double */
-            latitude: number | string;
+            latitude: number;
             /** Format: double */
-            longitude: number | string;
+            longitude: number;
             /** Format: double */
-            distTraveled: null | number | string;
+            distTraveled: null | number;
         };
         ShapeRequest: {
             code: null | string;
@@ -3469,7 +3469,7 @@ export interface components {
             id: string;
             code: string;
             /** Format: int32 */
-            pointCount: number | string;
+            pointCount: number;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -3513,9 +3513,9 @@ export interface components {
             ttsName?: null | string;
             description?: null | string;
             /** Format: double */
-            latitude?: null | number | string;
+            latitude?: null | number;
             /** Format: double */
-            longitude?: null | number | string;
+            longitude?: null | number;
             zoneId?: null | string;
             url?: null | string;
             locationType?: components["schemas"]["LocationType"];
@@ -3535,9 +3535,9 @@ export interface components {
             ttsName: null | string;
             description: null | string;
             /** Format: double */
-            latitude: null | number | string;
+            latitude: null | number;
             /** Format: double */
-            longitude: null | number | string;
+            longitude: null | number;
             zoneId: null | string;
             url: null | string;
             locationType: components["schemas"]["LocationType"];
@@ -3567,12 +3567,12 @@ export interface components {
             continuousPickup?: null | components["schemas"]["ContinuousPickupDropOff"];
             continuousDropOff?: null | components["schemas"]["ContinuousPickupDropOff"];
             /** Format: double */
-            shapeDistTraveled?: null | number | string;
+            shapeDistTraveled?: null | number;
             timepoint?: boolean;
         };
         StopTimeResponse: {
             /** Format: int32 */
-            stopSequence: number | string;
+            stopSequence: number;
             /** Format: uuid */
             stopId: string;
             arrivalTime: string;
@@ -3583,15 +3583,15 @@ export interface components {
             continuousPickup: null | components["schemas"]["ContinuousPickupDropOff"];
             continuousDropOff: null | components["schemas"]["ContinuousPickupDropOff"];
             /** Format: double */
-            shapeDistTraveled: null | number | string;
+            shapeDistTraveled: null | number;
             timepoint: boolean;
         };
         StringSegment: {
             buffer?: null | string;
             /** Format: int32 */
-            offset?: number | string;
+            offset?: number;
             /** Format: int32 */
-            length?: number | string;
+            length?: number;
             value?: null | string;
             hasValue?: boolean;
         };
@@ -3608,9 +3608,9 @@ export interface components {
             publicCode: null | string;
             name: string;
             /** Format: double */
-            latitude: null | number | string;
+            latitude: null | number;
             /** Format: double */
-            longitude: null | number | string;
+            longitude: null | number;
             locationType: components["schemas"]["LocationType"];
             /** Format: uuid */
             parentStationId: null | string;
@@ -3675,7 +3675,7 @@ export interface components {
         };
         TripSummaryResponse: {
             /** Format: int32 */
-            stopCount: number | string;
+            stopCount: number;
             firstDepartureTime: null | string;
             firstStopName: null | string;
             lastArrivalTime: null | string;
@@ -3685,7 +3685,7 @@ export interface components {
             type?: null | string;
             title?: null | string;
             /** Format: int32 */
-            status?: null | number | string;
+            status?: null | number;
             detail?: null | string;
             instance?: null | string;
             errors?: {
