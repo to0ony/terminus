@@ -25,8 +25,11 @@ Bez connection stringa aplikacija se ne pokreće.
 
 Bez administratora se nitko ne može prijaviti, pa lokalno treba postaviti i
 njega (stvara se pri pokretanju ako ne postoji). Prijevoznika ne treba
-postavljati: stvara ga čarobnjak prvog pokretanja (`POST /api/setup/blank` ili,
-kad bude gotov, uvoz GTFS-a).
+postavljati: stvara ga čarobnjak prvog pokretanja (`POST /api/setup/blank` ili uvoz
+GTFS-a).
+
+GTFS uvoz prima ZIP do 200 MB. IIS Express ima vlastito ograničenje od 30 MB,
+pa veće feedove treba slati na profil `http` ili `https` (Kestrel).
 
 ```sh
 dotnet user-secrets set "Admin:Email" "admin@example.com" --project Terminus.WebApi

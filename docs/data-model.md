@@ -51,7 +51,7 @@ Veze:
 | `fare_attributes.txt`, `fare_rules.txt` | sva |
 | `feed_info.txt` | sva; `feed_start_date`, `feed_end_date` i `feed_version` izračunavaju se pri izvozu |
 
-Nisu podržani: `frequencies.txt` (uvoz takve vožnje pretvara u pojedinačne),
+Nisu podržani (vidi [GTFS uvoz](gtfs-import.md)): `frequencies.txt` (uvoz takve vožnje pretvara u pojedinačne),
 `transfers.txt`, `pathways.txt`, `levels.txt`, `translations.txt`,
 `attributions.txt`, Fares v2 i GTFS-Flex.
 

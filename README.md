@@ -32,6 +32,9 @@ vlastitu instancu i bazu. Unutar instance može postojati više prijevoznika
   `trips`, `stop_times`, `calendar`, `calendar_dates`), stanice s peronima,
   ulazima i mjestima ukrcavanja, trase (`shapes`), cijene (Fares v1) i
   `feed_info`.
+- **GTFS uvoz** – pregled s izvještajem (greške, upozorenja, preskočene
+  datoteke) pa uvoz; interpolacija praznih vremena, `frequencies.txt` u
+  pojedinačne vožnje, nazivi kalendara; milijun vremena za pola minute.
 - **GTFS izvoz** s provjerama prije izvoza i, po izboru, javni feed bez prijave.
 - **Polasci** – sljedeći polasci sa stanice ili kolodvora (ponoć, vožnje do
   48 h, ljetno računanje vremena) za javne stranice i zaslone na stanicama.
@@ -41,8 +44,8 @@ vlastitu instancu i bazu. Unutar instance može postojati više prijevoznika
   neuspjelih pokušaja.
 - **Postavke instance** – naziv, boje i logo za javne stranice i PDF.
 
-U planu su uvoz GTFS-a, PDF vozni redovi, frontend (dashboard i zaslon na
-stanici) i editor voznog reda; vidi [roadmap](docs/roadmap.md).
+U planu su PDF vozni redovi, frontend (dashboard i zaslon na stanici) i
+editor voznog reda; vidi [roadmap](docs/roadmap.md).
 
 ## Tehnologije
 
@@ -60,7 +63,7 @@ stanici) i editor voznog reda; vidi [roadmap](docs/roadmap.md).
 terminus/
 ├── backend/                   .NET rješenje Terminus.slnx
 │   ├── Terminus.WebApi/       kontroleri, ugovori (DTO), konfiguracija i prijava
-│   ├── Terminus.Service*/     poslovna pravila, izračun polazaka, GTFS izvoz
+│   ├── Terminus.Service*/     poslovna pravila, izračun polazaka, GTFS uvoz i izvoz
 │   ├── Terminus.Repository*/  pristup podacima (EF Core)
 │   ├── Terminus.DAL/          entiteti, konfiguracije i migracije
 │   ├── Terminus.Model*/       modeli, sučelja, enumi i filteri
@@ -124,8 +127,9 @@ Konfiguracija daje samo administratora. Nakon prve prijave dashboard prikazuje
 čarobnjak (`GET /api/setup` vraća `completed: false`) s dva izbora:
 
 - **uvoz postojećeg GTFS-a** – prijevoznici, stanice, linije i vozni red dolaze
-  iz feeda; prvo se prikaže izvještaj provjere, a podaci se upisuju tek nakon
-  potvrde (u izradi);
+  iz feeda; `POST /api/gtfs/import/preview` vraća izvještaj provjere, a
+  `POST /api/gtfs/import` upisuje podatke tek nakon potvrde
+  (vidi [GTFS uvoz](docs/gtfs-import.md));
 - **početak od nule** – `POST /api/setup/blank` stvara prvog prijevoznika
   (naziv i web adresa; kod, zona i jezik imaju zadane vrijednosti).
 
@@ -158,6 +162,7 @@ Sve osim `/api/public/*`, `/api/auth/login` i `/health` traži prijavu
 | Trase | `/api/shapes` |
 | Cijene karata | `/api/fares` |
 | Izdavač feeda | `/api/feed-info` |
+| GTFS uvoz (pregled, uvoz) | `POST /api/gtfs/import/preview`, `POST /api/gtfs/import` |
 | GTFS izvoz | `GET /api/gtfs` |
 
 Javno, bez prijave:
@@ -180,6 +185,7 @@ Greške se vraćaju kao [ProblemDetails](https://www.rfc-editor.org/rfc/rfc9457)
 | [Lokalni razvoj](docs/development.md) | postavljanje, pokretanje, testovi, migracije |
 | [Arhitektura](docs/architecture.md) | slojevi i tok zahtjeva |
 | [Model podataka i GTFS](docs/data-model.md) | tablice, podržana GTFS polja, pravila |
+| [GTFS uvoz](docs/gtfs-import.md) | izvještaj, greške i upozorenja, pretvorbe |
 | [GTFS izvoz](docs/gtfs-export.md) | sadržaj feeda, format i provjere |
 | [Polasci, zasloni i PDF](docs/departures-and-timetables.md) | izračun polazaka, javna stranica stanice, PDF (plan) |
 | [Shema baze](docs/terminus_schema.sql) | SQL shema s komentarima |

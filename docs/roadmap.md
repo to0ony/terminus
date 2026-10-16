@@ -38,7 +38,7 @@ API za ručni unos (CRUD) već postoji i čeka editor iz faze 5.
 | 1.1 | Autentikacija: više administratora, prijava i odjava, promjena lozinke, prvi administrator iz konfiguracije ✅ | — |
 | 1.2 | Postavke instance: tablica `settings` (naziv, boje, logo, javni URL, objava GTFS-a); podaci za `feed_info.txt` su u `/api/feed-info` ✅ | 1.1 |
 | 1.3 | Health check `/health` (aplikacija i baza) ✅ | — |
-| 1.4 | Čarobnjak prvog pokretanja: stanje (`GET /api/setup`) i početak od nule (`POST /api/setup/blank`) ✅; uvoz GTFS-a kao drugi izbor dolazi s 2.2 | 1.1 |
+| 1.4 | Čarobnjak prvog pokretanja: stanje (`GET /api/setup`) i početak od nule (`POST /api/setup/blank`) i uvoz GTFS-a ✅ | 1.1 |
 
 Sve osim `/api/public/*`, prijave i `/health` traži prijavu. Upravljanje
 administratorima kroz dashboard dolazi u fazi 5; do tada se dodatni
@@ -51,16 +51,18 @@ pokretanjem.
 |---|---|---|
 | 2.0 | Proširen GTFS model: sva polja osnovnih datoteka, `location_type` 0–4, prošireni `route_type`, trase (`shapes`), cijene (Fares v1), `feed_info`; API i izvoz za sve ✅ | — |
 | 2.1 | `agencies.code` (GTFS `agency_id`), da se ID-evi prijevoznika sačuvaju pri uvozu i ponovnom izvozu ✅ | — |
-| 2.2 | Uvoz GTFS ZIP-a: čitanje, provjera, prijevod GTFS ID-eva u `code`, zamjena podataka instance u jednoj transakciji; pregled pa potvrda; završava čarobnjak prvog pokretanja | 1.1, 1.4, 2.1 |
-| 2.3 | Izvještaj o uvozu: broj uvezenih zapisa, greške koje zaustavljaju uvoz, upozorenja i preskočene datoteke | 2.2 |
-| 2.4 | Uvoz `shapes.txt` i cijena (Fares v1); `frequencies.txt` se pretvara u pojedinačne vožnje | 2.2 |
+| 2.2 | Uvoz GTFS ZIP-a: čitanje, provjera, prijevod GTFS ID-eva u `code`, zamjena podataka instance u jednoj transakciji; pregled pa potvrda; završava čarobnjak prvog pokretanja ✅ | 1.1, 1.4, 2.1 |
+| 2.3 | Izvještaj o uvozu: broj uvezenih zapisa, greške koje zaustavljaju uvoz, upozorenja i preskočene datoteke ✅ | 2.2 |
+| 2.4 | Uvoz `shapes.txt` i cijena (Fares v1); `frequencies.txt` se pretvara u pojedinačne vožnje ✅ | 2.2 |
 
 Uvoz zamjenjuje sve podatke voznog reda (prijevoznici, stanice, linije,
-kalendari, vožnje). Novi vozni red za sezonu uvozi se istim putem. Spajanje s
-postojećim podacima nije potrebno dok ne postoji editor.
+kalendari, vožnje, trase, cijene). Novi vozni red za sezonu uvozi se istim
+putem. Spajanje s postojećim podacima nije potrebno dok ne postoji editor.
+Detaljno u [gtfs-import.md](gtfs-import.md).
 
-Datoteke koje Terminus ne podržava (npr. `fare_*`, `transfers.txt`) navode se
-u izvještaju kao preskočene. Ponovni izvoz ih neće sadržavati.
+Datoteke koje Terminus ne podržava (npr. `transfers.txt`, Fares v2) navode se
+u izvještaju kao preskočene. Ponovni izvoz ih neće sadržavati. Provjereno na
+feedu ZET-a (1,1 milijun vremena): izvoz i ponovni uvoz daju iste podatke.
 
 Uvoz se testira krugom uvoz → izvoz → uvoz, uz stvarne feedove i
 [MobilityData validator](https://gtfs-validator.mobilitydata.org/).

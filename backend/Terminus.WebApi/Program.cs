@@ -10,6 +10,7 @@ using Terminus.Repository.Common;
 using Terminus.Service;
 using Terminus.Service.Common;
 using Terminus.Service.Gtfs;
+using Terminus.Service.Gtfs.Import;
 using Terminus.WebApi.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -112,6 +113,7 @@ builder.Services.AddScoped<IFeedInfoRepository, FeedInfoRepository>();
 builder.Services.AddScoped<ISettingsRepository, SettingsRepository>();
 builder.Services.AddScoped<ITimetableRepository, TimetableRepository>();
 builder.Services.AddScoped<ISetupRepository, SetupRepository>();
+builder.Services.AddScoped<IGtfsImportRepository, GtfsImportRepository>();
 
 // Servisi
 builder.Services.AddScoped<IAgencyService, AgencyService>();
@@ -127,6 +129,7 @@ builder.Services.AddScoped<IFeedInfoService, FeedInfoService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<ITimetableService, TimetableService>();
 builder.Services.AddScoped<ISetupService, SetupService>();
+builder.Services.AddScoped<IGtfsImportService, GtfsImportService>();
 
 builder.Services.AddSingleton(TimeProvider.System);
 

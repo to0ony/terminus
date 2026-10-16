@@ -400,6 +400,28 @@ Content-Type: application/json
 
 ###
 
+### GTFS uvoz, 1. korak: pregled (provjera i izvještaj, ništa se ne upisuje)
+POST {{Terminus.WebApi_HostAddress}}/api/gtfs/import/preview
+Content-Type: multipart/form-data; boundary=gtfs
+
+--gtfs
+Content-Disposition: form-data; name="file"; filename="gtfs.zip"
+Content-Type: application/zip
+
+< ./gtfs.zip
+--gtfs--
+
+### GTFS uvoz, 2. korak: uvoz (zamjenjuje sav vozni red; 422 s izvještajem ako feed ima greške)
+POST {{Terminus.WebApi_HostAddress}}/api/gtfs/import
+Content-Type: multipart/form-data; boundary=gtfs
+
+--gtfs
+Content-Disposition: form-data; name="file"; filename="gtfs.zip"
+Content-Type: application/zip
+
+< ./gtfs.zip
+--gtfs--
+
 ### GTFS izvoz (ZIP; 422 s popisom problema ako feed nije spreman)
 GET {{Terminus.WebApi_HostAddress}}/api/gtfs
 
