@@ -10,4 +10,7 @@ public record StopTimeResponse(
     string? StopHeadsign,
     PickupDropOffType PickupType,
     PickupDropOffType DropOffType,
+    ContinuousPickupDropOff? ContinuousPickup,
+    ContinuousPickupDropOff? ContinuousDropOff,
+    double? ShapeDistTraveled,
     bool Timepoint);

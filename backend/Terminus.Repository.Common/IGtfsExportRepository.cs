@@ -23,4 +23,13 @@ public interface IGtfsExportRepository
 
     /// <returns>Vremena svih vožnji, poredana po vožnji i rednom broju.</returns>
     Task<IReadOnlyList<IStopTimeModel>> GetStopTimesAsync(CancellationToken cancellationToken = default);
+
+    /// <returns>Sve trase s točkama, poredane po kodu.</returns>
+    Task<IReadOnlyList<IShapeModel>> GetShapesAsync(CancellationToken cancellationToken = default);
+
+    /// <returns>Sve cijene s pravilima, poredane po kodu.</returns>
+    Task<IReadOnlyList<IFareModel>> GetFaresAsync(CancellationToken cancellationToken = default);
+
+    /// <returns>Podaci o izdavaču ili null.</returns>
+    Task<IFeedInfoModel?> GetFeedInfoAsync(CancellationToken cancellationToken = default);
 }

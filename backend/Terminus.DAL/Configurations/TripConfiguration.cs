@@ -35,6 +35,15 @@ public class TripConfiguration : IEntityTypeConfiguration<Trip>
             .HasForeignKey(e => e.ServiceCalendarId)
             .OnDelete(DeleteBehavior.NoAction);
 
+        // Brisanje trase ostavlja vožnje bez nje.
+        builder.HasOne(e => e.Shape)
+            .WithMany(s => s.Trips)
+            .HasForeignKey(e => e.ShapeId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasIndex(e => e.ShapeId)
+            .HasDatabaseName("ix_trips_shape_id");
+
         builder.HasIndex(e => e.Code)
             .IsUnique()
             .HasDatabaseName("uq_trips_code");

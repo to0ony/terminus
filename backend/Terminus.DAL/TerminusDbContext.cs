@@ -12,6 +12,11 @@ public class TerminusDbContext(DbContextOptions<TerminusDbContext> options) : Db
     public DbSet<CalendarDate> CalendarDates => Set<CalendarDate>();
     public DbSet<Trip> Trips => Set<Trip>();
     public DbSet<StopTime> StopTimes => Set<StopTime>();
+    public DbSet<Shape> Shapes => Set<Shape>();
+    public DbSet<ShapePoint> ShapePoints => Set<ShapePoint>();
+    public DbSet<Fare> Fares => Set<Fare>();
+    public DbSet<FareRule> FareRules => Set<FareRule>();
+    public DbSet<FeedInfo> FeedInfo => Set<FeedInfo>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

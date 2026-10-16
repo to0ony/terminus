@@ -15,9 +15,13 @@ public static class RouteMappings
         LongName = request.LongName,
         Description = request.Description,
         RouteType = request.RouteType,
+        Url = request.Url,
         Color = request.Color,
         TextColor = request.TextColor,
         SortOrder = request.SortOrder,
+        ContinuousPickup = request.ContinuousPickup,
+        ContinuousDropOff = request.ContinuousDropOff,
+        NetworkId = request.NetworkId,
         IsActive = request.IsActive
     };
 
@@ -29,9 +33,13 @@ public static class RouteMappings
         model.LongName,
         model.Description,
         model.RouteType,
+        model.Url,
         model.Color,
         model.TextColor,
         model.SortOrder,
+        model.ContinuousPickup,
+        model.ContinuousDropOff,
+        model.NetworkId,
         model.IsActive,
         model.CreatedAt,
         model.UpdatedAt);

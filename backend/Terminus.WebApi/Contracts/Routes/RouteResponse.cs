@@ -10,9 +10,13 @@ public record RouteResponse(
     string? LongName,
     string? Description,
     RouteType RouteType,
+    string? Url,
     string? Color,
     string? TextColor,
     int? SortOrder,
+    ContinuousPickupDropOff? ContinuousPickup,
+    ContinuousPickupDropOff? ContinuousDropOff,
+    string? NetworkId,
     bool IsActive,
     DateTime CreatedAt,
     DateTime UpdatedAt);

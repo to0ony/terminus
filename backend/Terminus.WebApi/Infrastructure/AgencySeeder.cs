@@ -1,3 +1,4 @@
+using Terminus.Common;
 using Terminus.Common.Exceptions;
 using Terminus.Model;
 using Terminus.Repository.Common;
@@ -48,9 +49,11 @@ public static class AgencySeeder
                 return;
             }
 
-            // Timezone i Lang su opcionalni; servis postavlja zadane vrijednosti (Europe/Zagreb, hr).
+            // Code (GTFS agency_id), Timezone i Lang su opcionalni. Bez koda se izvodi iz naziva,
+            // a servis postavlja zadanu zonu i jezik (Europe/Zagreb, hr).
             var created = await service.CreateAsync(new AgencyModel
             {
+                Code = section["Code"] ?? Slug.From(section["Name"]!, fallback: "1"),
                 Name = section["Name"]!,
                 Url = section["Url"]!,
                 Timezone = section["Timezone"] ?? string.Empty,

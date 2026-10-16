@@ -81,4 +81,43 @@ public class GtfsExportRepository(TerminusDbContext context) : IGtfsExportReposi
 
         return entities.Select(TripMapper.ToModel).ToList();
     }
+
+    public async Task<IReadOnlyList<IShapeModel>> GetShapesAsync(CancellationToken cancellationToken = default)
+    {
+        var shapes = await context.Shapes
+            .AsNoTracking()
+            .OrderBy(s => s.Code)
+            .ToListAsync(cancellationToken);
+
+        var pointsByShape = (await context.ShapePoints
+                .AsNoTracking()
+                .OrderBy(p => p.ShapeId)
+                .ThenBy(p => p.Sequence)
+                .ToListAsync(cancellationToken))
+            .ToLookup(p => p.ShapeId);
+
+        return shapes
+            .Select(s => ShapeMapper.ToModel(s, pointsByShape[s.Id].Count(), pointsByShape[s.Id]))
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<IFareModel>> GetFaresAsync(CancellationToken cancellationToken = default)
+    {
+        var entities = await context.Fares
+            .AsNoTracking()
+            .Include(f => f.Rules)
+            .OrderBy(f => f.Code)
+            .ToListAsync(cancellationToken);
+
+        return entities.Select(f => FareMapper.ToModel(f, f.Rules)).ToList();
+    }
+
+    public async Task<IFeedInfoModel?> GetFeedInfoAsync(CancellationToken cancellationToken = default)
+    {
+        var entity = await context.FeedInfo
+            .AsNoTracking()
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return entity is null ? null : FeedInfoMapper.ToModel(entity);
+    }
 }

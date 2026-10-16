@@ -8,7 +8,7 @@ public interface IDepartureRepository
     /// <returns>Prvi uneseni prijevoznik (njegova zona vrijedi za sve) ili null ako prijevoznika nema.</returns>
     Task<IAgencyModel?> GetPrimaryAgencyAsync(CancellationToken cancellationToken = default);
 
-    /// <returns>Peroni kolodvora.</returns>
+    /// <returns>Peroni kolodvora (djeca s location_type 0), bez ulaza i čvorova.</returns>
     Task<IReadOnlyList<IStopModel>> GetPlatformsAsync(Guid stationId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<IServiceCalendarModel>> GetCalendarsAsync(CancellationToken cancellationToken = default);

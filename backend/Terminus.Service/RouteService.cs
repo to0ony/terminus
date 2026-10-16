@@ -54,6 +54,8 @@ public partial class RouteService(IRouteRepository repository, IAgencyRepository
         route.ShortName = NullIfBlank(route.ShortName);
         route.LongName = NullIfBlank(route.LongName);
         route.Description = NullIfBlank(route.Description);
+        route.Url = NullIfBlank(route.Url);
+        route.NetworkId = NullIfBlank(route.NetworkId);
         route.Color = NormalizeColor(route.Color);
         route.TextColor = NormalizeColor(route.TextColor);
     }
@@ -78,9 +80,25 @@ public partial class RouteService(IRouteRepository repository, IAgencyRepository
             errors.Add(nameof(route.ShortName), "Potrebna je kratka oznaka ili puni naziv linije.");
         }
 
-        if (!Enum.IsDefined(route.RouteType))
+        if (!RouteTypes.IsValid(route.RouteType))
         {
-            errors.Add(nameof(route.RouteType), "Nepoznata vrsta prijevoza.");
+            errors.Add(nameof(route.RouteType),
+                $"Nepoznata vrsta prijevoza. Dopuštene su osnovne GTFS vrijednosti i proširene od {RouteTypes.ExtendedMin} do {RouteTypes.ExtendedMax}.");
+        }
+
+        if (route.Url is not null && !Validators.IsHttpUrl(route.Url))
+        {
+            errors.Add(nameof(route.Url), "URL mora biti potpuna http ili https adresa.");
+        }
+
+        if (route.ContinuousPickup is { } pickup && !Enum.IsDefined(pickup))
+        {
+            errors.Add(nameof(route.ContinuousPickup), "Nepoznata vrijednost za ukrcavanje duž trase.");
+        }
+
+        if (route.ContinuousDropOff is { } dropOff && !Enum.IsDefined(dropOff))
+        {
+            errors.Add(nameof(route.ContinuousDropOff), "Nepoznata vrijednost za iskrcavanje duž trase.");
         }
 
         if (route.Color is not null && !HexColorRegex().IsMatch(route.Color))

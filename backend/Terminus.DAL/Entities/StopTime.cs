@@ -15,6 +15,9 @@ public class StopTime
     public string? StopHeadsign { get; set; }
     public short PickupType { get; set; }
     public short DropOffType { get; set; }
+    public short? ContinuousPickup { get; set; }
+    public short? ContinuousDropOff { get; set; }
+    public double? ShapeDistTraveled { get; set; }
     public bool Timepoint { get; set; } = true;
 
     public Trip Trip { get; set; } = null!;

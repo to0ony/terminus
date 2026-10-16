@@ -19,5 +19,14 @@ public class StopTimeRequest
     public string? StopHeadsign { get; set; }
     public PickupDropOffType PickupType { get; set; } = PickupDropOffType.Regular;
     public PickupDropOffType DropOffType { get; set; } = PickupDropOffType.Regular;
+
+    /// <summary>Izostavljeno znači vrijednost linije.</summary>
+    public ContinuousPickupDropOff? ContinuousPickup { get; set; }
+
+    public ContinuousPickupDropOff? ContinuousDropOff { get; set; }
+
+    /// <summary>Prijeđena udaljenost duž trase, u istim jedinicama kao trasa.</summary>
+    public double? ShapeDistTraveled { get; set; }
+
     public bool Timepoint { get; set; } = true;
 }

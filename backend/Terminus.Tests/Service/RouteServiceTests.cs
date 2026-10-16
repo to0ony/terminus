@@ -1,5 +1,6 @@
 using Terminus.Common.Exceptions;
 using Terminus.Model;
+using Terminus.Model.Common.Enums;
 using Terminus.Service;
 using Terminus.Tests.Fakes;
 
@@ -87,6 +88,35 @@ public class RouteServiceTests
             () => _service.CreateAsync(route, TestContext.Current.CancellationToken));
 
         Assert.Contains(nameof(RouteModel.Color), ex.Errors.Keys);
+    }
+
+    [Theory]
+    [InlineData((short)3)]
+    [InlineData((short)700)]
+    [InlineData((short)200)]
+    public async Task CreateAsync_BasicOrExtendedRouteType_IsAccepted(short routeType)
+    {
+        var route = ValidRoute();
+        route.RouteType = (RouteType)routeType;
+
+        var created = await _service.CreateAsync(route, TestContext.Current.CancellationToken);
+
+        Assert.Equal(routeType, (short)created.RouteType);
+    }
+
+    [Theory]
+    [InlineData((short)8)]
+    [InlineData((short)99)]
+    [InlineData((short)1800)]
+    public async Task CreateAsync_UnknownRouteType_ThrowsValidationError(short routeType)
+    {
+        var route = ValidRoute();
+        route.RouteType = (RouteType)routeType;
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            () => _service.CreateAsync(route, TestContext.Current.CancellationToken));
+
+        Assert.Contains(nameof(RouteModel.RouteType), ex.Errors.Keys);
     }
 
     [Fact]

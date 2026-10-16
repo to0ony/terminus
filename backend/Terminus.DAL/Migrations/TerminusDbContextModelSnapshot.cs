@@ -30,6 +30,11 @@ namespace Terminus.DAL.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("gen_random_uuid()");
 
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("code");
+
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -39,6 +44,10 @@ namespace Terminus.DAL.Migrations
                     b.Property<string>("Email")
                         .HasColumnType("text")
                         .HasColumnName("email");
+
+                    b.Property<string>("FareUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("fare_url");
 
                     b.Property<string>("Lang")
                         .IsRequired()
@@ -75,6 +84,10 @@ namespace Terminus.DAL.Migrations
                     b.HasKey("Id")
                         .HasName("pk_agencies");
 
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_agencies_code");
+
                     b.ToTable("agencies", (string)null);
                 });
 
@@ -104,6 +117,180 @@ namespace Terminus.DAL.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Terminus.DAL.Entities.Fare", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<Guid?>("AgencyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("agency_id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("CurrencyType")
+                        .IsRequired()
+                        .HasColumnType("char(3)")
+                        .HasColumnName("currency_type");
+
+                    b.Property<short>("PaymentMethod")
+                        .HasColumnType("smallint")
+                        .HasColumnName("payment_method");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)")
+                        .HasColumnName("price");
+
+                    b.Property<int?>("TransferDuration")
+                        .HasColumnType("integer")
+                        .HasColumnName("transfer_duration");
+
+                    b.Property<short?>("Transfers")
+                        .HasColumnType("smallint")
+                        .HasColumnName("transfers");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id")
+                        .HasName("pk_fares");
+
+                    b.HasIndex("AgencyId")
+                        .HasDatabaseName("ix_fares_agency_id");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_fares_code");
+
+                    b.ToTable("fares", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_fares_currency", "currency_type ~ '^[A-Z]{3}$'");
+
+                            t.HasCheckConstraint("ck_fares_payment_method", "payment_method IN (0, 1)");
+
+                            t.HasCheckConstraint("ck_fares_price", "price >= 0");
+
+                            t.HasCheckConstraint("ck_fares_transfer_duration", "transfer_duration IS NULL OR transfer_duration >= 0");
+
+                            t.HasCheckConstraint("ck_fares_transfers", "transfers IS NULL OR transfers IN (0, 1, 2)");
+                        });
+                });
+
+            modelBuilder.Entity("Terminus.DAL.Entities.FareRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("ContainsId")
+                        .HasColumnType("text")
+                        .HasColumnName("contains_id");
+
+                    b.Property<string>("DestinationId")
+                        .HasColumnType("text")
+                        .HasColumnName("destination_id");
+
+                    b.Property<Guid>("FareId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fare_id");
+
+                    b.Property<string>("OriginId")
+                        .HasColumnType("text")
+                        .HasColumnName("origin_id");
+
+                    b.Property<Guid?>("RouteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("route_id");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("integer")
+                        .HasColumnName("sequence");
+
+                    b.HasKey("Id")
+                        .HasName("pk_fare_rules");
+
+                    b.HasIndex("RouteId")
+                        .HasDatabaseName("ix_fare_rules_route_id");
+
+                    b.HasIndex("FareId", "Sequence")
+                        .IsUnique()
+                        .HasDatabaseName("uq_fare_rules_fare_sequence");
+
+                    b.ToTable("fare_rules", (string)null);
+                });
+
+            modelBuilder.Entity("Terminus.DAL.Entities.FeedInfo", b =>
+                {
+                    b.Property<short>("Id")
+                        .HasColumnType("smallint")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ContactEmail")
+                        .HasColumnType("text")
+                        .HasColumnName("contact_email");
+
+                    b.Property<string>("ContactUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("contact_url");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("DefaultLang")
+                        .HasColumnType("text")
+                        .HasColumnName("default_lang");
+
+                    b.Property<string>("Lang")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("lang");
+
+                    b.Property<string>("PublisherName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("publisher_name");
+
+                    b.Property<string>("PublisherUrl")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("publisher_url");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id")
+                        .HasName("pk_feed_info");
+
+                    b.ToTable("feed_info", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_feed_info_single_row", "id = 1");
+                        });
+                });
+
             modelBuilder.Entity("Terminus.DAL.Entities.Route", b =>
                 {
                     b.Property<Guid>("Id")
@@ -125,6 +312,14 @@ namespace Terminus.DAL.Migrations
                         .HasColumnType("char(6)")
                         .HasColumnName("color");
 
+                    b.Property<short?>("ContinuousDropOff")
+                        .HasColumnType("smallint")
+                        .HasColumnName("continuous_drop_off");
+
+                    b.Property<short?>("ContinuousPickup")
+                        .HasColumnType("smallint")
+                        .HasColumnName("continuous_pickup");
+
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -143,6 +338,10 @@ namespace Terminus.DAL.Migrations
                     b.Property<string>("LongName")
                         .HasColumnType("text")
                         .HasColumnName("long_name");
+
+                    b.Property<string>("NetworkId")
+                        .HasColumnType("text")
+                        .HasColumnName("network_id");
 
                     b.Property<short>("RouteType")
                         .HasColumnType("smallint")
@@ -167,6 +366,10 @@ namespace Terminus.DAL.Migrations
                         .HasColumnName("updated_at")
                         .HasDefaultValueSql("now()");
 
+                    b.Property<string>("Url")
+                        .HasColumnType("text")
+                        .HasColumnName("url");
+
                     b.HasKey("Id")
                         .HasName("pk_routes");
 
@@ -180,6 +383,10 @@ namespace Terminus.DAL.Migrations
                     b.ToTable("routes", null, t =>
                         {
                             t.HasCheckConstraint("ck_routes_color", "color IS NULL OR color ~ '^[0-9A-Fa-f]{6}$'");
+
+                            t.HasCheckConstraint("ck_routes_continuous_drop_off", "continuous_drop_off IS NULL OR continuous_drop_off IN (0, 1, 2, 3)");
+
+                            t.HasCheckConstraint("ck_routes_continuous_pickup", "continuous_pickup IS NULL OR continuous_pickup IN (0, 1, 2, 3)");
 
                             t.HasCheckConstraint("ck_routes_name", "short_name IS NOT NULL OR long_name IS NOT NULL");
 
@@ -280,6 +487,78 @@ namespace Terminus.DAL.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Terminus.DAL.Entities.Shape", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id")
+                        .HasName("pk_shapes");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("uq_shapes_code");
+
+                    b.ToTable("shapes", (string)null);
+                });
+
+            modelBuilder.Entity("Terminus.DAL.Entities.ShapePoint", b =>
+                {
+                    b.Property<Guid>("ShapeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shape_id");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("integer")
+                        .HasColumnName("sequence");
+
+                    b.Property<double?>("DistTraveled")
+                        .HasColumnType("double precision")
+                        .HasColumnName("dist_traveled");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("latitude");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("longitude");
+
+                    b.HasKey("ShapeId", "Sequence")
+                        .HasName("pk_shape_points");
+
+                    b.ToTable("shape_points", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_shape_points_dist", "dist_traveled IS NULL OR dist_traveled >= 0");
+
+                            t.HasCheckConstraint("ck_shape_points_latitude", "latitude BETWEEN -90 AND 90");
+
+                            t.HasCheckConstraint("ck_shape_points_longitude", "longitude BETWEEN -180 AND 180");
+
+                            t.HasCheckConstraint("ck_shape_points_sequence", "sequence >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Terminus.DAL.Entities.Stop", b =>
                 {
                     b.Property<Guid>("Id")
@@ -308,7 +587,7 @@ namespace Terminus.DAL.Migrations
                         .HasDefaultValue(true)
                         .HasColumnName("is_active");
 
-                    b.Property<double>("Latitude")
+                    b.Property<double?>("Latitude")
                         .HasColumnType("double precision")
                         .HasColumnName("latitude");
 
@@ -317,7 +596,7 @@ namespace Terminus.DAL.Migrations
                         .HasDefaultValue((short)0)
                         .HasColumnName("location_type");
 
-                    b.Property<double>("Longitude")
+                    b.Property<double?>("Longitude")
                         .HasColumnType("double precision")
                         .HasColumnName("longitude");
 
@@ -334,16 +613,36 @@ namespace Terminus.DAL.Migrations
                         .HasColumnType("text")
                         .HasColumnName("platform_code");
 
+                    b.Property<string>("PublicCode")
+                        .HasColumnType("text")
+                        .HasColumnName("public_code");
+
+                    b.Property<string>("Timezone")
+                        .HasColumnType("text")
+                        .HasColumnName("timezone");
+
+                    b.Property<string>("TtsName")
+                        .HasColumnType("text")
+                        .HasColumnName("tts_name");
+
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at")
                         .HasDefaultValueSql("now()");
 
+                    b.Property<string>("Url")
+                        .HasColumnType("text")
+                        .HasColumnName("url");
+
                     b.Property<short>("WheelchairBoarding")
                         .HasColumnType("smallint")
                         .HasDefaultValue((short)0)
                         .HasColumnName("wheelchair_boarding");
+
+                    b.Property<string>("ZoneId")
+                        .HasColumnType("text")
+                        .HasColumnName("zone_id");
 
                     b.HasKey("Id")
                         .HasName("pk_stops");
@@ -357,9 +656,11 @@ namespace Terminus.DAL.Migrations
 
                     b.ToTable("stops", null, t =>
                         {
+                            t.HasCheckConstraint("ck_stops_coordinates", "location_type IN (3, 4) OR (latitude IS NOT NULL AND longitude IS NOT NULL)");
+
                             t.HasCheckConstraint("ck_stops_latitude", "latitude BETWEEN -90 AND 90");
 
-                            t.HasCheckConstraint("ck_stops_location_type", "location_type IN (0, 1)");
+                            t.HasCheckConstraint("ck_stops_location_type", "location_type IN (0, 1, 2, 3, 4)");
 
                             t.HasCheckConstraint("ck_stops_longitude", "longitude BETWEEN -180 AND 180");
 
@@ -383,6 +684,14 @@ namespace Terminus.DAL.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("arrival_time");
 
+                    b.Property<short?>("ContinuousDropOff")
+                        .HasColumnType("smallint")
+                        .HasColumnName("continuous_drop_off");
+
+                    b.Property<short?>("ContinuousPickup")
+                        .HasColumnType("smallint")
+                        .HasColumnName("continuous_pickup");
+
                     b.Property<int>("DepartureTime")
                         .HasColumnType("integer")
                         .HasColumnName("departure_time");
@@ -398,6 +707,10 @@ namespace Terminus.DAL.Migrations
                         .HasColumnType("smallint")
                         .HasDefaultValue((short)0)
                         .HasColumnName("pickup_type");
+
+                    b.Property<double?>("ShapeDistTraveled")
+                        .HasColumnType("double precision")
+                        .HasColumnName("shape_dist_traveled");
 
                     b.Property<string>("StopHeadsign")
                         .HasColumnType("text")
@@ -422,6 +735,10 @@ namespace Terminus.DAL.Migrations
                         {
                             t.HasCheckConstraint("ck_stop_times_arrival", "arrival_time BETWEEN 0 AND 172800");
 
+                            t.HasCheckConstraint("ck_stop_times_continuous_drop_off", "continuous_drop_off IS NULL OR continuous_drop_off IN (0, 1, 2, 3)");
+
+                            t.HasCheckConstraint("ck_stop_times_continuous_pickup", "continuous_pickup IS NULL OR continuous_pickup IN (0, 1, 2, 3)");
+
                             t.HasCheckConstraint("ck_stop_times_departure", "departure_time BETWEEN 0 AND 172800");
 
                             t.HasCheckConstraint("ck_stop_times_dropoff", "drop_off_type IN (0, 1, 2, 3)");
@@ -431,6 +748,8 @@ namespace Terminus.DAL.Migrations
                             t.HasCheckConstraint("ck_stop_times_pickup", "pickup_type IN (0, 1, 2, 3)");
 
                             t.HasCheckConstraint("ck_stop_times_sequence", "stop_sequence >= 0");
+
+                            t.HasCheckConstraint("ck_stop_times_shape_dist", "shape_dist_traveled IS NULL OR shape_dist_traveled >= 0");
                         });
                 });
 
@@ -479,6 +798,10 @@ namespace Terminus.DAL.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("service_calendar_id");
 
+                    b.Property<Guid?>("ShapeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shape_id");
+
                     b.Property<string>("ShortName")
                         .HasColumnType("text")
                         .HasColumnName("short_name");
@@ -508,6 +831,9 @@ namespace Terminus.DAL.Migrations
                     b.HasIndex("ServiceCalendarId")
                         .HasDatabaseName("ix_trips_service_calendar_id");
 
+                    b.HasIndex("ShapeId")
+                        .HasDatabaseName("ix_trips_shape_id");
+
                     b.ToTable("trips", null, t =>
                         {
                             t.HasCheckConstraint("ck_trips_bikes", "bikes_allowed IN (0, 1, 2)");
@@ -530,6 +856,37 @@ namespace Terminus.DAL.Migrations
                     b.Navigation("ServiceCalendar");
                 });
 
+            modelBuilder.Entity("Terminus.DAL.Entities.Fare", b =>
+                {
+                    b.HasOne("Terminus.DAL.Entities.Agency", "Agency")
+                        .WithMany("Fares")
+                        .HasForeignKey("AgencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_fares_agencies_agency_id");
+
+                    b.Navigation("Agency");
+                });
+
+            modelBuilder.Entity("Terminus.DAL.Entities.FareRule", b =>
+                {
+                    b.HasOne("Terminus.DAL.Entities.Fare", "Fare")
+                        .WithMany("Rules")
+                        .HasForeignKey("FareId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_fare_rules_fares_fare_id");
+
+                    b.HasOne("Terminus.DAL.Entities.Route", "Route")
+                        .WithMany("FareRules")
+                        .HasForeignKey("RouteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_fare_rules_routes_route_id");
+
+                    b.Navigation("Fare");
+
+                    b.Navigation("Route");
+                });
+
             modelBuilder.Entity("Terminus.DAL.Entities.Route", b =>
                 {
                     b.HasOne("Terminus.DAL.Entities.Agency", "Agency")
@@ -540,6 +897,18 @@ namespace Terminus.DAL.Migrations
                         .HasConstraintName("fk_routes_agencies_agency_id");
 
                     b.Navigation("Agency");
+                });
+
+            modelBuilder.Entity("Terminus.DAL.Entities.ShapePoint", b =>
+                {
+                    b.HasOne("Terminus.DAL.Entities.Shape", "Shape")
+                        .WithMany("Points")
+                        .HasForeignKey("ShapeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_shape_points_shapes_shape_id");
+
+                    b.Navigation("Shape");
                 });
 
             modelBuilder.Entity("Terminus.DAL.Entities.Stop", b =>
@@ -590,24 +959,48 @@ namespace Terminus.DAL.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_trips_service_calendars_service_calendar_id");
 
+                    b.HasOne("Terminus.DAL.Entities.Shape", "Shape")
+                        .WithMany("Trips")
+                        .HasForeignKey("ShapeId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_trips_shapes_shape_id");
+
                     b.Navigation("Route");
 
                     b.Navigation("ServiceCalendar");
+
+                    b.Navigation("Shape");
                 });
 
             modelBuilder.Entity("Terminus.DAL.Entities.Agency", b =>
                 {
+                    b.Navigation("Fares");
+
                     b.Navigation("Routes");
+                });
+
+            modelBuilder.Entity("Terminus.DAL.Entities.Fare", b =>
+                {
+                    b.Navigation("Rules");
                 });
 
             modelBuilder.Entity("Terminus.DAL.Entities.Route", b =>
                 {
+                    b.Navigation("FareRules");
+
                     b.Navigation("Trips");
                 });
 
             modelBuilder.Entity("Terminus.DAL.Entities.ServiceCalendar", b =>
                 {
                     b.Navigation("CalendarDates");
+
+                    b.Navigation("Trips");
+                });
+
+            modelBuilder.Entity("Terminus.DAL.Entities.Shape", b =>
+                {
+                    b.Navigation("Points");
 
                     b.Navigation("Trips");
                 });

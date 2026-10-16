@@ -22,9 +22,12 @@ public class DepartureRepository(TerminusDbContext context) : IDepartureReposito
 
     public async Task<IReadOnlyList<IStopModel>> GetPlatformsAsync(Guid stationId, CancellationToken cancellationToken = default)
     {
+        // Ulazi i čvorovi stanice nisu peroni; vožnje staju samo na location_type 0.
+        const short platform = (short)LocationType.StopOrPlatform;
+
         var entities = await context.Stops
             .AsNoTracking()
-            .Where(s => s.ParentStationId == stationId)
+            .Where(s => s.ParentStationId == stationId && s.LocationType == platform)
             .ToListAsync(cancellationToken);
 
         return entities.Select(StopMapper.ToModel).ToList();

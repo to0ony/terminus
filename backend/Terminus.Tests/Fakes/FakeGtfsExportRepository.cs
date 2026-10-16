@@ -13,6 +13,9 @@ internal sealed class FakeGtfsExportRepository : IGtfsExportRepository
     public List<ICalendarDateModel> CalendarDates { get; } = [];
     public List<ITripModel> Trips { get; } = [];
     public List<IStopTimeModel> StopTimes { get; } = [];
+    public List<IShapeModel> Shapes { get; } = [];
+    public List<IFareModel> Fares { get; } = [];
+    public IFeedInfoModel? FeedInfo { get; set; }
 
     public Task<IReadOnlyList<IAgencyModel>> GetAgenciesAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<IAgencyModel>>(Agencies);
@@ -34,4 +37,13 @@ internal sealed class FakeGtfsExportRepository : IGtfsExportRepository
 
     public Task<IReadOnlyList<IStopTimeModel>> GetStopTimesAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<IStopTimeModel>>(StopTimes);
+
+    public Task<IReadOnlyList<IShapeModel>> GetShapesAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<IShapeModel>>(Shapes);
+
+    public Task<IReadOnlyList<IFareModel>> GetFaresAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<IFareModel>>(Fares);
+
+    public Task<IFeedInfoModel?> GetFeedInfoAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(FeedInfo);
 }

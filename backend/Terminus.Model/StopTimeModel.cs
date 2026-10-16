@@ -13,5 +13,8 @@ public class StopTimeModel : IStopTimeModel
     public string? StopHeadsign { get; set; }
     public PickupDropOffType PickupType { get; set; }
     public PickupDropOffType DropOffType { get; set; }
+    public ContinuousPickupDropOff? ContinuousPickup { get; set; }
+    public ContinuousPickupDropOff? ContinuousDropOff { get; set; }
+    public double? ShapeDistTraveled { get; set; }
     public bool Timepoint { get; set; } = true;
 }

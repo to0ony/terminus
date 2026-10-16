@@ -13,6 +13,7 @@ public class TripModel : ITripModel
     public string? ShortName { get; set; }
     public TripDirection? DirectionId { get; set; }
     public string? BlockId { get; set; }
+    public Guid? ShapeId { get; set; }
     public WheelchairAccessible WheelchairAccessible { get; set; }
     public BikesAllowed BikesAllowed { get; set; }
     public DateTime CreatedAt { get; set; }

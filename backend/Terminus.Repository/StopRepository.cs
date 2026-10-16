@@ -89,6 +89,9 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
     public Task<bool> HasChildStopsAsync(Guid id, CancellationToken cancellationToken = default) =>
         context.Stops.AnyAsync(s => s.ParentStationId == id, cancellationToken);
 
+    public Task<bool> IsUsedByTripsAsync(Guid id, CancellationToken cancellationToken = default) =>
+        context.StopTimes.AnyAsync(st => st.StopId == id, cancellationToken);
+
     public async Task<IStopModel> InsertAsync(IStopModel stop, CancellationToken cancellationToken = default)
     {
         var entity = new Stop();

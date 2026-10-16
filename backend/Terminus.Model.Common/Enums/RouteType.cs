@@ -1,6 +1,10 @@
 namespace Terminus.Model.Common.Enums;
 
-/// <summary>GTFS route_type (osnovne vrijednosti).</summary>
+/// <summary>
+/// GTFS route_type. Imenovane su osnovne vrijednosti; dopuštene su i proširene
+/// vrijednosti (Hierarchical Vehicle Types, npr. 700 = autobus, 200 = međugradski
+/// autobus), koje se spremaju kao broj.
+/// </summary>
 public enum RouteType : short
 {
     Tram = 0,

@@ -37,6 +37,7 @@ builder.Services.AddScoped<ITripRepository, TripRepository>();
 builder.Services.AddScoped<IStopTimeRepository, StopTimeRepository>();
 builder.Services.AddScoped<IGtfsExportRepository, GtfsExportRepository>();
 builder.Services.AddScoped<IDepartureRepository, DepartureRepository>();
+builder.Services.AddScoped<IShapeRepository, ShapeRepository>();
 
 // Servisi
 builder.Services.AddScoped<IAgencyService, AgencyService>();

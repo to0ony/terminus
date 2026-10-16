@@ -12,7 +12,10 @@ public class StopConfiguration : IEntityTypeConfiguration<Stop>
         {
             t.HasCheckConstraint("ck_stops_latitude", "latitude BETWEEN -90 AND 90");
             t.HasCheckConstraint("ck_stops_longitude", "longitude BETWEEN -180 AND 180");
-            t.HasCheckConstraint("ck_stops_location_type", "location_type IN (0, 1)");
+            // GTFS: koordinate su obavezne osim za čvorove (3) i mjesta ukrcavanja (4).
+            t.HasCheckConstraint("ck_stops_coordinates",
+                "location_type IN (3, 4) OR (latitude IS NOT NULL AND longitude IS NOT NULL)");
+            t.HasCheckConstraint("ck_stops_location_type", "location_type IN (0, 1, 2, 3, 4)");
             t.HasCheckConstraint("ck_stops_wheelchair", "wheelchair_boarding IN (0, 1, 2)");
             t.HasCheckConstraint("ck_stops_not_own_parent", "parent_station_id IS NULL OR parent_station_id <> id");
         });

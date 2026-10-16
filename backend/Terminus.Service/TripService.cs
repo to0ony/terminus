@@ -13,7 +13,8 @@ public class TripService(
     IStopTimeRepository stopTimeRepository,
     IRouteRepository routeRepository,
     IServiceCalendarRepository calendarRepository,
-    IStopRepository stopRepository) : ITripService
+    IStopRepository stopRepository,
+    IShapeRepository shapeRepository) : ITripService
 {
     /// <summary>GTFS: vožnja mora imati barem dvije stanice.</summary>
     private const int MinStopTimes = 2;
@@ -131,6 +132,11 @@ public class TripService(
             errors.Add(nameof(trip.ServiceCalendarId), "Kalendar ne postoji.");
         }
 
+        if (trip.ShapeId is Guid shapeId && !await shapeRepository.ExistsAsync(shapeId, cancellationToken))
+        {
+            errors.Add(nameof(trip.ShapeId), "Trasa ne postoji.");
+        }
+
         errors.ThrowIfAny();
     }
 
@@ -161,6 +167,10 @@ public class TripService(
             {
                 // GTFS: vožnja staje na stajalištu ili peronu, ne na roditeljskoj stanici.
                 errors.Add($"{prefix}.StopId", $"'{stop.Name}' je kolodvor; odaberi njegov peron ili stajalište.");
+            }
+            else if (stop.LocationType != LocationType.StopOrPlatform)
+            {
+                errors.Add($"{prefix}.StopId", $"'{stop.Name}' nije stajalište ni peron (ulaz, čvor ili mjesto ukrcavanja).");
             }
 
             if (stopTime.ArrivalTime is < 0 or > GtfsTime.MaxSeconds)
@@ -193,6 +203,29 @@ public class TripService(
             if (!Enum.IsDefined(stopTime.DropOffType))
             {
                 errors.Add($"{prefix}.DropOffType", "Nepoznata vrsta iskrcavanja.");
+            }
+
+            if (stopTime.ContinuousPickup is { } continuousPickup && !Enum.IsDefined(continuousPickup))
+            {
+                errors.Add($"{prefix}.ContinuousPickup", "Nepoznata vrijednost za ukrcavanje duž trase.");
+            }
+
+            if (stopTime.ContinuousDropOff is { } continuousDropOff && !Enum.IsDefined(continuousDropOff))
+            {
+                errors.Add($"{prefix}.ContinuousDropOff", "Nepoznata vrijednost za iskrcavanje duž trase.");
+            }
+
+            if (stopTime.ShapeDistTraveled is { } distance)
+            {
+                if (!double.IsFinite(distance) || distance < 0)
+                {
+                    errors.Add($"{prefix}.ShapeDistTraveled", "Prijeđena udaljenost ne smije biti negativna.");
+                }
+                else if (i > 0 && stopTimes[i - 1].ShapeDistTraveled is { } previous && distance < previous)
+                {
+                    // GTFS: udaljenost duž trase ne smije se smanjivati.
+                    errors.Add($"{prefix}.ShapeDistTraveled", "Prijeđena udaljenost ne smije biti manja nego na prethodnoj stanici.");
+                }
             }
         }
 

@@ -54,7 +54,7 @@ public class AgencyRepository(TerminusDbContext context) : IAgencyRepository
         AgencyMapper.Apply(agency, entity);
 
         context.Agencies.Add(entity);
-        await context.SaveChangesAsync(cancellationToken);
+        await SaveChangesAsync(agency, cancellationToken);
 
         // Id, CreatedAt i UpdatedAt je vratila baza (RETURNING).
         return AgencyMapper.ToModel(entity);
@@ -70,7 +70,7 @@ public class AgencyRepository(TerminusDbContext context) : IAgencyRepository
         }
 
         AgencyMapper.Apply(agency, entity);
-        await context.SaveChangesAsync(cancellationToken);
+        await SaveChangesAsync(agency, cancellationToken);
 
         return AgencyMapper.ToModel(entity);
     }
@@ -93,6 +93,14 @@ public class AgencyRepository(TerminusDbContext context) : IAgencyRepository
         {
             throw new ConflictException("Prijevoznik ima linije i ne može se obrisati.", ex);
         }
+        catch (Exception ex) when (ex.GetBaseException() is PostgresException
+        {
+            SqlState: PostgresErrorCodes.ForeignKeyViolation,
+            ConstraintName: "fk_fares_agencies_agency_id"
+        })
+        {
+            throw new ConflictException("Prijevoznik ima cijene karata i ne može se obrisati.", ex);
+        }
     }
 
     public Task<string?> GetOtherTimezoneAsync(Guid exceptId, string timezone, CancellationToken cancellationToken = default) =>
@@ -104,4 +112,16 @@ public class AgencyRepository(TerminusDbContext context) : IAgencyRepository
 
     public Task<bool> AnyAsync(CancellationToken cancellationToken = default) =>
         context.Agencies.AnyAsync(cancellationToken);
+
+    private async Task SaveChangesAsync(IAgencyModel agency, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (ex.GetBaseException() is PostgresException { ConstraintName: "uq_agencies_code" })
+        {
+            throw new ConflictException($"Prijevoznik s kodom '{agency.Code}' već postoji.", ex);
+        }
+    }
 }

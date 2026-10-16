@@ -18,6 +18,7 @@ public static class TripMappings
         ShortName = request.ShortName,
         DirectionId = request.DirectionId,
         BlockId = request.BlockId,
+        ShapeId = request.ShapeId,
         WheelchairAccessible = request.WheelchairAccessible,
         BikesAllowed = request.BikesAllowed
     };
@@ -31,6 +32,7 @@ public static class TripMappings
         model.ShortName,
         model.DirectionId,
         model.BlockId,
+        model.ShapeId,
         model.WheelchairAccessible,
         model.BikesAllowed,
         model.CreatedAt,
@@ -78,6 +80,9 @@ public static class TripMappings
                 StopHeadsign = item.StopHeadsign,
                 PickupType = item.PickupType,
                 DropOffType = item.DropOffType,
+                ContinuousPickup = item.ContinuousPickup,
+                ContinuousDropOff = item.ContinuousDropOff,
+                ShapeDistTraveled = item.ShapeDistTraveled,
                 Timepoint = item.Timepoint
             });
         }
@@ -98,6 +103,9 @@ public static class TripMappings
         model.StopHeadsign,
         model.PickupType,
         model.DropOffType,
+        model.ContinuousPickup,
+        model.ContinuousDropOff,
+        model.ShapeDistTraveled,
         model.Timepoint);
 
     private const string TimeFormatMessage = "Vrijeme mora biti u obliku HH:MM:SS, npr. 06:15:00 ili 25:30:00.";

@@ -16,6 +16,9 @@ public class StopTimeConfiguration : IEntityTypeConfiguration<StopTime>
             t.HasCheckConstraint("ck_stop_times_order", "departure_time >= arrival_time");
             t.HasCheckConstraint("ck_stop_times_pickup", "pickup_type IN (0, 1, 2, 3)");
             t.HasCheckConstraint("ck_stop_times_dropoff", "drop_off_type IN (0, 1, 2, 3)");
+            t.HasCheckConstraint("ck_stop_times_continuous_pickup", "continuous_pickup IS NULL OR continuous_pickup IN (0, 1, 2, 3)");
+            t.HasCheckConstraint("ck_stop_times_continuous_drop_off", "continuous_drop_off IS NULL OR continuous_drop_off IN (0, 1, 2, 3)");
+            t.HasCheckConstraint("ck_stop_times_shape_dist", "shape_dist_traveled IS NULL OR shape_dist_traveled >= 0");
         });
 
         builder.HasKey(e => new { e.TripId, e.StopSequence });

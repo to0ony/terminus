@@ -10,6 +10,7 @@ public class Trip : IAuditable
     public string? ShortName { get; set; }
     public short? DirectionId { get; set; }
     public string? BlockId { get; set; }
+    public Guid? ShapeId { get; set; }
     public short WheelchairAccessible { get; set; }
     public short BikesAllowed { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -17,5 +18,6 @@ public class Trip : IAuditable
 
     public Route Route { get; set; } = null!;
     public ServiceCalendar ServiceCalendar { get; set; } = null!;
+    public Shape? Shape { get; set; }
     public ICollection<StopTime> StopTimes { get; set; } = new List<StopTime>();
 }

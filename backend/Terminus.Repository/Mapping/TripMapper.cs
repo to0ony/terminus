@@ -17,6 +17,7 @@ internal static class TripMapper
         ShortName = entity.ShortName,
         DirectionId = (TripDirection?)entity.DirectionId,
         BlockId = entity.BlockId,
+        ShapeId = entity.ShapeId,
         WheelchairAccessible = (WheelchairAccessible)entity.WheelchairAccessible,
         BikesAllowed = (BikesAllowed)entity.BikesAllowed,
         CreatedAt = entity.CreatedAt,
@@ -33,6 +34,7 @@ internal static class TripMapper
         entity.ShortName = model.ShortName;
         entity.DirectionId = (short?)model.DirectionId;
         entity.BlockId = model.BlockId;
+        entity.ShapeId = model.ShapeId;
         entity.WheelchairAccessible = (short)model.WheelchairAccessible;
         entity.BikesAllowed = (short)model.BikesAllowed;
     }
@@ -47,6 +49,9 @@ internal static class TripMapper
         StopHeadsign = entity.StopHeadsign,
         PickupType = (PickupDropOffType)entity.PickupType,
         DropOffType = (PickupDropOffType)entity.DropOffType,
+        ContinuousPickup = (ContinuousPickupDropOff?)entity.ContinuousPickup,
+        ContinuousDropOff = (ContinuousPickupDropOff?)entity.ContinuousDropOff,
+        ShapeDistTraveled = entity.ShapeDistTraveled,
         Timepoint = entity.Timepoint
     };
 
@@ -60,6 +65,9 @@ internal static class TripMapper
         StopHeadsign = model.StopHeadsign,
         PickupType = (short)model.PickupType,
         DropOffType = (short)model.DropOffType,
+        ContinuousPickup = (short?)model.ContinuousPickup,
+        ContinuousDropOff = (short?)model.ContinuousDropOff,
+        ShapeDistTraveled = model.ShapeDistTraveled,
         Timepoint = model.Timepoint
     };
 }

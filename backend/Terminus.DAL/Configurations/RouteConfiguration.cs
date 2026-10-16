@@ -13,6 +13,8 @@ public class RouteConfiguration : IEntityTypeConfiguration<Route>
             t.HasCheckConstraint("ck_routes_name", "short_name IS NOT NULL OR long_name IS NOT NULL");
             t.HasCheckConstraint("ck_routes_color", "color IS NULL OR color ~ '^[0-9A-Fa-f]{6}$'");
             t.HasCheckConstraint("ck_routes_text_color", "text_color IS NULL OR text_color ~ '^[0-9A-Fa-f]{6}$'");
+            t.HasCheckConstraint("ck_routes_continuous_pickup", "continuous_pickup IS NULL OR continuous_pickup IN (0, 1, 2, 3)");
+            t.HasCheckConstraint("ck_routes_continuous_drop_off", "continuous_drop_off IS NULL OR continuous_drop_off IN (0, 1, 2, 3)");
         });
 
         builder.HasKey(e => e.Id);

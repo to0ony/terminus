@@ -22,6 +22,14 @@ public interface IStopTimeModel
     PickupDropOffType PickupType { get; set; }
     PickupDropOffType DropOffType { get; set; }
 
+    /// <summary>Null znači vrijednost linije (GTFS continuous_pickup).</summary>
+    ContinuousPickupDropOff? ContinuousPickup { get; set; }
+
+    ContinuousPickupDropOff? ContinuousDropOff { get; set; }
+
+    /// <summary>Prijeđena udaljenost duž trase, u istim jedinicama kao trasa (GTFS shape_dist_traveled).</summary>
+    double? ShapeDistTraveled { get; set; }
+
     /// <summary>true = točno vrijeme, false = okvirno.</summary>
     bool Timepoint { get; set; }
 }

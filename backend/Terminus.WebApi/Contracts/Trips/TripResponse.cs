@@ -11,6 +11,7 @@ public record TripResponse(
     string? ShortName,
     TripDirection? DirectionId,
     string? BlockId,
+    Guid? ShapeId,
     WheelchairAccessible WheelchairAccessible,
     BikesAllowed BikesAllowed,
     DateTime CreatedAt,

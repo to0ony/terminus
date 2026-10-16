@@ -20,6 +20,9 @@ public interface ITripModel
     /// <summary>Vožnje s istim BlockId vozi isto vozilo.</summary>
     string? BlockId { get; set; }
 
+    /// <summary>Trasa vožnje (GTFS shape_id).</summary>
+    Guid? ShapeId { get; set; }
+
     WheelchairAccessible WheelchairAccessible { get; set; }
     BikesAllowed BikesAllowed { get; set; }
     DateTime CreatedAt { get; set; }

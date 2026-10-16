@@ -49,9 +49,36 @@ public class AgencyServiceTests
         Assert.Equal("Europe/London", updated.Timezone);
     }
 
+    [Fact]
+    public async Task CreateAsync_WithoutCode_ThrowsValidationError()
+    {
+        var service = new AgencyService(new FakeAgencyRepository());
+        var agency = Agency("Europe/Zagreb");
+        agency.Code = " ";
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            () => service.CreateAsync(agency, TestContext.Current.CancellationToken));
+
+        Assert.Contains(nameof(AgencyModel.Code), ex.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task CreateAsync_InvalidFareUrl_ThrowsValidationError()
+    {
+        var service = new AgencyService(new FakeAgencyRepository());
+        var agency = Agency("Europe/Zagreb");
+        agency.FareUrl = "cijene.html";
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            () => service.CreateAsync(agency, TestContext.Current.CancellationToken));
+
+        Assert.Contains(nameof(AgencyModel.FareUrl), ex.Errors.Keys);
+    }
+
     private static AgencyModel Agency(string timezone) => new()
     {
         Id = Guid.NewGuid(),
+        Code = "PRIJEVOZNIK",
         Name = "Prijevoznik",
         Url = "https://example.com",
         Timezone = timezone,

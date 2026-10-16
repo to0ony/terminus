@@ -3,14 +3,17 @@ namespace Terminus.DAL.Entities;
 public class Agency : IAuditable
 {
     public Guid Id { get; set; }
+    public string Code { get; set; } = null!;
     public string Name { get; set; } = null!;
     public string Url { get; set; } = null!;
     public string Timezone { get; set; } = "Europe/Zagreb";
     public string Lang { get; set; } = "hr";
     public string? Phone { get; set; }
+    public string? FareUrl { get; set; }
     public string? Email { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
     public ICollection<Route> Routes { get; set; } = new List<Route>();
+    public ICollection<Fare> Fares { get; set; } = new List<Fare>();
 }

@@ -22,6 +22,10 @@ public class TripRequest
     public TripDirection? DirectionId { get; set; }
 
     public string? BlockId { get; set; }
+
+    /// <summary>Trasa vožnje (GTFS shape_id).</summary>
+    public Guid? ShapeId { get; set; }
+
     public WheelchairAccessible WheelchairAccessible { get; set; } = WheelchairAccessible.Unknown;
     public BikesAllowed BikesAllowed { get; set; } = BikesAllowed.Unknown;
 }

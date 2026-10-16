@@ -17,7 +17,12 @@ public interface IRouteModel
     string? LongName { get; set; }
 
     string? Description { get; set; }
+
+    /// <summary>Osnovna ili proširena vrijednost (vidi <see cref="RouteTypes"/>).</summary>
     RouteType RouteType { get; set; }
+
+    /// <summary>Web stranica linije (GTFS route_url).</summary>
+    string? Url { get; set; }
 
     /// <summary>Hex boja bez #, npr. "FF0000".</summary>
     string? Color { get; set; }
@@ -26,6 +31,15 @@ public interface IRouteModel
     string? TextColor { get; set; }
 
     int? SortOrder { get; set; }
+
+    /// <summary>Null znači da nije zadano (u GTFS-u isto kao <see cref="ContinuousPickupDropOff.None"/>).</summary>
+    ContinuousPickupDropOff? ContinuousPickup { get; set; }
+
+    ContinuousPickupDropOff? ContinuousDropOff { get; set; }
+
+    /// <summary>Mreža kojoj linija pripada (GTFS network_id).</summary>
+    string? NetworkId { get; set; }
+
     bool IsActive { get; set; }
     DateTime CreatedAt { get; set; }
     DateTime UpdatedAt { get; set; }
