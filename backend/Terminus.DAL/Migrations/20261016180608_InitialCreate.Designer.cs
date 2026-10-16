@@ -12,8 +12,8 @@ using Terminus.DAL;
 namespace Terminus.DAL.Migrations
 {
     [DbContext(typeof(TerminusDbContext))]
-    [Migration("20261016180103_AddAdminAuthentication")]
-    partial class AddAdminAuthentication
+    [Migration("20261016180608_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -486,6 +486,73 @@ namespace Terminus.DAL.Migrations
                     b.ToTable("feed_info", null, t =>
                         {
                             t.HasCheckConstraint("ck_feed_info_single_row", "id = 1");
+                        });
+                });
+
+            modelBuilder.Entity("Terminus.DAL.Entities.InstanceSettings", b =>
+                {
+                    b.Property<short>("Id")
+                        .HasColumnType("smallint")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("DisplayName")
+                        .HasColumnType("text")
+                        .HasColumnName("display_name");
+
+                    b.Property<byte[]>("Logo")
+                        .HasColumnType("bytea")
+                        .HasColumnName("logo");
+
+                    b.Property<string>("LogoContentType")
+                        .HasColumnType("text")
+                        .HasColumnName("logo_content_type");
+
+                    b.Property<DateTime?>("LogoUpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("logo_updated_at");
+
+                    b.Property<string>("PrimaryColor")
+                        .HasColumnType("text")
+                        .HasColumnName("primary_color");
+
+                    b.Property<string>("PrimaryTextColor")
+                        .HasColumnType("text")
+                        .HasColumnName("primary_text_color");
+
+                    b.Property<bool>("PublicGtfsEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("public_gtfs_enabled");
+
+                    b.Property<string>("PublicUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("public_url");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id")
+                        .HasName("pk_settings");
+
+                    b.ToTable("settings", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_settings_logo", "(logo IS NULL) = (logo_content_type IS NULL) AND (logo IS NULL) = (logo_updated_at IS NULL)");
+
+                            t.HasCheckConstraint("ck_settings_primary_color", "primary_color ~ '^[0-9A-F]{6}$'");
+
+                            t.HasCheckConstraint("ck_settings_primary_text_color", "primary_text_color ~ '^[0-9A-F]{6}$'");
+
+                            t.HasCheckConstraint("ck_settings_single_row", "id = 1");
                         });
                 });
 
