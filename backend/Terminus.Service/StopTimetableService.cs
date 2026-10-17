@@ -1,16 +1,20 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
+using QRCoder;
 using Terminus.Common;
 using Terminus.Common.Exceptions;
 using Terminus.Model.Common.Enums;
 using Terminus.Repository.Common;
 using Terminus.Service.Common;
+using Terminus.Service.Pdf;
 
 namespace Terminus.Service;
 
 public class StopTimetableService(
     IStopRepository stopRepository,
     IDepartureRepository departureRepository,
-    ITimetableService timetableService) : IStopTimetableService
+    ITimetableService timetableService,
+    ISettingsService settingsService) : IStopTimetableService
 {
     /// <summary>Najdulje razdoblje jednog voznog reda.</summary>
     public const int MaxDays = 366;
@@ -65,5 +69,41 @@ public class StopTimetableService(
         }
 
         return new StopTimetable(stop, agency.Name, start, end, sections);
+    }
+
+    public async Task<TimetablePdf> GetPdfAsync(Guid stopId, TimetablePdfOptions options, DateTimeOffset now, CancellationToken cancellationToken = default)
+    {
+        var timetable = await GetAsync(stopId, options.From, options.To, now, cancellationToken);
+        var settings = await settingsService.GetAsync(cancellationToken);
+
+        (byte[], bool)? logo = null;
+        if (settings.LogoUpdatedAt is not null)
+        {
+            var image = await settingsService.GetLogoAsync(cancellationToken);
+            logo = (image.Content, image.ContentType == "image/svg+xml");
+        }
+
+        var content = StopTimetableDocument.Generate(
+            timetable,
+            options,
+            settings.DisplayName ?? timetable.AgencyName,
+            settings.PrimaryColor,
+            logo,
+            settings.PublicUrl is { } publicUrl ? BoardQrCode(publicUrl, timetable.Stop.Code) : null);
+
+        var texts = TimetableTexts.For(options.Language);
+        var code = Regex.Replace(timetable.Stop.Code, "[^A-Za-z0-9_-]", "_");
+        var fileName = $"{texts.FilePrefix}-{code}-{timetable.From.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}.pdf";
+
+        return new TimetablePdf(content, fileName);
+    }
+
+    /// <summary>QR kod koji vodi na zaslon polazaka stanice (/board/{kod}).</summary>
+    private static string BoardQrCode(string publicUrl, string stopCode)
+    {
+        var url = $"{publicUrl.TrimEnd('/')}/board/{Uri.EscapeDataString(stopCode)}";
+        using var generator = new QRCodeGenerator();
+        using var data = generator.CreateQrCode(url, QRCodeGenerator.ECCLevel.M);
+        return new SvgQRCode(data).GetGraphic(4);
     }
 }

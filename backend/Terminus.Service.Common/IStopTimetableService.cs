@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Terminus.Model.Common;
 
 namespace Terminus.Service.Common;
@@ -13,6 +14,35 @@ public interface IStopTimetableService
     /// zadnjeg dana s voznim redom.
     /// </summary>
     Task<StopTimetable> GetAsync(Guid stopId, DateOnly? from, DateOnly? to, DateTimeOffset now, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Vozni red stanice kao PDF za ispis, s nazivom, bojama i logom iz postavki.
+    /// QR kod vodi na zaslon polazaka stanice ako je u postavkama javna adresa.
+    /// </summary>
+    Task<TimetablePdf> GetPdfAsync(Guid stopId, TimetablePdfOptions options, DateTimeOffset now, CancellationToken cancellationToken = default);
+}
+
+/// <param name="From">Prvi dan; bez njega danas.</param>
+/// <param name="To">Zadnji dan; bez njega zadnji dan s voznim redom.</param>
+public sealed record TimetablePdfOptions(DateOnly? From, DateOnly? To, PaperSize Paper, TimetableLanguage Language);
+
+public sealed record TimetablePdf(byte[] Content, string FileName);
+
+// Kao tekst ("A4", "Hr"), i u OpenAPI opisu i u adresi.
+[JsonConverter(typeof(JsonStringEnumConverter<PaperSize>))]
+public enum PaperSize
+{
+    A4,
+
+    /// <summary>Za kolodvore s mnogo linija: tri stupca odjeljaka umjesto dva.</summary>
+    A3
+}
+
+[JsonConverter(typeof(JsonStringEnumConverter<TimetableLanguage>))]
+public enum TimetableLanguage
+{
+    Hr,
+    En
 }
 
 /// <param name="AgencyName">Naziv prvog unesenog prijevoznika.</param>

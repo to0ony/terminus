@@ -14,6 +14,7 @@ public class StopsController(
     IStopService stopService,
     ITimetableService timetableService,
     IDepartureService departureService,
+    IStopTimetableService stopTimetableService,
     TimeProvider timeProvider) : ControllerBase
 {
     [HttpGet]
@@ -80,6 +81,26 @@ public class StopsController(
     {
         var result = await departureService.GetForDayAsync(id, query.Date, timeProvider.GetUtcNow(), cancellationToken);
         return Ok(result.ToResponse());
+    }
+
+    /// <summary>
+    /// Vozni red stanice za ispis (PDF): polasci po liniji i smjeru, stupci po
+    /// danima u tjednu s istim voznim redom, odstupanja kao napomene. Razdoblje
+    /// je zadano od danas do zadnjeg dana s voznim redom, najviše 366 dana.
+    /// 422 ako u razdoblju sa stanice nema polazaka.
+    /// </summary>
+    [HttpGet("{id:guid}/timetable.pdf")]
+    [ProducesResponseType<FileContentResult>(StatusCodes.Status200OK, "application/pdf")]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> GetTimetablePdf(
+        Guid id,
+        [FromQuery] StopTimetableQuery query,
+        CancellationToken cancellationToken)
+    {
+        var pdf = await stopTimetableService.GetPdfAsync(id, query.ToOptions(), timeProvider.GetUtcNow(), cancellationToken);
+        return File(pdf.Content, "application/pdf", pdf.FileName);
     }
 
     [HttpGet("{id:guid}")]
