@@ -12,6 +12,7 @@ public record TripResponse(
     TripDirection? DirectionId,
     string? BlockId,
     Guid? ShapeId,
+    Guid? VariantId,
     WheelchairAccessible WheelchairAccessible,
     BikesAllowed BikesAllowed,
     TripSummaryResponse Summary,

@@ -14,7 +14,8 @@ public class TripService(
     IRouteRepository routeRepository,
     IServiceCalendarRepository calendarRepository,
     IStopRepository stopRepository,
-    IShapeRepository shapeRepository) : ITripService
+    IShapeRepository shapeRepository,
+    IRouteVariantRepository variantRepository) : ITripService
 {
     public async Task<ITripModel> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
         await tripRepository.GetAsync(id, cancellationToken) ?? throw TripNotFound(id);
@@ -132,6 +133,12 @@ public class TripService(
         if (trip.ShapeId is Guid shapeId && !await shapeRepository.ExistsAsync(shapeId, cancellationToken))
         {
             errors.Add(nameof(trip.ShapeId), "Trasa ne postoji.");
+        }
+
+        if (trip.VariantId is Guid variantId
+            && (await variantRepository.GetAsync(variantId, cancellationToken))?.RouteId != trip.RouteId)
+        {
+            errors.Add(nameof(trip.VariantId), "Varijanta ne postoji ili ne pripada liniji vožnje.");
         }
 
         errors.ThrowIfAny();

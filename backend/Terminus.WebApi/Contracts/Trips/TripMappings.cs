@@ -19,6 +19,7 @@ public static class TripMappings
         DirectionId = request.DirectionId,
         BlockId = request.BlockId,
         ShapeId = request.ShapeId,
+        VariantId = request.VariantId,
         WheelchairAccessible = request.WheelchairAccessible,
         BikesAllowed = request.BikesAllowed
     };
@@ -33,6 +34,7 @@ public static class TripMappings
         model.DirectionId,
         model.BlockId,
         model.ShapeId,
+        model.VariantId,
         model.WheelchairAccessible,
         model.BikesAllowed,
         model.Summary.ToResponse(),

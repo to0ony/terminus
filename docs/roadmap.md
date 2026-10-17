@@ -13,7 +13,7 @@ detaljan opis funkcija je u ostalim dokumentima (npr.
 | 2 Uvoz GTFS-a | ✅ |
 | 3 Dashboard za pregled | ✅ osim trase linije na karti |
 | 4 Za putnike (zaslon na stanici, PDF, javni feed) | ✅ osim PDF-a za sve stanice odjednom |
-| 5 Editor | kalendari (sezone, tipovi dana, praznici) ✅, grafikon vožnji ✅; nova linija od nule, trase i ostalo u planu |
+| 5 Editor | kalendari (sezone, tipovi dana, praznici) ✅, grafikon vožnji ✅, varijante linija (backend) ✅; uvoz kao osnova, editor linija i varijanti, grafikon po varijantama u izradi |
 | 6 Produkcija | čeka odluku o hostingu |
 
 ## Cilj
@@ -108,7 +108,7 @@ Detaljno u [departures-and-timetables.md](departures-and-timetables.md).
 
 | # | Korak | Ovisi o |
 |---|---|---|
-| 5.1 | Odluka: vožnje ostaju u GTFS obliku, a uređuju se kroz **grafikon voznog reda** (stanice × vrijeme, vožnja je crta kroz točkice koje se povlače) | — |
+| 5.1 | Odluka: vožnje ostaju u GTFS obliku i uređuju se kroz **grafikon voznog reda**; **varijante linije** (redoslijed stanica smjera s vremenima vožnje) su pravi zapis i predložak za nove vožnje ✅ | — |
 | 5.2 | Uređivanje stanica (karta), prijevoznika i linija; kalendari kroz sezone voznog reda (razdoblje, tipovi dana, iznimke klikom na dan, i za praznu instancu) ✅ | 3.x |
 | 5.3 | Uređivanje vožnji i vremena u grafikonu (povlačenje vožnje i točkica, točna vremena u panelu, tip dana, poništavanje, spremanje u jednoj transakciji s provjerom sukoba) ✅ | 5.1, 3.5 |
 | 5.4 | Brzi unos: nova vožnja klikom, kopiranje s pomakom (npr. +30 min, 10 puta), generator takta, pomak i brisanje više vožnji ✅ | 5.3 |
@@ -118,8 +118,21 @@ Detaljno u [departures-and-timetables.md](departures-and-timetables.md).
 | 5.8 | Upravljanje administratorima: dodavanje, uklanjanje, reset lozinke | 1.1 |
 | 5.9 | Upozorenja kod izvoza koja ne blokiraju izvoz (npr. feed istječe za 7 dana) | — |
 
-Odluka 5.1 donosi se prije dizajna zaslona za vožnje. Ako se uvedu obrasci,
-uvoz (faza 2) treba prepoznati obrasce u uvezenim vožnjama.
+**Plan editora (dogovoreno 18. 10. 2026.)** Aplikacija je alat u kojem se vozni
+red radi, a GTFS uvoz je samo pomoć na početku. Ciljani su mali i srednji
+prijevoznici. Redoslijed:
+
+1. Varijante linija u backendu (prepoznavanje iz vožnji, API) ✅
+2. **Uvoz kao osnova:** prijevoznici, stanice, linije, varijante s vremenima
+   vožnje i trase, bez kalendara i vožnji; pregled varijanti pri uvozu
+   (rijetke zadano isključene); ponovni uvoz dopunjava i ne dira sezone ni
+   vožnje; čarobnjak vodi dalje (sezona, vožnje).
+3. **Editor linija i varijanti:** nova linija, varijanta klikom na stanice na
+   karti, vremena vožnje po dionici, nova stanica i premještanje na karti.
+4. **Grafikon po varijantama:** redci iz odabranih varijanti, takt i nova
+   vožnja po varijanti, "Nacrtaj vožnju" (dva klika: prva i zadnja stanica,
+   međustanice po vremenima vožnje; po želji stanica po stanica).
+5. Deploy (faza 6), pa trase za nove varijante (5.6).
 
 ## Faza 6: produkcija
 

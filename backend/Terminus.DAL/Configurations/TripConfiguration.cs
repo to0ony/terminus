@@ -41,6 +41,15 @@ public class TripConfiguration : IEntityTypeConfiguration<Trip>
             .HasForeignKey(e => e.ShapeId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        // Brisanje varijante ostavlja vožnje bez nje (servis to ne dopušta dok ih ima).
+        builder.HasOne(e => e.Variant)
+            .WithMany(v => v.Trips)
+            .HasForeignKey(e => e.VariantId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasIndex(e => e.VariantId)
+            .HasDatabaseName("ix_trips_variant_id");
+
         builder.HasIndex(e => e.ShapeId)
             .HasDatabaseName("ix_trips_shape_id");
 

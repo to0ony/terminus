@@ -36,6 +36,7 @@ public record ScheduleTripResponse(
     string? ShortName,
     string? BlockId,
     Guid? ShapeId,
+    Guid? VariantId,
     WheelchairAccessible WheelchairAccessible,
     BikesAllowed BikesAllowed,
     DateTime UpdatedAt,
@@ -80,6 +81,10 @@ public class ScheduleTripRequest
     public string? ShortName { get; set; }
     public string? BlockId { get; set; }
     public Guid? ShapeId { get; set; }
+
+    /// <summary>Varijanta linije po kojoj vožnja vozi.</summary>
+    public Guid? VariantId { get; set; }
+
     public WheelchairAccessible WheelchairAccessible { get; set; }
     public BikesAllowed BikesAllowed { get; set; }
 
@@ -127,6 +132,7 @@ public static class ScheduleMappings
             t.Trip.ShortName,
             t.Trip.BlockId,
             t.Trip.ShapeId,
+            t.Trip.VariantId,
             t.Trip.WheelchairAccessible,
             t.Trip.BikesAllowed,
             t.Trip.UpdatedAt,
@@ -155,6 +161,7 @@ public static class ScheduleMappings
                 ShortName = u.ShortName,
                 BlockId = u.BlockId,
                 ShapeId = u.ShapeId,
+                VariantId = u.VariantId,
                 WheelchairAccessible = u.WheelchairAccessible,
                 BikesAllowed = u.BikesAllowed
             },

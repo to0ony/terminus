@@ -11,6 +11,10 @@ public class Trip : IAuditable
     public short? DirectionId { get; set; }
     public string? BlockId { get; set; }
     public Guid? ShapeId { get; set; }
+
+    /// <summary>Varijanta linije po kojoj vožnja vozi; nije dio GTFS-a.</summary>
+    public Guid? VariantId { get; set; }
+
     public short WheelchairAccessible { get; set; }
     public short BikesAllowed { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -19,5 +23,6 @@ public class Trip : IAuditable
     public Route Route { get; set; } = null!;
     public ServiceCalendar ServiceCalendar { get; set; } = null!;
     public Shape? Shape { get; set; }
+    public RouteVariant? Variant { get; set; }
     public ICollection<StopTime> StopTimes { get; set; } = new List<StopTime>();
 }

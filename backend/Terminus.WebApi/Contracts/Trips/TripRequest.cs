@@ -26,6 +26,9 @@ public class TripRequest
     /// <summary>Trasa vožnje (GTFS shape_id).</summary>
     public Guid? ShapeId { get; set; }
 
+    /// <summary>Varijanta linije po kojoj vožnja vozi; mora pripadati istoj liniji.</summary>
+    public Guid? VariantId { get; set; }
+
     public WheelchairAccessible WheelchairAccessible { get; set; } = WheelchairAccessible.Unknown;
     public BikesAllowed BikesAllowed { get; set; } = BikesAllowed.Unknown;
 }

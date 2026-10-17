@@ -29,7 +29,7 @@ public class ScheduleServiceTests
         departures.Calendars.Add(_workdays);
         departures.Calendars.Add(_sunday);
 
-        _service = new ScheduleService(routes, _timetable, _schedule, new FakeStopRepository(_stops), departures, new FakeShapeRepository());
+        _service = new ScheduleService(routes, _timetable, _schedule, new FakeStopRepository(_stops), departures, new FakeShapeRepository(), new FakeRouteVariantRepository());
     }
 
     [Fact]

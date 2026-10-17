@@ -28,6 +28,7 @@ Tablice izvan GTFS-a:
 | `data_protection_keys` | Ključevi za šifriranje kolačića prijave (ASP.NET Core Data Protection). |
 | `timetable_seasons` | Sezone voznog reda: razdoblje, država praznika i pravilo za praznike. |
 | `season_days` | Dani sezone koji odstupaju od dana u tjednu (praznici i ručne iznimke). |
+| `route_variants`, `route_variant_stops` | Varijante linije: redoslijed stanica smjera s vremenima vožnje i stajanja. |
 
 Veze:
 
@@ -35,6 +36,7 @@ Veze:
 - `stops` 1 → N `stops` (peroni, ulazi i čvorovi stanice; mjesta ukrcavanja perona, preko `parent_station_id`)
 - `service_calendars` 1 → N `calendar_dates`
 - `timetable_seasons` 1 → N `service_calendars` (tipovi dana sezone), `timetable_seasons` 1 → N `season_days`
+- `routes` 1 → N `route_variants` 1 → N `route_variant_stops`; `route_variants` 1 → N `trips` (`trips.variant_id`)
 - `routes` 1 → N `trips`, `service_calendars` 1 → N `trips`, `shapes` 1 → N `trips`
 - `trips` 1 → N `stop_times`, `stops` 1 → N `stop_times`
 - `shapes` 1 → N `shape_points`
@@ -108,6 +110,17 @@ nedjelju), pa se tipovi dana sezone ne uređuju preko `/api/calendars` (409).
 Svaki dan u tjednu pripada najviše jednom tipu dana, a sezone se ne preklapaju.
 Kalendari uvezeni iz GTFS-a nisu u sezoni i ostaju kakvi jesu. GTFS uvoz briše
 i sezone.
+
+**Varijante linije.** Varijanta (`route_variants`) je redoslijed stanica
+jednog smjera linije (npr. glavna Črnomerec → Sopot, skraćena, iz garaže), s
+vremenom vožnje od prethodne stanice i stajanjem za svaku stanicu
+(`route_variant_stops`), natpisom smjera i trasom. Nije dio GTFS-a: služi kao
+predložak za nove vožnje, a vožnja (`trips.variant_id`) i dalje ima svoja
+vremena, koja idu u izvoz. Prva varijanta smjera (`sort_order`) je glavna.
+Varijante se mogu prepoznati iz postojećih vožnji: isti smjer i redoslijed
+stanica čine varijantu, a vremena vožnje su medijan njezinih vožnji. Stanice
+varijante koju koriste vožnje ne mogu se promijeniti, a takva varijanta ne
+može se obrisati (409).
 
 **Aktivnost.** `stops.is_active` i `routes.is_active` nisu dio GTFS-a; služe za
 privremeno isključivanje zapisa bez brisanja.

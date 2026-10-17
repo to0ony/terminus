@@ -192,6 +192,14 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
         {
             throw new ConflictException("Stanica se koristi u voznom redu i ne može se obrisati.", ex);
         }
+        catch (Exception ex) when (ex.GetBaseException() is PostgresException
+        {
+            SqlState: PostgresErrorCodes.ForeignKeyViolation,
+            ConstraintName: "fk_route_variant_stops_stops_stop_id"
+        })
+        {
+            throw new ConflictException("Stanica je u varijanti linije i ne može se obrisati.", ex);
+        }
     }
 
     private async Task SaveChangesAsync(IStopModel stop, CancellationToken cancellationToken)

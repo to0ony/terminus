@@ -13,7 +13,8 @@ public class ScheduleService(
     IScheduleRepository scheduleRepository,
     IStopRepository stopRepository,
     IDepartureRepository departureRepository,
-    IShapeRepository shapeRepository) : IScheduleService
+    IShapeRepository shapeRepository,
+    IRouteVariantRepository variantRepository) : IScheduleService
 {
     /// <summary>Najviše vožnji u jednom spremanju; zaštita od pogrešnog klijenta.</summary>
     public const int MaxChanges = 5000;
@@ -101,6 +102,7 @@ public class ScheduleService(
         var stopIds = changes.Upserts.SelectMany(u => u.StopTimes).Select(st => st.StopId).Distinct().ToList();
         var stops = (await stopRepository.GetManyAsync(stopIds, cancellationToken)).ToDictionary(s => s.Id);
         var shapes = new Dictionary<Guid, bool>();
+        var variants = (await variantRepository.ListByRouteAsync(routeId, cancellationToken)).Select(v => v.Id).ToHashSet();
 
         var upserts = new List<TripStopTimes>();
         for (var i = 0; i < changes.Upserts.Count; i++)
@@ -138,6 +140,10 @@ public class ScheduleService(
                 {
                     errors.Add($"{path}.ShapeId", "Trasa ne postoji.");
                 }
+            }
+            if (trip.VariantId is { } variantId && !variants.Contains(variantId))
+            {
+                errors.Add($"{path}.VariantId", "Varijanta ne pripada ovoj liniji.");
             }
             if (!Enum.IsDefined(trip.WheelchairAccessible) || !Enum.IsDefined(trip.BikesAllowed))
             {

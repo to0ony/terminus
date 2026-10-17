@@ -235,6 +235,62 @@ CREATE TABLE season_days (
 CREATE INDEX ix_season_days_calendar_id ON season_days (calendar_id);
 
 -- ---------------------------------------------------------------------
+-- route_variants, route_variant_stops: varijante linije (redoslijed
+-- stanica smjera s vremenima vožnje). Nisu dio GTFS-a; predložak su za
+-- nove vožnje (trips.variant_id), a izvoz koristi vremena vožnji.
+--   source:      0 = ručno, 1 = prepoznata iz vožnji (GTFS uvoz)
+--   travel_time: sekunde od polaska s prethodne stanice (0 za prvu)
+--   dwell_time:  sekunde stajanja na stanici
+-- ---------------------------------------------------------------------
+CREATE TABLE route_variants (
+    id           uuid        NOT NULL DEFAULT gen_random_uuid(),
+    route_id     uuid        NOT NULL,
+    name         text        NOT NULL,
+    direction_id smallint,
+    headsign     text,
+    shape_id     uuid,
+    sort_order   integer     NOT NULL,
+    source       smallint    NOT NULL,
+    created_at   timestamptz NOT NULL DEFAULT now(),
+    updated_at   timestamptz NOT NULL DEFAULT now(),
+
+    CONSTRAINT pk_route_variants PRIMARY KEY (id),
+    CONSTRAINT fk_route_variants_routes_route_id
+        FOREIGN KEY (route_id) REFERENCES routes (id) ON DELETE CASCADE,
+    CONSTRAINT fk_route_variants_shapes_shape_id
+        FOREIGN KEY (shape_id) REFERENCES shapes (id) ON DELETE SET NULL,
+    CONSTRAINT ck_route_variants_direction CHECK (direction_id IS NULL OR direction_id IN (0, 1)),
+    CONSTRAINT ck_route_variants_source CHECK (source IN (0, 1))
+);
+
+CREATE INDEX ix_route_variants_route_id ON route_variants (route_id);
+CREATE INDEX ix_route_variants_shape_id ON route_variants (shape_id);
+
+CREATE TABLE route_variant_stops (
+    variant_id  uuid    NOT NULL,
+    sequence    integer NOT NULL,
+    stop_id     uuid    NOT NULL,
+    travel_time integer NOT NULL,
+    dwell_time  integer NOT NULL,
+
+    CONSTRAINT pk_route_variant_stops PRIMARY KEY (variant_id, sequence),
+    CONSTRAINT fk_route_variant_stops_route_variants_variant_id
+        FOREIGN KEY (variant_id) REFERENCES route_variants (id) ON DELETE CASCADE,
+    CONSTRAINT fk_route_variant_stops_stops_stop_id
+        FOREIGN KEY (stop_id) REFERENCES stops (id),
+    CONSTRAINT ck_route_variant_stops_times CHECK (travel_time >= 0 AND dwell_time >= 0)
+);
+
+CREATE INDEX ix_route_variant_stops_stop_id ON route_variant_stops (stop_id);
+
+ALTER TABLE trips
+    ADD COLUMN variant_id uuid,
+    ADD CONSTRAINT fk_trips_route_variants_variant_id
+        FOREIGN KEY (variant_id) REFERENCES route_variants (id) ON DELETE SET NULL;
+
+CREATE INDEX ix_trips_variant_id ON trips (variant_id);
+
+-- ---------------------------------------------------------------------
 -- shapes, shape_points: trasa vožnje na karti. GTFS: shapes.txt
 --   dist_traveled: prijeđena udaljenost od početka trase, u jedinicama
 --                  po izboru (iste kao stop_times.shape_dist_traveled)

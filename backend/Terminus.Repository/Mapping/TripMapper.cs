@@ -18,6 +18,7 @@ internal static class TripMapper
         DirectionId = (TripDirection?)entity.DirectionId,
         BlockId = entity.BlockId,
         ShapeId = entity.ShapeId,
+        VariantId = entity.VariantId,
         WheelchairAccessible = (WheelchairAccessible)entity.WheelchairAccessible,
         BikesAllowed = (BikesAllowed)entity.BikesAllowed,
         CreatedAt = entity.CreatedAt,
@@ -35,6 +36,7 @@ internal static class TripMapper
         entity.DirectionId = (short?)model.DirectionId;
         entity.BlockId = model.BlockId;
         entity.ShapeId = model.ShapeId;
+        entity.VariantId = model.VariantId;
         entity.WheelchairAccessible = (short)model.WheelchairAccessible;
         entity.BikesAllowed = (short)model.BikesAllowed;
     }

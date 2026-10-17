@@ -23,6 +23,10 @@ public interface ITripModel
     /// <summary>Trasa vožnje (GTFS shape_id).</summary>
     Guid? ShapeId { get; set; }
 
+    /// <summary>Varijanta linije po kojoj vožnja vozi; nije dio GTFS-a.</summary>
+    Guid? VariantId { get; set; }
+
+
     WheelchairAccessible WheelchairAccessible { get; set; }
     BikesAllowed BikesAllowed { get; set; }
     /// <summary>Prva i zadnja stanica s vremenima; puni se samo pri čitanju, null kod upisa.</summary>

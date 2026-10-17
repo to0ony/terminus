@@ -23,7 +23,7 @@ public class GtfsImportRepository(TerminusDbContext context) : IGtfsImportReposi
         var connection = (NpgsqlConnection)context.Database.GetDbConnection();
 
         await context.Database.ExecuteSqlRawAsync(
-            "TRUNCATE TABLE stop_times, trips, fare_rules, fares, shape_points, shapes, calendar_dates, " +
+            "TRUNCATE TABLE stop_times, trips, route_variant_stops, route_variants, fare_rules, fares, shape_points, shapes, calendar_dates, " +
             "season_days, service_calendars, timetable_seasons, routes, stops, agencies, feed_info",
             cancellationToken);
 

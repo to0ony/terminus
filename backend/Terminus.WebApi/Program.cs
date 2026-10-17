@@ -123,6 +123,7 @@ builder.Services.AddScoped<ISetupRepository, SetupRepository>();
 builder.Services.AddScoped<IGtfsImportRepository, GtfsImportRepository>();
 builder.Services.AddScoped<ISeasonRepository, SeasonRepository>();
 builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
+builder.Services.AddScoped<IRouteVariantRepository, RouteVariantRepository>();
 
 // Servisi
 builder.Services.AddScoped<IAgencyService, AgencyService>();
@@ -142,6 +143,7 @@ builder.Services.AddScoped<ISetupService, SetupService>();
 builder.Services.AddScoped<IGtfsImportService, GtfsImportService>();
 builder.Services.AddScoped<ISeasonService, SeasonService>();
 builder.Services.AddScoped<IScheduleService, ScheduleService>();
+builder.Services.AddScoped<IRouteVariantService, RouteVariantService>();
 
 // Državni praznici za sezone voznog reda.
 builder.Services.AddMemoryCache();

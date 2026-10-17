@@ -660,6 +660,106 @@ namespace Terminus.DAL.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Terminus.DAL.Entities.RouteVariant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<short?>("DirectionId")
+                        .HasColumnType("smallint")
+                        .HasColumnName("direction_id");
+
+                    b.Property<string>("Headsign")
+                        .HasColumnType("text")
+                        .HasColumnName("headsign");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("RouteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("route_id");
+
+                    b.Property<Guid?>("ShapeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shape_id");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<short>("Source")
+                        .HasColumnType("smallint")
+                        .HasColumnName("source");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id")
+                        .HasName("pk_route_variants");
+
+                    b.HasIndex("RouteId")
+                        .HasDatabaseName("ix_route_variants_route_id");
+
+                    b.HasIndex("ShapeId")
+                        .HasDatabaseName("ix_route_variants_shape_id");
+
+                    b.ToTable("route_variants", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_route_variants_direction", "direction_id IS NULL OR direction_id IN (0, 1)");
+
+                            t.HasCheckConstraint("ck_route_variants_source", "source IN (0, 1)");
+                        });
+                });
+
+            modelBuilder.Entity("Terminus.DAL.Entities.RouteVariantStop", b =>
+                {
+                    b.Property<Guid>("VariantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("variant_id");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("integer")
+                        .HasColumnName("sequence");
+
+                    b.Property<int>("DwellTime")
+                        .HasColumnType("integer")
+                        .HasColumnName("dwell_time");
+
+                    b.Property<Guid>("StopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("stop_id");
+
+                    b.Property<int>("TravelTime")
+                        .HasColumnType("integer")
+                        .HasColumnName("travel_time");
+
+                    b.HasKey("VariantId", "Sequence")
+                        .HasName("pk_route_variant_stops");
+
+                    b.HasIndex("StopId")
+                        .HasDatabaseName("ix_route_variant_stops_stop_id");
+
+                    b.ToTable("route_variant_stops", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_route_variant_stops_times", "travel_time >= 0 AND dwell_time >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Terminus.DAL.Entities.SeasonDay", b =>
                 {
                     b.Property<Guid>("SeasonId")
@@ -1185,6 +1285,10 @@ namespace Terminus.DAL.Migrations
                         .HasColumnName("updated_at")
                         .HasDefaultValueSql("now()");
 
+                    b.Property<Guid?>("VariantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("variant_id");
+
                     b.Property<short>("WheelchairAccessible")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("smallint")
@@ -1206,6 +1310,9 @@ namespace Terminus.DAL.Migrations
 
                     b.HasIndex("ShapeId")
                         .HasDatabaseName("ix_trips_shape_id");
+
+                    b.HasIndex("VariantId")
+                        .HasDatabaseName("ix_trips_variant_id");
 
                     b.ToTable("trips", null, t =>
                         {
@@ -1300,6 +1407,47 @@ namespace Terminus.DAL.Migrations
                         .HasConstraintName("fk_routes_agencies_agency_id");
 
                     b.Navigation("Agency");
+                });
+
+            modelBuilder.Entity("Terminus.DAL.Entities.RouteVariant", b =>
+                {
+                    b.HasOne("Terminus.DAL.Entities.Route", "Route")
+                        .WithMany()
+                        .HasForeignKey("RouteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_route_variants_routes_route_id");
+
+                    b.HasOne("Terminus.DAL.Entities.Shape", "Shape")
+                        .WithMany()
+                        .HasForeignKey("ShapeId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_route_variants_shapes_shape_id");
+
+                    b.Navigation("Route");
+
+                    b.Navigation("Shape");
+                });
+
+            modelBuilder.Entity("Terminus.DAL.Entities.RouteVariantStop", b =>
+                {
+                    b.HasOne("Terminus.DAL.Entities.Stop", "Stop")
+                        .WithMany()
+                        .HasForeignKey("StopId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_route_variant_stops_stops_stop_id");
+
+                    b.HasOne("Terminus.DAL.Entities.RouteVariant", "Variant")
+                        .WithMany("Stops")
+                        .HasForeignKey("VariantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_route_variant_stops_route_variants_variant_id");
+
+                    b.Navigation("Stop");
+
+                    b.Navigation("Variant");
                 });
 
             modelBuilder.Entity("Terminus.DAL.Entities.SeasonDay", b =>
@@ -1406,11 +1554,19 @@ namespace Terminus.DAL.Migrations
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_trips_shapes_shape_id");
 
+                    b.HasOne("Terminus.DAL.Entities.RouteVariant", "Variant")
+                        .WithMany("Trips")
+                        .HasForeignKey("VariantId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_trips_route_variants_variant_id");
+
                     b.Navigation("Route");
 
                     b.Navigation("ServiceCalendar");
 
                     b.Navigation("Shape");
+
+                    b.Navigation("Variant");
                 });
 
             modelBuilder.Entity("Terminus.DAL.Entities.Agency", b =>
@@ -1428,6 +1584,13 @@ namespace Terminus.DAL.Migrations
             modelBuilder.Entity("Terminus.DAL.Entities.Route", b =>
                 {
                     b.Navigation("FareRules");
+
+                    b.Navigation("Trips");
+                });
+
+            modelBuilder.Entity("Terminus.DAL.Entities.RouteVariant", b =>
+                {
+                    b.Navigation("Stops");
 
                     b.Navigation("Trips");
                 });
