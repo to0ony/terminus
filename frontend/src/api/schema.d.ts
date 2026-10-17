@@ -4502,6 +4502,7 @@ export interface components {
             routeId: string;
             directionId: null | components["schemas"]["TripDirection"];
             stops: components["schemas"]["ScheduleStopResponse"][];
+            variants: components["schemas"]["ScheduleVariantResponse"][];
             trips: components["schemas"]["ScheduleTripResponse"][];
             tripCounts: {
                 [key: string]: number;
@@ -4587,6 +4588,28 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             stopTimes: components["schemas"]["ScheduleStopTimeResponse"][];
+        };
+        ScheduleVariantResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            directionId: null | components["schemas"]["TripDirection"];
+            headsign: null | string;
+            /** Format: uuid */
+            shapeId: null | string;
+            /** Format: int32 */
+            sortOrder: number;
+            /** Format: int32 */
+            tripCount: number;
+            stops: components["schemas"]["ScheduleVariantStopResponse"][];
+        };
+        ScheduleVariantStopResponse: {
+            /** Format: uuid */
+            stopId: string;
+            /** Format: int32 */
+            travelTime: number;
+            /** Format: int32 */
+            dwellTime: number;
         };
         /** @enum {unknown} */
         SeasonDayMode: "Regular" | "RunsAs" | "NoService";

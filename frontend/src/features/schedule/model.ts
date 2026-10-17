@@ -301,3 +301,100 @@ function toRequest(trip: EditorTrip): TripRequest {
     stopTimes: trip.stopTimes.map((st) => ({ ...st })),
   }
 }
+
+export type ScheduleVariant = components['schemas']['ScheduleVariantResponse']
+
+/**
+ * Dolasci i polasci varijante od polaska s prve stanice (sekunde): dolazak je
+ * polazak s prethodne + vrijeme vožnje, polazak je dolazak + stajanje.
+ */
+export function variantOffsets(variant: ScheduleVariant): {
+  arrival: number[]
+  departure: number[]
+} {
+  const arrival: number[] = []
+  const departure: number[] = []
+  variant.stops.forEach((stop, i) => {
+    const arrive = i === 0 ? 0 : departure[i - 1] + stop.travelTime
+    arrival.push(arrive)
+    departure.push(i === 0 ? 0 : arrive + stop.dwellTime)
+  })
+  return { arrival, departure }
+}
+
+/** Nova vožnja po varijanti s polaskom s prve stanice u <paramref name="departure"/>. */
+export function tripFromVariant(
+  variant: ScheduleVariant,
+  departure: number,
+  calendarId: string,
+): EditorTrip {
+  const offsets = variantOffsets(variant)
+  return newTrip(
+    variant,
+    calendarId,
+    offsets.arrival.map((a) => departure + a),
+    offsets.departure.map((d) => departure + d),
+  )
+}
+
+/**
+ * Nacrtana vožnja: korisnik je kliknuo vremena na nekim stanicama varijante
+ * (prva je obavezna). Stanice između dvaju klikova dobivaju vremena razmjerno
+ * vremenima vožnje varijante, a iza zadnjeg klika vremena varijante.
+ */
+export function drawnTrip(
+  variant: ScheduleVariant,
+  anchors: { index: number; time: number }[],
+  calendarId: string,
+): EditorTrip {
+  const offsets = variantOffsets(variant).departure
+  const points = [...anchors].sort((a, b) => a.index - b.index)
+  const departures = offsets.map((offset, i) => {
+    const before = points.filter((p) => p.index <= i).at(-1) ?? points[0]
+    const after = points.find((p) => p.index >= i)
+    if (!after || after.index === before.index) {
+      return before.time + (offset - offsets[before.index])
+    }
+    const span = offsets[after.index] - offsets[before.index]
+    const share =
+      span > 0
+        ? (offset - offsets[before.index]) / span
+        : (i - before.index) / (after.index - before.index)
+    return Math.round(before.time + share * (after.time - before.time))
+  })
+  return newTrip(variant, calendarId, departures, departures)
+}
+
+function newTrip(
+  variant: ScheduleVariant,
+  calendarId: string,
+  arrivals: number[],
+  departures: number[],
+): EditorTrip {
+  return {
+    key: newKey(),
+    id: null,
+    code: null,
+    updatedAt: null,
+    serviceCalendarId: calendarId,
+    headsign: variant.headsign,
+    shortName: null,
+    blockId: null,
+    shapeId: variant.shapeId,
+    variantId: variant.id,
+    wheelchairAccessible: 0,
+    bikesAllowed: 0,
+    stopTimes: variant.stops.map((stop, i) => ({
+      stopId: stop.stopId,
+      arrivalTime: arrivals[i],
+      departureTime: departures[i],
+      stopHeadsign: null,
+      pickupType: 0,
+      dropOffType: 0,
+      continuousPickup: null,
+      continuousDropOff: null,
+      shapeDistTraveled: null,
+      timepoint: true,
+    })),
+  }
+}

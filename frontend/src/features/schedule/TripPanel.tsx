@@ -80,8 +80,8 @@ function Overview({ trips, onTakt, canCreate }: TripPanelProps) {
       </Button>
       {!canCreate && (
         <Text size="xs" c="dimmed">
-          Nove vožnje kopiraju vremena vožnje postojeće vožnje. Ovaj tip dana još nema vožnji, pa
-          gore pod „Usporedi s” odaberi tip dana koji ih ima.
+          Nove vožnje trebaju varijantu linije ili postojeću vožnju za vremena vožnje. Dodaj
+          varijantu na stranici linije ili gore pod „Usporedi s” odaberi tip dana koji ima vožnji.
         </Text>
       )}
       <Stack gap={4}>

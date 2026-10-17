@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   changes,
+  drawnTrip,
   type EditorTrip,
   formatTime,
   headways,
@@ -12,6 +13,7 @@ import {
   taktDepartures,
   templateTrip,
   tripFrom,
+  tripFromVariant,
   validateTrip,
 } from './model'
 
@@ -141,5 +143,61 @@ describe('changes', () => {
   it('is empty when nothing changed', () => {
     const original = [trip('t1', ['a', 'b'], 600)]
     expect(changes(original, [...original])).toEqual({ upserts: [], deletes: [] })
+  })
+})
+
+describe('trips from a variant', () => {
+  const variant = {
+    id: 'v',
+    name: 'Glavna',
+    directionId: 0,
+    headsign: 'Sopot',
+    shapeId: null,
+    sortOrder: 0,
+    tripCount: 0,
+    stops: [
+      { stopId: 'a', travelTime: 0, dwellTime: 0 },
+      { stopId: 'b', travelTime: 120, dwellTime: 30 },
+      { stopId: 'c', travelTime: 270, dwellTime: 0 },
+      { stopId: 'd', travelTime: 180, dwellTime: 0 },
+    ],
+  }
+
+  it('follow its running and dwell times', () => {
+    const trip = tripFromVariant(variant, 3600, 'rd')
+    expect(trip.stopTimes.map((st) => [st.arrivalTime, st.departureTime])).toEqual([
+      [3600, 3600],
+      [3720, 3750],
+      [4020, 4020],
+      [4200, 4200],
+    ])
+    expect(trip.variantId).toBe('v')
+    expect(trip.headsign).toBe('Sopot')
+  })
+
+  it('stretch between drawn points and follow the variant after the last', () => {
+    // Varijanta treba 7 min do c (420 s), nacrtano je 14 min: sve se rasteže dvostruko.
+    const trip = drawnTrip(
+      variant,
+      [
+        { index: 0, time: 3600 },
+        { index: 2, time: 3600 + 840 },
+      ],
+      'rd',
+    )
+    expect(trip.stopTimes.map((st) => st.departureTime)).toEqual([3600, 3900, 4440, 4620])
+  })
+
+  it('with two clicks spread over the whole variant', () => {
+    const trip = drawnTrip(
+      variant,
+      [
+        { index: 3, time: 3600 + 1200 },
+        { index: 0, time: 3600 },
+      ],
+      'rd',
+    )
+    expect(trip.stopTimes.at(-1)!.departureTime).toBe(4800)
+    expect(trip.stopTimes[1].departureTime).toBe(3600 + Math.round((150 / 600) * 1200))
   })
 })

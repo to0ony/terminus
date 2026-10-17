@@ -50,6 +50,20 @@ interface ScheduleChartProps {
   onCreate: ((departure: number) => void) | null
   /** Predložak nove vožnje: redak i pomak od prvog polaska za svako vrijeme. */
   preview: { row: number; offset: number }[] | null
+  /**
+   * Crtanje vožnje po varijanti: redak svake njezine stanice, kliknute točke
+   * (indeks stanice i vrijeme) i vožnja kakva bi nastala; null izvan crtanja.
+   */
+  drawing: Drawing | null
+  onDrawPoint: (index: number, time: number) => void
+}
+
+export interface Drawing {
+  rows: number[]
+  anchors: { index: number; time: number }[]
+  preview: EditorTrip | null
+  /** Nazivi stanica varijante, za oblačić. */
+  names: string[]
 }
 
 type Drag =
@@ -277,10 +291,53 @@ export function ScheduleChart(props: ScheduleChartProps) {
       }
     }
 
-    // Nova vožnja: obris ispod pokazivača u retku prve stanice.
+    // Crtanje: prijedlog vožnje, kliknute točke i crta do pokazivača.
     const h = hover.current
     let createLabel: string | null = null
-    if (
+    let drawLabel: { x: number; y: number; text: string } | null = null
+    if (p.drawing) {
+      if (p.drawing.preview) {
+        ctx.setLineDash([5, 4])
+        drawTrip(p.drawing.preview, colors.selected, 2, false)
+        ctx.setLineDash([])
+      }
+      ctx.fillStyle = colors.selected
+      for (const anchor of p.drawing.anchors) {
+        ctx.beginPath()
+        ctx.arc(
+          g.x(anchor.time),
+          g.y(p.drawing.rows[anchor.index]),
+          dotRadius + 1.5,
+          0,
+          Math.PI * 2,
+        )
+        ctx.fill()
+      }
+      const target = h ? drawTarget(h.x, h.y) : null
+      if (target) {
+        const tx = g.x(target.time)
+        const ty = g.y(p.drawing.rows[target.index])
+        const last = p.drawing.anchors.at(-1)
+        ctx.strokeStyle = colors.selected
+        ctx.lineWidth = 1.5
+        ctx.setLineDash([2, 3])
+        if (last) {
+          ctx.beginPath()
+          ctx.moveTo(g.x(last.time), g.y(p.drawing.rows[last.index]))
+          ctx.lineTo(tx, ty)
+          ctx.stroke()
+        }
+        ctx.setLineDash([])
+        ctx.beginPath()
+        ctx.arc(tx, ty, dotRadius + 1.5, 0, Math.PI * 2)
+        ctx.stroke()
+        drawLabel = {
+          x: tx,
+          y: ty - 16,
+          text: `${p.drawing.names[target.index]} · ${formatTime(target.time)}`,
+        }
+      }
+    } else if (
       h &&
       !drag.current &&
       p.preview &&
@@ -318,7 +375,9 @@ export function ScheduleChart(props: ScheduleChartProps) {
     ctx.restore()
 
     // Oblačić s vremenom ispod pokazivača ili pomakom pri povlačenju.
-    if (createLabel && h && p.preview) {
+    if (drawLabel) {
+      tooltip(ctx, colors, drawLabel.x, drawLabel.y, drawLabel.text)
+    } else if (createLabel && h && p.preview) {
       tooltip(ctx, colors, h.x, g.y(p.preview[0].row) - 14, createLabel)
     } else if (d?.kind === 'trips' || d?.kind === 'stop') {
       if (h) {
@@ -367,6 +426,38 @@ export function ScheduleChart(props: ScheduleChartProps) {
       }
     }
     ctx.restore()
+  }
+
+  /**
+   * Stanica varijante najbliža pokazivaču pri crtanju i vrijeme na minutu.
+   * Prva točka je uvijek na prvoj stanici, a svaka sljedeća iza prethodne.
+   */
+  const drawTarget = (px: number, py: number): { index: number; time: number } | null => {
+    const p = latest.current
+    if (!p.drawing) {
+      return null
+    }
+    const g = geometry(width)
+    if (px < g.plotLeft || py < overviewHeight + axisHeight || py > height - headwayHeight) {
+      return null
+    }
+    const last = p.drawing.anchors.at(-1)
+    const candidates = last ? p.drawing.rows.map((_, i) => i).filter((i) => i > last.index) : [0]
+    let best: number | null = null
+    for (const i of candidates) {
+      const distance = Math.abs(g.y(p.drawing.rows[i]) - py)
+      if (
+        distance <= 14 &&
+        (best === null || distance < Math.abs(g.y(p.drawing.rows[best]) - py))
+      ) {
+        best = i
+      }
+    }
+    if (best === null) {
+      return null
+    }
+    const time = Math.round(g.time(px) / minute) * minute
+    return { index: best, time: last ? Math.max(time, last.time) : time }
   }
 
   /** Točkica ili crta vožnje ispod pokazivača; odabrane imaju prednost. */
@@ -471,6 +562,14 @@ export function ScheduleChart(props: ScheduleChartProps) {
       return
     }
 
+    if (p.drawing) {
+      const target = drawTarget(x, y)
+      if (target) {
+        p.onDrawPoint(target.index, target.time)
+      }
+      return
+    }
+
     const hit = hitTest(x, y)
     const additive = event.ctrlKey || event.metaKey
     if (hit) {
@@ -529,8 +628,9 @@ export function ScheduleChart(props: ScheduleChartProps) {
 
     const canvas = event.currentTarget
     const hit = d ? null : hitTest(x, y)
-    canvas.style.cursor =
-      d?.kind === 'trips' || d?.kind === 'stop'
+    canvas.style.cursor = p.drawing
+      ? 'crosshair'
+      : d?.kind === 'trips' || d?.kind === 'stop'
         ? 'grabbing'
         : hit?.index !== null && hit
           ? 'ew-resize'

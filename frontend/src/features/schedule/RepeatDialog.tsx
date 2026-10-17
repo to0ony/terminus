@@ -66,10 +66,12 @@ interface TaktDialogProps {
   onCreate: (departures: number[]) => void
   /** Postojeći prvi polasci, da se ne naprave dvostruki. */
   existing: number[]
+  /** Naziv varijante po kojoj nastaju vožnje; null kad se kopira postojeća vožnja. */
+  template: string | null
 }
 
 /** Generator takta: polasci od–do svakih N minuta, po predlošku glavnog obrasca. */
-export function TaktDialog({ opened, onClose, onCreate, existing }: TaktDialogProps) {
+export function TaktDialog({ opened, onClose, onCreate, existing, template }: TaktDialogProps) {
   const [from, setFrom] = useState('05:00')
   const [to, setTo] = useState('23:00')
   const [every, setEvery] = useState<number | string>(15)
@@ -87,8 +89,10 @@ export function TaktDialog({ opened, onClose, onCreate, existing }: TaktDialogPr
     <Modal opened={opened} onClose={onClose} title="Generator takta" size="sm">
       <Stack gap="md">
         <Text size="sm" c="dimmed">
-          Nove vožnje s vremenima vožnje glavnog obrasca linije. Polasci koji već postoje se
-          preskaču.
+          {template
+            ? `Nove vožnje po varijanti „${template}”.`
+            : 'Nove vožnje s vremenima vožnje glavnog obrasca linije.'}{' '}
+          Polasci koji već postoje se preskaču.
         </Text>
         <Group grow>
           <TextInput

@@ -24,6 +24,7 @@ import {
   IconArrowForwardUp,
   IconArrowLeft,
   IconDeviceFloppy,
+  IconPencil,
   IconZoomIn,
   IconZoomOut,
 } from '@tabler/icons-react'
@@ -37,10 +38,12 @@ import { directionOptions } from '@/features/routes/directions'
 import { useRoute, useRoutePatterns } from '@/features/routes/queries'
 import { RouteBadge } from '@/features/routes/RouteBadge'
 import { useSeasons } from '@/features/seasons/queries'
+import { useRouteVariants, variantDirections } from '@/features/variants/queries'
 import { dayTypeColor } from '@/features/seasons/seasonDays'
 import {
   changes,
   clampView,
+  drawnTrip,
   firstDeparture,
   formatTime,
   fromResponse,
@@ -51,12 +54,14 @@ import {
   shiftTrip,
   templateTrip,
   tripFrom,
+  tripFromVariant,
+  variantOffsets,
   validateTrip,
   type View,
 } from './model'
 import { type Schedule, useSaveSchedule, useSchedule } from './queries'
 import { CopyDialog, TaktDialog } from './RepeatDialog'
-import { ScheduleChart } from './ScheduleChart'
+import { type Drawing, ScheduleChart } from './ScheduleChart'
 import { TripPanel } from './TripPanel'
 import { useScheduleEditor } from './useScheduleEditor'
 
@@ -79,20 +84,28 @@ export function SchedulePage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const route = useRoute(routeId)
   const patterns = useRoutePatterns(routeId)
+  const routeVariants = useRouteVariants(routeId)
   const calendars = useCalendars({ PageSize: 100 })
   const seasons = useSeasons()
 
-  const directions = directionOptions(patterns.data ?? [])
+  // Smjerovi iz varijanti; linija bez varijanti (stari podaci) ih uzima iz vožnji.
+  const ready = patterns.isSuccess && routeVariants.isSuccess
+  const directions =
+    routeVariants.data && routeVariants.data.length > 0
+      ? variantDirections(routeVariants.data)
+      : directionOptions(patterns.data ?? [])
   const direction = directions.length
     ? Number(
         directions.find((d) => d.value === searchParams.get('dir'))?.value ?? directions[0].value,
       )
-    : (patterns.data?.find((p) => p.directionId !== null)?.directionId ?? null)
+    : (routeVariants.data?.find((v) => v.directionId !== null)?.directionId ??
+      patterns.data?.find((p) => p.directionId !== null)?.directionId ??
+      null)
 
   // Broj vožnji po kalendaru dolazi uz svaki odgovor; dok tip dana nije
   // odabran, traži se kalendar koji ne postoji, pa odgovor nema vožnji.
   const calendarParam = searchParams.get('cal')
-  const schedule = useSchedule(routeId, direction, calendarParam ?? noCalendar, patterns.isSuccess)
+  const schedule = useSchedule(routeId, direction, calendarParam ?? noCalendar, ready)
   const counts = useMemo(() => schedule.data?.tripCounts ?? {}, [schedule.data])
 
   const dayTypes = useMemo<DayTypeOption[]>(() => {
@@ -141,12 +154,7 @@ export function SchedulePage() {
           ? busiest.id
           : null))
 
-  const shown = useSchedule(
-    routeId,
-    direction,
-    calendarId,
-    patterns.isSuccess && calendarId !== null,
-  )
+  const shown = useSchedule(routeId, direction, calendarId, ready && calendarId !== null)
   const compared = useSchedule(routeId, direction, compareId, compareId !== null)
 
   const setParam = (key: string, value: string | null) =>
@@ -162,7 +170,7 @@ export function SchedulePage() {
       { replace: true },
     )
 
-  if (route.isPending || patterns.isPending) {
+  if (route.isPending || patterns.isPending || routeVariants.isPending) {
     return <PageLoader />
   }
   if (route.isError) {
@@ -286,19 +294,57 @@ function ScheduleEditor({
   const [copyOpened, copy] = useDisclosure(false)
   const [taktOpened, takt] = useDisclosure(false)
 
-  const stops = schedule.stops
-  const names = useMemo(() => new Map(stops.map((s) => [s.id, s.name])), [stops])
+  const variants = schedule.variants
+  const [shownVariants, setShownVariants] = useState<string[]>(() => variants.map((v) => v.id))
+  const [activeId, setActiveId] = useState<string | null>(variants[0]?.id ?? null)
+  const active = variants.find((v) => v.id === activeId) ?? null
+  // Kliknute točke nove vožnje; null izvan crtanja.
+  const [anchors, setAnchors] = useState<{ index: number; time: number }[] | null>(null)
+
+  const names = useMemo(() => new Map(schedule.stops.map((s) => [s.id, s.name])), [schedule])
   const stopName = (id: string) => names.get(id) ?? '?'
 
-  // Vožnje drugih tipova dana (premještene u panelu) ne crtaju se ovdje.
-  const visible = editor.trips.filter((t) => t.serviceCalendarId === dayType.id)
+  // Vožnje drugih tipova dana (premještene u panelu) i skrivenih varijanti ne crtaju se.
+  const hiddenVariants = new Set(
+    variants.filter((v) => !shownVariants.includes(v.id)).map((v) => v.id),
+  )
+  const visible = editor.trips.filter(
+    (t) =>
+      t.serviceCalendarId === dayType.id &&
+      !(t.variantId !== null && hiddenVariants.has(t.variantId)),
+  )
+  const shownGhosts = ghostTrips.filter(
+    (t) => !(t.variantId !== null && hiddenVariants.has(t.variantId)),
+  )
+
+  // Redci: stanice prikazanih varijanti (i one po kojoj nastaju nove vožnje) te vožnji.
+  const stops = useMemo(() => {
+    const ids = schedule.stops.map((s) => s.id)
+    if (variants.length === 0) {
+      return schedule.stops
+    }
+    const used = new Set<number>()
+    const mark = (stopIds: string[]) => rowIndexes(ids, stopIds).forEach((row) => used.add(row))
+    for (const variant of variants) {
+      if (shownVariants.includes(variant.id) || variant.id === activeId) {
+        mark(variant.stops.map((s) => s.stopId))
+      }
+    }
+    for (const trip of [...visible, ...shownGhosts]) {
+      mark(trip.stopTimes.map((st) => st.stopId))
+    }
+    return schedule.stops.filter((_, row) => used.has(row))
+  }, [schedule, variants, shownVariants, activeId, visible, shownGhosts])
+  const rowIds = stops.map((s) => s.id)
+
   const positions = useMemo(
     () =>
       rowPositions(
         stops.map((s) => s.id),
-        [...original, ...ghostTrips],
+        // Varijante daju vremena vožnje i kad linija još nema vožnji.
+        [...original, ...ghostTrips, ...variants.map((v) => tripFromVariant(v, 0, ''))],
       ),
-    [stops, original, ghostTrips],
+    [stops, original, ghostTrips, variants],
   )
 
   const errors = useMemo(() => {
@@ -333,21 +379,30 @@ function ScheduleEditor({
   const [viewState, setView] = useState<View | null>(null)
   const view = clampView(viewState ?? span, span)
 
+  // Nove vožnje nastaju po odabranoj varijanti; linija bez varijanti kopira postojeću vožnju.
   const templateSource = visible.length > 0 ? visible : ghostTrips
-  const mainTemplate = templateTrip(templateSource)
-  const preview = mainTemplate
+  const mainTemplate = active ? null : templateTrip(templateSource)
+  const preview = active
     ? rowIndexes(
-        stops.map((s) => s.id),
-        mainTemplate.stopTimes.map((st) => st.stopId),
-      ).map((row, i) => ({
-        row,
-        offset: mainTemplate.stopTimes[i].departureTime - firstDeparture(mainTemplate),
-      }))
-    : null
+        rowIds,
+        active.stops.map((s) => s.stopId),
+      ).map((row, i) => ({ row, offset: variantOffsets(active).departure[i] }))
+    : mainTemplate
+      ? rowIndexes(
+          rowIds,
+          mainTemplate.stopTimes.map((st) => st.stopId),
+        ).map((row, i) => ({
+          row,
+          offset: mainTemplate.stopTimes[i].departureTime - firstDeparture(mainTemplate),
+        }))
+      : null
+  const canCreate = active !== null || mainTemplate !== null
 
   const create = (departures: number[]) => {
-    // Bez predloška (tip dana bez vožnji i bez usporedbe) nova vožnja nema vremena vožnje.
     const created = departures.flatMap((t) => {
+      if (active) {
+        return [tripFromVariant(active, t, dayType.id)]
+      }
       const template = templateTrip(templateSource, t)
       return template ? [tripFrom(template, t, dayType.id)] : []
     })
@@ -359,6 +414,29 @@ function ScheduleEditor({
       created.map((t) => t.key),
     )
   }
+
+  /** Nacrtana vožnja ide u vozni red, a crtanje se nastavlja sljedećom. */
+  const finishDrawing = (points: { index: number; time: number }[]) => {
+    if (!active || points.length === 0) {
+      return
+    }
+    const trip = drawnTrip(active, points, dayType.id)
+    editor.apply((trips) => [...trips, trip], [trip.key])
+    setAnchors([])
+  }
+
+  const drawing: Drawing | null =
+    active && anchors !== null
+      ? {
+          rows: rowIndexes(
+            rowIds,
+            active.stops.map((s) => s.stopId),
+          ),
+          anchors,
+          preview: anchors.length > 0 ? drawnTrip(active, anchors, dayType.id) : null,
+          names: active.stops.map((s) => stopName(s.stopId)),
+        }
+      : null
 
   const shiftSelected = (delta: number) =>
     editor.apply((trips) =>
@@ -389,7 +467,16 @@ function ScheduleEditor({
         return
       }
       const ctrl = event.ctrlKey || event.metaKey
-      if (ctrl && event.key.toLowerCase() === 'z' && !event.shiftKey) {
+      if (anchors !== null && ['Enter', 'Escape', 'Backspace'].includes(event.key)) {
+        // Crtanje: Enter završava vožnju, Backspace briše zadnju točku, Esc odustaje.
+        if (event.key === 'Enter') {
+          finishDrawing(anchors)
+        } else if (event.key === 'Backspace') {
+          setAnchors(anchors.slice(0, -1))
+        } else {
+          setAnchors(anchors.length > 0 ? [] : null)
+        }
+      } else if (ctrl && event.key.toLowerCase() === 'z' && !event.shiftKey) {
         editor.undo()
       } else if (
         ctrl &&
@@ -506,6 +593,67 @@ function ScheduleEditor({
         </Group>
       </Group>
 
+      <Paper withBorder p="xs">
+        {variants.length === 0 ? (
+          <Text size="sm" c="dimmed">
+            Linija u ovom smjeru nema varijanti, pa nove vožnje kopiraju vremena postojećih.
+            Varijante se dodaju na stranici linije.
+          </Text>
+        ) : (
+          <Stack gap="xs">
+            <Group gap="xs" align="center">
+              <Text size="sm" c="dimmed">
+                Varijante:
+              </Text>
+              <Chip.Group multiple value={shownVariants} onChange={setShownVariants}>
+                <Group gap={6}>
+                  {variants.map((v) => (
+                    <Chip key={v.id} value={v.id} size="xs" variant="outline">
+                      {v.name} ({v.tripCount})
+                    </Chip>
+                  ))}
+                </Group>
+              </Chip.Group>
+            </Group>
+            <Group gap="xs" align="center">
+              <Text size="sm" c="dimmed">
+                Nove vožnje po:
+              </Text>
+              <Select
+                size="xs"
+                w={280}
+                data={variants.map((v) => ({ value: v.id, label: v.name }))}
+                value={activeId}
+                onChange={(value) => {
+                  setActiveId(value)
+                  setAnchors((current) => (current === null ? null : []))
+                }}
+                allowDeselect={false}
+              />
+              <Button
+                size="xs"
+                variant={anchors !== null ? 'filled' : 'default'}
+                leftSection={<IconPencil size={14} />}
+                onClick={() => setAnchors(anchors === null ? [] : null)}
+              >
+                {anchors !== null ? 'Završi crtanje' : 'Nacrtaj vožnju'}
+              </Button>
+            </Group>
+          </Stack>
+        )}
+      </Paper>
+
+      {anchors !== null && active && (
+        <Alert color="blue" variant="light" p="xs">
+          <Text size="sm">
+            Klikni polazak na prvoj stanici ({stopName(active.stops[0].stopId)}), pa po želji
+            vremena na sljedećim stanicama, i završi klikom na zadnjoj stanici (
+            {stopName(active.stops.at(-1)!.stopId)}) ili tipkom Enter. Stanice između računaju se po
+            vremenima vožnje varijante. Backspace briše zadnju točku, Esc odustaje.
+          </Text>
+        </Alert>
+      )}
+
       {invalid.size > 0 && (
         <Alert color="red" variant="light">
           {invalid.size} vožnji ima neispravna vremena (crveno). Ispravi ih prije spremanja.
@@ -533,8 +681,8 @@ function ScheduleEditor({
 
       {stops.length === 0 ? (
         <Alert color="yellow" variant="light">
-          Linija u ovom smjeru još nema nijednu vožnju, pa nema ni redoslijeda stanica. Prvu vožnju
-          moći ćeš dodati kad bude gotov editor linija.
+          Linija u ovom smjeru nema ni varijanti ni vožnji, pa nema redoslijeda stanica. Dodaj
+          varijantu na stranici linije, pa ovdje dodaj vožnje.
         </Alert>
       ) : (
         <Grid gap="md">
@@ -562,8 +710,17 @@ function ScheduleEditor({
                     trips.map((t) => (t.key === key ? shiftStop(t, index, delta, cascade) : t)),
                   )
                 }
-                onCreate={mainTemplate ? (departure) => create([departure]) : null}
+                onCreate={canCreate ? (departure) => create([departure]) : null}
                 preview={preview}
+                drawing={drawing}
+                onDrawPoint={(index, time) => {
+                  const next = [...(anchors ?? []), { index, time }]
+                  if (active && index === active.stops.length - 1) {
+                    finishDrawing(next)
+                  } else {
+                    setAnchors(next)
+                  }
+                }}
               />
             </Paper>
           </Grid.Col>
@@ -581,7 +738,7 @@ function ScheduleEditor({
               onCopy={copy.open}
               onDelete={deleteSelected}
               onTakt={takt.open}
-              canCreate={mainTemplate !== null}
+              canCreate={canCreate}
             />
           </Grid.Col>
         </Grid>
@@ -598,6 +755,7 @@ function ScheduleEditor({
         onClose={takt.close}
         onCreate={create}
         existing={visible.map(firstDeparture)}
+        template={active?.name ?? null}
       />
 
       <Modal
