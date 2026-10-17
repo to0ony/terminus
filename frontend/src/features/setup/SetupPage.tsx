@@ -47,10 +47,10 @@ export function SetupPage() {
     return <Navigate to="/" replace />
   }
 
-  const finish = async (message: string) => {
+  const finish = async (message: string, to = '/') => {
     await queryClient.invalidateQueries({ queryKey: setupKeys.status })
     notifications.show({ color: 'green', title: 'Terminus je spreman', message })
-    navigate('/', { replace: true })
+    navigate(to, { replace: true })
   }
 
   return (
@@ -82,7 +82,7 @@ export function SetupPage() {
               <Choice
                 icon={IconFileZip}
                 title="Uvezi postojeći GTFS"
-                description="Prijevoznici, stanice, linije i vozni red iz GTFS ZIP datoteke. Prije uvoza vidiš izvještaj provjere."
+                description="Prijevoznici, stanice, linije, trase i varijante linija iz GTFS ZIP datoteke, da ne kreneš od nule. Kalendare i vožnje radiš u aplikaciji."
                 onClick={() => setMode('import')}
               />
               <Choice
@@ -99,10 +99,15 @@ export function SetupPage() {
           <Stack gap="lg">
             <StepTitle
               title="Uvoz GTFS-a"
-              description="Odaberi GTFS ZIP. Feed se prvo provjeri, a podaci se upisuju tek nakon potvrde."
+              description="Odaberi GTFS ZIP. Feed se prvo provjeri, a podaci se upisuju tek nakon potvrde. Uvoze se stanice, linije, trase i varijante linija; kalendare i vožnje radiš u aplikaciji."
             />
             <GtfsImport
-              onImported={() => finish('Vozni red je uvezen.')}
+              onImported={() =>
+                finish(
+                  'Osnova je uvezena. Sljedeći korak: napravi sezonu voznog reda.',
+                  '/calendars',
+                )
+              }
               onCancel={() => setMode('choose')}
             />
           </Stack>

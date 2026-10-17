@@ -1,32 +1,53 @@
-import {
-  Accordion,
-  Alert,
-  Badge,
-  Code,
-  Group,
-  List,
-  Paper,
-  SimpleGrid,
-  Stack,
-  Text,
-} from '@mantine/core'
+import { Accordion, Alert, Code, List, Paper, SimpleGrid, Stack, Text } from '@mantine/core'
 import { IconAlertCircle, IconAlertTriangle, IconCircleCheck } from '@tabler/icons-react'
 import { formatNumber } from '@/lib/format'
 import type { GtfsImportIssue, GtfsImportReport as Report } from './queries'
 
-/** Izvještaj pregleda ili uvoza: što se uvozi, greške, upozorenja i preskočene datoteke. */
-export function GtfsImportReport({ report }: { report: Report }) {
-  const { counts, errors, warnings, skippedFiles } = report
+/**
+ * Izvještaj pregleda ili uvoza: osnova koja se uvozi (novo i ažurirano),
+ * greške, upozorenja i preskočene datoteke.
+ */
+export function GtfsImportReport({
+  report,
+  selectedVariants,
+}: {
+  report: Report
+  /** Broj varijanti koje je korisnik odabrao (u pregledu); bez njega zadani izbor. */
+  selectedVariants?: number
+}) {
+  const { counts, changes, errors, warnings, skippedFiles } = report
 
   const stats = [
-    { label: 'Prijevoznici', value: counts.agencies },
-    { label: 'Stanice', value: counts.stops },
-    { label: 'Linije', value: counts.routes },
-    { label: 'Kalendari', value: counts.calendars },
-    { label: 'Vožnje', value: counts.trips },
-    { label: 'Vremena polazaka', value: counts.stopTimes },
-    { label: 'Trase', value: counts.shapes },
-    { label: 'Cijene', value: counts.fares },
+    {
+      label: 'Prijevoznici',
+      value: counts.agencies,
+      added: changes.newAgencies,
+      updated: changes.updatedAgencies,
+    },
+    {
+      label: 'Stanice',
+      value: counts.stops,
+      added: changes.newStops,
+      updated: changes.updatedStops,
+    },
+    {
+      label: 'Linije',
+      value: counts.routes,
+      added: changes.newRoutes,
+      updated: changes.updatedRoutes,
+    },
+    {
+      label: 'Trase',
+      value: counts.shapes,
+      added: changes.newShapes,
+      updated: changes.updatedShapes,
+    },
+    {
+      label: 'Varijante linija',
+      value: selectedVariants ?? report.variants.filter((v) => v.included).length,
+      added: null,
+      updated: null,
+    },
   ]
 
   return (
@@ -45,33 +66,30 @@ export function GtfsImportReport({ report }: { report: Report }) {
       )}
 
       {report.canImport && (
-        <SimpleGrid cols={{ base: 2, xs: 4 }} spacing="sm">
-          {stats.map((stat) => (
-            <Paper key={stat.label} withBorder p="sm">
-              <Text size="xs" c="dimmed">
-                {stat.label}
-              </Text>
-              <Text fw={700} size="lg">
-                {formatNumber(stat.value)}
-              </Text>
-            </Paper>
-          ))}
-        </SimpleGrid>
-      )}
-
-      {(counts.tripsFromFrequencies > 0 || counts.interpolatedStopTimes > 0) && (
-        <Group gap="xs">
-          {counts.tripsFromFrequencies > 0 && (
-            <Badge variant="light">
-              {formatNumber(counts.tripsFromFrequencies)} vožnji iz frequencies.txt
-            </Badge>
-          )}
-          {counts.interpolatedStopTimes > 0 && (
-            <Badge variant="light">
-              {formatNumber(counts.interpolatedStopTimes)} izračunatih vremena
-            </Badge>
-          )}
-        </Group>
+        <>
+          <SimpleGrid cols={{ base: 2, xs: 3, sm: 5 }} spacing="sm">
+            {stats.map((stat) => (
+              <Paper key={stat.label} withBorder p="sm">
+                <Text size="xs" c="dimmed">
+                  {stat.label}
+                </Text>
+                <Text fw={700} size="lg">
+                  {formatNumber(stat.value)}
+                </Text>
+                {stat.added !== null && stat.updated !== null && stat.updated > 0 && (
+                  <Text size="xs" c="dimmed">
+                    {formatNumber(stat.added)} novih · {formatNumber(stat.updated)} ažurira se
+                  </Text>
+                )}
+              </Paper>
+            ))}
+          </SimpleGrid>
+          <Text size="sm" c="dimmed">
+            Kalendari i vožnje se ne uvoze, nego ih radiš u aplikaciji.
+            {counts.trips > 0 &&
+              ` ${formatNumber(counts.trips)} vožnji iz feeda služi samo za prepoznavanje varijanti i vremena vožnje.`}
+          </Text>
+        </>
       )}
 
       {(warnings.length > 0 || skippedFiles.length > 0) && (
@@ -113,7 +131,9 @@ export function GtfsImportReport({ report }: { report: Report }) {
 
 function Summary({ report }: { report: Report }) {
   if (report.imported) {
-    return <Alert color="green" variant="light" icon={<IconCircleCheck />} title="Feed je uvezen" />
+    return (
+      <Alert color="green" variant="light" icon={<IconCircleCheck />} title="Osnova je uvezena" />
+    )
   }
   if (!report.canImport) {
     return null

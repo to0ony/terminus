@@ -31,9 +31,9 @@ vlastitu instancu i bazu. Unutar instance može postojati više prijevoznika
 **Za administratora (dashboard)**
 
 - **Prvo pokretanje** – čarobnjak: uvoz postojećeg GTFS-a ili početak od nule.
-- **GTFS uvoz** – pregled s izvještajem (greške, upozorenja, preskočene
-  datoteke) pa uvoz; interpolacija praznih vremena, `frequencies.txt` u
-  pojedinačne vožnje, nazivi kalendara; milijun vremena za pola minute.
+- **GTFS uvoz osnove** – prijevoznici, stanice, linije, trase i varijante
+  linija s vremenima vožnje iz postojećeg feeda, s pregledom i odabirom
+  varijanti; ponovni uvoz dopunjava i ne dira sezone ni vožnje.
 - **GTFS izvoz** s provjerama prije izvoza i, po izboru, javni feed bez prijave.
 - **Pregled voznog reda** – linije, vozni red linije po danu i smjeru, stanice
   na karti, polasci sa stanice za odabrani dan, kalendari s iznimkama,

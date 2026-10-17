@@ -66,12 +66,12 @@ function ImportSection() {
   const [imported, setImported] = useState(false)
 
   const handleImported = async () => {
-    // Uvoz zamjenjuje sve podatke voznog reda, pa ništa iz cachea ne vrijedi.
+    // Uvoz mijenja stanice, linije i varijante, pa ništa iz cachea ne vrijedi.
     await queryClient.invalidateQueries()
     notifications.show({
       color: 'green',
       title: 'Uvoz je završen',
-      message: 'Vozni red je zamijenjen.',
+      message: 'Stanice, linije, trase i varijante su uvezene.',
     })
     setImported(true)
   }
@@ -85,10 +85,11 @@ function ImportSection() {
     <Paper withBorder p="lg">
       <Stack gap="md">
         <div>
-          <Title order={3}>Uvoz novog voznog reda</Title>
+          <Title order={3}>Uvoz iz GTFS-a</Title>
           <Text size="sm" c="dimmed">
-            Uvoz zamjenjuje sve postojeće prijevoznike, linije, stanice, kalendare i vožnje.
-            Postavke i administratori ostaju. Feed se prvo provjeri, a upisuje se tek nakon potvrde.
+            Iz tuđeg ili starog GTFS feeda uvoze se prijevoznici, stanice, linije, trase i varijante
+            linija s vremenima vožnje. Kalendari i vožnje se ne uvoze. Uvoz dopunjava: isti GTFS ID
+            se ažurira, a sezone i vožnje ostaju. Upisuje se tek nakon potvrde.
           </Text>
         </div>
         <GtfsImport key={run} onImported={() => void handleImported()} />

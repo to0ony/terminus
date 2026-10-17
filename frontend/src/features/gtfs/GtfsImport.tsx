@@ -1,11 +1,19 @@
-import { Alert, Button, Group, Loader, Paper, Stack, Stepper, Text } from '@mantine/core'
+import { Alert, Anchor, Button, Group, Loader, Paper, Stack, Stepper, Text } from '@mantine/core'
 import { Dropzone } from '@mantine/dropzone'
 import { useInterval } from '@mantine/hooks'
-import { IconAlertCircle, IconFileZip, IconUpload, IconX } from '@tabler/icons-react'
+import {
+  IconAlertCircle,
+  IconFileZip,
+  IconInfoCircle,
+  IconUpload,
+  IconX,
+} from '@tabler/icons-react'
 import { useState } from 'react'
+import { Link } from 'react-router'
 import { errorMessage } from '@/api/errors'
-import { formatBytes, formatNumber } from '@/lib/format'
+import { formatBytes } from '@/lib/format'
 import { GtfsImportReport } from './GtfsImportReport'
+import { VariantSelection } from './VariantSelection'
 import {
   maxGtfsUploadBytes,
   useImportGtfs,
@@ -19,12 +27,19 @@ interface GtfsImportProps {
   onCancel?: () => void
 }
 
-/** Uvoz GTFS feeda: odabir datoteke, pregled s izvještajem, potvrda i uvoz. */
+/**
+ * Uvoz osnove iz GTFS feeda: odabir datoteke, pregled s izvještajem i
+ * odabirom varijanti linija, potvrda i uvoz.
+ */
 export function GtfsImport({ onImported, onCancel }: GtfsImportProps) {
   const [file, setFile] = useState<File | null>(null)
   const [rejection, setRejection] = useState<string | null>(null)
   const preview = usePreviewGtfs()
   const importFeed = useImportGtfs()
+  // null: korisnik još nije mijenjao odabir, pa vrijede zadane varijante iz pregleda.
+  const [chosen, setChosen] = useState<Set<string> | null>(null)
+  const selection =
+    chosen ?? new Set(preview.data?.variants.filter((v) => v.included).map((v) => v.key) ?? [])
 
   const report = importFeed.data ?? preview.data
   // Nakon uspješnog uvoza svi su koraci završeni.
@@ -39,21 +54,24 @@ export function GtfsImport({ onImported, onCancel }: GtfsImportProps) {
   const selectFile = (selected: File) => {
     setRejection(null)
     setFile(selected)
+    setChosen(null)
     importFeed.reset()
     preview.mutate(selected)
   }
 
   const reset = () => {
     setFile(null)
+    setChosen(null)
     preview.reset()
     importFeed.reset()
   }
 
   const confirmImport = () => {
     if (file) {
-      importFeed.mutate(file, {
-        onSuccess: (result) => result.imported && onImported(result),
-      })
+      importFeed.mutate(
+        { file, variants: [...selection] },
+        { onSuccess: (result) => result.imported && onImported(result) },
+      )
     }
   }
 
@@ -159,8 +177,19 @@ export function GtfsImport({ onImported, onCancel }: GtfsImportProps) {
 
           {report && !importFeed.isPending && (
             <>
-              {report.canImport && !report.imported && <ExistingDataWarning report={report} />}
-              <GtfsImportReport report={report} />
+              {report.canImport && !report.imported && <MergeInfo report={report} />}
+              <GtfsImportReport
+                report={report}
+                selectedVariants={report.imported ? undefined : selection.size}
+              />
+              {report.canImport && !report.imported && report.variants.length > 0 && (
+                <VariantSelection
+                  variants={report.variants}
+                  selected={selection}
+                  onChange={setChosen}
+                />
+              )}
+              {report.imported && <NextSteps />}
             </>
           )}
 
@@ -183,20 +212,30 @@ export function GtfsImport({ onImported, onCancel }: GtfsImportProps) {
   )
 }
 
-function ExistingDataWarning({ report }: { report: Report }) {
+/** Uvoz ne briše ništa: dopunjava osnovu, a sezone i vožnje ostaju. */
+function MergeInfo({ report }: { report: Report }) {
   const { agencies, stops, routes, trips } = report.existing
   if (agencies + stops + routes + trips === 0) {
     return null
   }
   return (
-    <Alert
-      color="orange"
-      variant="light"
-      icon={<IconAlertCircle />}
-      title="Uvoz zamjenjuje postojeći vozni red"
-    >
-      Obrisat će se {formatNumber(stops)} stanica, {formatNumber(routes)} linija i{' '}
-      {formatNumber(trips)} vožnji. Postavke i administratori ostaju.
+    <Alert color="blue" variant="light" icon={<IconInfoCircle />} title="Uvoz dopunjava podatke">
+      Stanice, linije i trase s istim GTFS ID-em se ažuriraju, a nove se dodaju. Sezone, vožnje i
+      ručno uređene varijante ostaju kakve jesu; ništa se ne briše.
+    </Alert>
+  )
+}
+
+function NextSteps() {
+  return (
+    <Alert color="blue" variant="light" icon={<IconInfoCircle />} title="Sljedeći koraci">
+      <Text size="sm">
+        Kalendari i vožnje se ne uvoze. Napravi sezonu voznog reda na stranici{' '}
+        <Anchor component={Link} to="/calendars" size="sm">
+          Kalendari
+        </Anchor>
+        , pa na stranici linije otvori grafikon i dodaj vožnje po varijantama.
+      </Text>
     </Alert>
   )
 }

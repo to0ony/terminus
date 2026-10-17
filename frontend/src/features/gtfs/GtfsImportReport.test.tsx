@@ -26,6 +26,32 @@ const report = (overrides: Partial<Report> = {}): Report => ({
   canImport: true,
   counts,
   existing: { agencies: 0, stops: 0, routes: 0, trips: 0 },
+  changes: {
+    newAgencies: 1,
+    updatedAgencies: 0,
+    newStops: 3700,
+    updatedStops: 100,
+    newRoutes: 154,
+    updatedRoutes: 0,
+    newShapes: 561,
+    updatedShapes: 0,
+  },
+  variants: [
+    {
+      key: 'a',
+      routeCode: '6',
+      routeName: '6',
+      directionId: 0,
+      name: 'Črnomerec → Sopot',
+      headsign: 'Sopot',
+      stopCount: 23,
+      tripCount: 584,
+      duration: 2340,
+      share: 0.66,
+      main: true,
+      included: true,
+    },
+  ],
   errors: [],
   warnings: [],
   skippedFiles: [],
@@ -37,8 +63,11 @@ describe('GtfsImportReport', () => {
     render(<GtfsImportReport report={report()} />)
 
     expect(screen.getByText('Feed se može uvesti')).toBeInTheDocument()
-    expect(screen.getByText('1.131.537')).toBeInTheDocument()
-    expect(screen.getByText('12 izračunatih vremena')).toBeInTheDocument()
+    expect(screen.getByText('3.800')).toBeInTheDocument()
+    expect(screen.getByText('3.700 novih · 100 ažurira se')).toBeInTheDocument()
+    expect(
+      screen.getByText(/66.661 vožnji iz feeda služi samo za prepoznavanje/),
+    ).toBeInTheDocument()
   })
 
   it('lists errors with counts and examples and hides the counts', () => {

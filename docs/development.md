@@ -65,9 +65,10 @@ Nepotpuna konfiguracija samo se zapisuje u log; aplikacija se normalno pokreće.
 Konfiguracija daje samo administratora. Nakon prve prijave dashboard prikazuje
 čarobnjak (`GET /api/setup` vraća `completed: false`) s dva izbora:
 
-- **uvoz postojećeg GTFS-a** – prijevoznici, stanice, linije i vozni red dolaze
-  iz feeda; prvo se prikazuje izvještaj provjere, a podaci se upisuju tek nakon
-  potvrde (vidi [GTFS uvoz](gtfs-import.md));
+- **uvoz postojećeg GTFS-a** – prijevoznici, stanice, linije, trase i varijante
+  linija dolaze iz feeda (kalendari i vožnje ne); prvo se prikazuje izvještaj
+  provjere s odabirom varijanti, a podaci se upisuju tek nakon potvrde (vidi
+  [GTFS uvoz](gtfs-import.md));
 - **početak od nule** – stvara se prvi prijevoznik (naziv i web adresa; kod,
   zona i jezik imaju zadane vrijednosti).
 

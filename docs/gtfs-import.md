@@ -1,19 +1,48 @@
 # GTFS uvoz
 
 ```
-POST /api/gtfs/import/preview   pregled: provjera i izvještaj, bez upisa
-POST /api/gtfs/import           uvoz
+POST /api/gtfs/import/preview   pregled: provjera, izvještaj i varijante, bez upisa
+POST /api/gtfs/import           uvoz (polje "variants": odabrane varijante)
 ```
 
 Oba primaju GTFS ZIP kao `multipart/form-data` (polje `file`, najviše 200 MB)
-i vraćaju isti izvještaj. Dashboard prvo šalje pregled, prikaže izvještaj i
-nakon potvrde šalje istu datoteku na uvoz.
+i vraćaju isti izvještaj. Dashboard prvo šalje pregled, prikaže izvještaj s
+popisom varijanti linija i nakon potvrde šalje istu datoteku i odabrane
+varijante (`variants`, JSON popis ključeva iz pregleda; bez njega vrijedi zadani
+izbor).
 
-Uvoz **zamjenjuje sve podatke voznog reda** instance (prijevoznici, stanice,
-linije, kalendari, vožnje, trase, cijene, `feed_info`) u jednoj transakciji.
-Postavke instance i administratori ostaju. Ako feed ima greške, uvoz vraća
-`422` s izvještajem i ništa ne mijenja. Uspješan uvoz završava čarobnjak prvog
-pokretanja.
+**Uvozi se osnova, a ne vozni red.** Terminus je alat u kojem se vozni red
+radi; tuđi GTFS pomaže da se ne kreće od nule, ali se njegovi kalendari i
+vožnje ne preuzimaju (često su neuredni, npr. kalendari po tjednima samo s
+datumima). Uvoze se:
+
+| Uvozi se | Napomena |
+|---|---|
+| prijevoznici, stanice (s kolodvorima i peronima), linije | |
+| trase (`shapes.txt`) | |
+| **varijante linija** | prepoznate iz vožnji, s vremenima vožnje (vidi niže) |
+| cijene (Fares v1) i `feed_info` | zamjenjuju postojeće |
+| kalendari i vožnje | **ne**; čitaju se samo za prepoznavanje varijanti |
+
+**Uvoz dopunjava.** Zapisi s istim GTFS ID-em (`code`) se ažuriraju, a novi
+dodaju; ništa se ne briše. Sezone, vožnje i ručno uređene varijante ostaju.
+Varijante iz prethodnog uvoza koje nemaju vožnji zamjenjuju se novima, a nova
+varijanta istog smjera i redoslijeda stanica kao postojeća se preskače. Ako
+feed ima greške, uvoz vraća `422` s izvještajem i ništa ne mijenja. Uspješan
+uvoz završava čarobnjak prvog pokretanja.
+
+## Varijante linija
+
+Vožnje iste linije, istog smjera i istog redoslijeda stanica čine varijantu
+(npr. glavna, skraćena, iz garaže). Vrijeme vožnje između stanica i stajanje
+su medijan njezinih vožnji, a natpis smjera i trasa najčešći. Naziv je
+„prva → zadnja stanica” (isti naziv dobiva broj: „… (2)”). Unutar smjera
+varijanta s najviše vožnji je glavna.
+
+Zadano se uvoze glavne varijante i one s barem 5 % vožnji smjera; rijetke
+(npr. pojedinačne vožnje u garažu) korisnik uključuje sam u pregledu. Ključ
+varijante je sažetak linije, smjera i GTFS ID-eva stanica, pa isti feed daje
+iste ključeve i u pregledu i u uvozu.
 
 ## Izvještaj
 
@@ -26,6 +55,13 @@ pokretanja.
               "fares": 0, "fareRules": 0, "feedInfo": true,
               "tripsFromFrequencies": 0, "interpolatedStopTimes": 0 },
   "existing": { "agencies": 0, "stops": 0, "routes": 0, "trips": 0 },
+  "changes": { "newAgencies": 1, "updatedAgencies": 0, "newStops": 3800, "updatedStops": 0,
+               "newRoutes": 154, "updatedRoutes": 0, "newShapes": 561, "updatedShapes": 0 },
+  "variants": [
+    { "key": "3f1c…", "routeCode": "6", "routeName": "6", "directionId": 0,
+      "name": "Črnomerec → Sopot", "headsign": "Sopot", "stopCount": 23, "tripCount": 584,
+      "duration": 2340, "share": 0.66, "main": true, "included": true }
+  ],
   "errors": [],
   "warnings": [
     { "file": "shapes.txt", "message": "Trasa s dvostrukim rednim brojem točke je preskočena.",
@@ -35,8 +71,11 @@ pokretanja.
 }
 ```
 
-- `counts` – što se uvozi, nakon preskakanja neispravnih zapisa.
-- `existing` – podaci koje uvoz briše (za upozorenje prije potvrde).
+- `counts` – što je pročitano iz feeda, nakon preskakanja neispravnih zapisa.
+- `existing` – podaci u instanci prije uvoza.
+- `changes` – koliko je prijevoznika, stanica, linija i trasa novo, a koliko
+  se ažurira.
+- `variants` – prepoznate varijante linija; `included` kaže uvozi li se.
 - `errors` – zbog njih se feed ne može uvesti (`canImport: false`).
 - `warnings` – zapisi koji su preskočeni ili ispravljeni; uvoz je moguć.
 - Isti problem iz više redaka je jedan unos s brojem (`count`) i do pet
@@ -51,11 +90,14 @@ preskače se lančano (npr. vožnja na preskočenoj liniji).
 | Greška (uvoz se odbija) |
 |---|
 | datoteka nije ZIP ili je raspakirana veća od 2 GB |
-| nedostaje `agency.txt`, `stops.txt`, `routes.txt`, `trips.txt`, `stop_times.txt` ili oba `calendar.txt` i `calendar_dates.txt` |
+| nedostaje `agency.txt`, `stops.txt` ili `routes.txt` |
 | obavezni stupac nedostaje u obaveznoj datoteci ili u `frequencies.txt` |
 | dvostruki `agency_id`, `stop_id`, `route_id`, `service_id`, `trip_id` ili `fare_id` |
 | prijevoznik bez naziva, s neispravnom web adresom ili vremenskom zonom; prijevoznici s različitim zonama |
-| nakon provjere nije ostala nijedna vožnja |
+
+Bez `trips.txt` i `stop_times.txt`, ili kad nakon provjere ne ostane nijedna
+vožnja, uvoz je moguć, ali bez varijanti (upozorenje). Bez kalendara
+(`calendar.txt` i `calendar_dates.txt`) vožnje se i dalje koriste za varijante.
 
 | Upozorenje | Posljedica |
 |---|---|
@@ -90,16 +132,6 @@ vožnji: polasci u `start_time`, `start_time + headway_secs` … (prije
 `end_time`), s istim razmacima između stanica kao predložak. Kod nove vožnje je
 `trip_id` i vrijeme polaska, npr. `T1-072000`. Predložak se ne uvozi.
 
-**Servisi samo u `calendar_dates.txt`** dobivaju kalendar bez dana u tjednu, s
-razdobljem od prvog do zadnjeg datuma; datumi su iznimke.
-
-**Nazivi kalendara** (za prikaz i stupce PDF voznog reda) izvode se iz dana u
-tjednu: „Radni dan”, „Subota”, „Nedjelja”, „Subota i nedjelja”, „Radni dan i
-subota”, „Svaki dan” ili popis dana („Pon, Sri, Pet”). Kalendar bez dana u
-tjednu imenuje se po danima dodanih datuma: dani s barem pola najčešćeg broja
-datuma su njegovi dani, a rijetki ostali su praznici („Nedjelja i praznici”).
-Kalendar s do tri datuma imenuje se datumima („Posebni datumi: 24.12., 31.12.”).
-
 **Redni brojevi** (`stop_sequence`, `shape_pt_sequence`) se poredaju i
 prenumeriraju u 1, 2, 3 …
 
@@ -124,10 +156,10 @@ datumi i verzija (izvoz ih računa sam).
 | CSV i ZIP | `GtfsCsvReader`, `GtfsArchive` (`Terminus.Service/Gtfs/Import`) |
 | Provjere i pretvorbe | `GtfsFeedReader` (stanice, linije, kalendari, trase, cijene, vožnje i vremena) |
 | Izvještaj | `ImportReportBuilder` |
+| Varijante iz vožnji | `RouteVariantBuilder` |
 | Pregled i uvoz | `GtfsImportService` |
-| Upis | `GtfsImportRepository`: `TRUNCATE` i binarni `COPY` u jednoj transakciji |
+| Upis | `GtfsImportRepository`: dopuna po GTFS ID-u u jednoj transakciji; točke trasa binarnim `COPY`-jem |
 
-Čitanje i provjera feeda s milijun vremena traju nekoliko sekundi; upis u bazu
-nekoliko desetaka sekundi (provjera stranih ključeva i indeksi u bazi). Isti
-feed nakon izvoza i ponovnog uvoza daje iste brojeve bez upozorenja; to
-pokriva i test `ImportAsync_ExportedFeed_RoundTrips`.
+Za ZET (3.800 stanica, 154 linije, 66.661 vožnja s 1,1 milijun vremena) pregled
+traje oko 4 s, a uvoz oko 6 s (559 prepoznatih varijanti, 430 zadano
+odabranih).

@@ -866,6 +866,8 @@ export interface paths {
                 content: {
                     "multipart/form-data": {
                         file?: components["schemas"]["IFormFile"];
+                    } & {
+                        variants?: string;
                     };
                 };
             };
@@ -4225,6 +4227,24 @@ export interface components {
             /** Format: double */
             maxLongitude: number;
         };
+        GtfsImportChangesResponse: {
+            /** Format: int32 */
+            newAgencies: number;
+            /** Format: int32 */
+            updatedAgencies: number;
+            /** Format: int32 */
+            newStops: number;
+            /** Format: int32 */
+            updatedStops: number;
+            /** Format: int32 */
+            newRoutes: number;
+            /** Format: int32 */
+            updatedRoutes: number;
+            /** Format: int32 */
+            newShapes: number;
+            /** Format: int32 */
+            updatedShapes: number;
+        };
         GtfsImportCountsResponse: {
             /** Format: int32 */
             agencies: number;
@@ -4266,9 +4286,29 @@ export interface components {
             canImport: boolean;
             counts: components["schemas"]["GtfsImportCountsResponse"];
             existing: components["schemas"]["SetupCountsResponse"];
+            changes: components["schemas"]["GtfsImportChangesResponse"];
+            variants: components["schemas"]["GtfsImportVariantResponse"][];
             errors: components["schemas"]["GtfsImportIssueResponse"][];
             warnings: components["schemas"]["GtfsImportIssueResponse"][];
             skippedFiles: components["schemas"]["GtfsSkippedFileResponse"][];
+        };
+        GtfsImportVariantResponse: {
+            key: string;
+            routeCode: string;
+            routeName: null | string;
+            directionId: null | components["schemas"]["TripDirection"];
+            name: string;
+            headsign: null | string;
+            /** Format: int32 */
+            stopCount: number;
+            /** Format: int32 */
+            tripCount: number;
+            /** Format: int32 */
+            duration: number;
+            /** Format: double */
+            share: number;
+            main: boolean;
+            included: boolean;
         };
         GtfsSkippedFileResponse: {
             file: string;

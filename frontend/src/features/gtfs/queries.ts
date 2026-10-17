@@ -6,13 +6,17 @@ import { type DownloadedFile, fileNameOf } from '@/lib/download'
 
 export type GtfsImportReport = components['schemas']['GtfsImportReportResponse']
 export type GtfsImportIssue = components['schemas']['GtfsImportIssueResponse']
+export type GtfsImportVariant = components['schemas']['GtfsImportVariantResponse']
 
 /** Najveći ZIP koji backend prima (GtfsImportController.MaxUploadBytes). */
 export const maxGtfsUploadBytes = 200 * 1024 * 1024
 
-function fileBody(file: File) {
+function fileBody(file: File, variants?: string[]) {
   const form = new FormData()
   form.append('file', file)
+  if (variants) {
+    form.append('variants', JSON.stringify(variants))
+  }
   return { body: {}, bodySerializer: () => form }
 }
 
@@ -26,13 +30,20 @@ export function usePreviewGtfs() {
 }
 
 /**
- * Uvoz feeda. Feed s greškama (422) nije greška zahtjeva: vraća se izvještaj
+ * Uvoz osnove iz feeda. Feed s greškama (422) nije greška zahtjeva: vraća se izvještaj
  * s `imported: false`, isto kao kod pregleda.
  */
 export function useImportGtfs() {
   return useMutation({
-    mutationFn: async (file: File): Promise<GtfsImportReport> => {
-      const result = await api.POST('/api/gtfs/import', fileBody(file))
+    mutationFn: async ({
+      file,
+      variants,
+    }: {
+      file: File
+      /** Ključevi odabranih varijanti iz pregleda. */
+      variants: string[]
+    }): Promise<GtfsImportReport> => {
+      const result = await api.POST('/api/gtfs/import', fileBody(file, variants))
       if (result.response.status === 422) {
         return result.error as GtfsImportReport
       }

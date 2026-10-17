@@ -13,7 +13,7 @@ detaljan opis funkcija je u ostalim dokumentima (npr.
 | 2 Uvoz GTFS-a | ✅ |
 | 3 Dashboard za pregled | ✅ osim trase linije na karti |
 | 4 Za putnike (zaslon na stanici, PDF, javni feed) | ✅ osim PDF-a za sve stanice odjednom |
-| 5 Editor | kalendari (sezone, tipovi dana, praznici) ✅, grafikon vožnji ✅, varijante linija (backend) ✅; uvoz kao osnova, editor linija i varijanti, grafikon po varijantama u izradi |
+| 5 Editor | kalendari (sezone, tipovi dana, praznici) ✅, grafikon vožnji ✅, varijante linija (backend) ✅, uvoz kao osnova ✅; editor linija i varijanti, grafikon po varijantama u izradi |
 | 6 Produkcija | čeka odluku o hostingu |
 
 ## Cilj
@@ -66,17 +66,12 @@ pokretanjem.
 | 2.3 | Izvještaj o uvozu: broj uvezenih zapisa, greške koje zaustavljaju uvoz, upozorenja i preskočene datoteke ✅ | 2.2 |
 | 2.4 | Uvoz `shapes.txt` i cijena (Fares v1); `frequencies.txt` se pretvara u pojedinačne vožnje ✅ | 2.2 |
 
-Uvoz zamjenjuje sve podatke voznog reda (prijevoznici, stanice, linije,
-kalendari, vožnje, trase, cijene). Novi vozni red za sezonu uvozi se istim
-putem. Spajanje s postojećim podacima nije potrebno dok ne postoji editor.
-Detaljno u [gtfs-import.md](gtfs-import.md).
+Od 18. 10. 2026. uvoz donosi samo osnovu (prijevoznici, stanice, linije, trase,
+varijante linija) i dopunjava postojeće podatke; kalendari i vožnje rade se u
+aplikaciji (vidi plan editora u fazi 5). Detaljno u [gtfs-import.md](gtfs-import.md).
 
 Datoteke koje Terminus ne podržava (npr. `transfers.txt`, Fares v2) navode se
-u izvještaju kao preskočene. Ponovni izvoz ih neće sadržavati. Provjereno na
-feedu ZET-a (1,1 milijun vremena): izvoz i ponovni uvoz daju iste podatke.
-
-Uvoz se testira krugom uvoz → izvoz → uvoz, uz stvarne feedove i
-[MobilityData validator](https://gtfs-validator.mobilitydata.org/).
+u izvještaju kao preskočene.
 
 ## Faza 3: dashboard za pregled
 
@@ -126,7 +121,7 @@ prijevoznici. Redoslijed:
 2. **Uvoz kao osnova:** prijevoznici, stanice, linije, varijante s vremenima
    vožnje i trase, bez kalendara i vožnji; pregled varijanti pri uvozu
    (rijetke zadano isključene); ponovni uvoz dopunjava i ne dira sezone ni
-   vožnje; čarobnjak vodi dalje (sezona, vožnje).
+   vožnje; čarobnjak vodi dalje (sezona, vožnje) ✅
 3. **Editor linija i varijanti:** nova linija, varijanta klikom na stanice na
    karti, vremena vožnje po dionici, nova stanica i premještanje na karti.
 4. **Grafikon po varijantama:** redci iz odabranih varijanti, takt i nova
@@ -170,7 +165,7 @@ prije prvog pilota.
 
 | Tema | Odluka | Razlog |
 |---|---|---|
-| Uvoz | Zamjenjuje sve podatke voznog reda | Bez editora nema ručnih izmjena koje bi se izgubile; nova sezona = novi uvoz. |
+| Uvoz | Samo osnova (stanice, linije, trase, varijante), kao dopuna | Tuđi kalendari i vožnje su često neuredni; vozni red se radi u aplikaciji, a ponovni uvoz ne smije pregaziti taj rad. |
 | Autentikacija | ASP.NET Core Identity, HttpOnly cookie | Ugrađeno u .NET, korisnici u našoj bazi, bez dodatne infrastrukture. Frontend i API su na istoj domeni, pa cookie radi bez tokena u pregledniku. |
 | Endpointi za prijavu | Vlastiti (`/api/auth/login`, `logout`, `me`) preko `SignInManager` | `MapIdentityApi` otvara javnu registraciju, a ovdje administratore dodaje samo drugi administrator. |
 | CORS | Nije potreban | U razvoju Vite proxy šalje `/api` na backend; u produkciji je isti origin. |
