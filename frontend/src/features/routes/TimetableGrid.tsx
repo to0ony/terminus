@@ -8,7 +8,8 @@ const stickyCell = {
   left: 0,
   zIndex: 1,
   background: 'var(--mantine-color-body)',
-  minWidth: 200,
+  // Na mobitelu uži, da ostane mjesta za vremena.
+  minWidth: 'min(200px, 36vw)',
   maxWidth: 280,
 } as const
 

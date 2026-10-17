@@ -8,8 +8,29 @@ namespace Terminus.WebApi.Controllers;
 [ApiController]
 [Route("api/calendars")]
 [Produces("application/json")]
-public class ServiceCalendarsController(IServiceCalendarService calendarService) : ControllerBase
+public class ServiceCalendarsController(
+    IServiceCalendarService calendarService,
+    ITimetableService timetableService,
+    TimeProvider timeProvider) : ControllerBase
 {
+    /// <summary>
+    /// Kalendari koji voze zadani dan (bez njega danas) i zadnji dan s voznim
+    /// redom, npr. za upozorenje da feed uskoro istječe.
+    /// </summary>
+    [HttpGet("overview")]
+    [ProducesResponseType<ServiceOverviewResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<ServiceOverviewResponse>> GetOverview(
+        [FromQuery] ServiceOverviewQuery query,
+        CancellationToken cancellationToken)
+    {
+        var overview = await timetableService.GetServiceOverviewAsync(query.Date, timeProvider.GetUtcNow(), cancellationToken);
+        return Ok(new ServiceOverviewResponse(
+            overview.Date,
+            overview.ActiveCalendars.Select(c => c.ToResponse()).ToList(),
+            overview.LastServiceDate));
+    }
+
     [HttpGet]
     [ProducesResponseType<PagedResult<ServiceCalendarResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]

@@ -165,6 +165,52 @@ public class TimetableServiceTests
         Assert.Empty(await Service.GetStopRoutesAsync(_d.Id, Ct));
     }
 
+    [Fact]
+    public async Task GetServiceOverviewAsync_ListsTodaysCalendarsAndLastServiceDay()
+    {
+        // Now je srijeda 23. 12. 2026.; oba kalendara vrijede do 31. 12.
+        // (četvrtak), a 31. 12. je ukinut radnim danima.
+        _departures.CalendarDates.Add(new CalendarDateModel
+        {
+            ServiceCalendarId = _workdays.Id,
+            Date = new DateOnly(2026, 12, 31),
+            ExceptionType = CalendarExceptionType.Removed
+        });
+
+        var overview = await Service.GetServiceOverviewAsync(null, Now, Ct);
+
+        Assert.Equal(new DateOnly(2026, 12, 23), overview.Date);
+        Assert.Equal([_workdays.Id], overview.ActiveCalendars.Select(c => c.Id));
+        Assert.Equal(new DateOnly(2026, 12, 30), overview.LastServiceDate);
+    }
+
+    [Fact]
+    public async Task GetServiceOverviewAsync_AddedDatesExtendTheTimetable()
+    {
+        var dated = Calendar("POS");
+        _departures.Calendars.Add(dated);
+        _departures.CalendarDates.Add(new CalendarDateModel
+        {
+            ServiceCalendarId = dated.Id,
+            Date = new DateOnly(2027, 1, 6),
+            ExceptionType = CalendarExceptionType.Added
+        });
+
+        var overview = await Service.GetServiceOverviewAsync(new DateOnly(2027, 1, 2), Now, Ct);
+
+        Assert.Empty(overview.ActiveCalendars);
+        Assert.Equal(new DateOnly(2027, 1, 6), overview.LastServiceDate);
+    }
+
+    [Fact]
+    public async Task GetServiceOverviewAsync_AfterTheLastDay_HasNoServiceDate()
+    {
+        var overview = await Service.GetServiceOverviewAsync(new DateOnly(2027, 3, 1), Now, Ct);
+
+        Assert.Empty(overview.ActiveCalendars);
+        Assert.Null(overview.LastServiceDate);
+    }
+
     private StopModel AddStop(string code, LocationType locationType = LocationType.StopOrPlatform)
     {
         var stop = new StopModel { Id = Guid.NewGuid(), Code = code, Name = code, LocationType = locationType };

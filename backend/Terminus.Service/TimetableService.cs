@@ -139,6 +139,50 @@ public class TimetableService(
             : await timetableRepository.GetRoutesServingAsync(stopIds, cancellationToken);
     }
 
+    public async Task<ServiceOverview> GetServiceOverviewAsync(
+        DateOnly? date,
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default)
+    {
+        var day = date ?? await TodayAsync(now, cancellationToken);
+        var calendars = await departureRepository.GetCalendarsAsync(cancellationToken);
+        var exceptions = (await departureRepository.GetCalendarDatesAsync(day, DateOnly.MaxValue, cancellationToken))
+            .ToLookup(e => e.Date);
+
+        bool RunsOn(IServiceCalendarModel calendar, DateOnly d) =>
+            ServiceCalendarRules.RunsOn(calendar, exceptions[d], d);
+
+        var active = calendars
+            .Where(c => RunsOn(c, day))
+            .OrderBy(c => c.Code, StringComparer.Ordinal)
+            .ToList();
+
+        // Zadnji mogući dan je kraj razdoblja kalendara s danima u tjednu ili
+        // najkasniji dodani datum; od njega se ide unatrag do dana koji vozi
+        // (ukinuti datumi na kraju razdoblja ga pomiču ranije).
+        var latest = calendars
+            .Where(HasWeekdays)
+            .Select(c => c.EndDate)
+            .Concat(exceptions.SelectMany(g => g).Where(e => e.ExceptionType == CalendarExceptionType.Added).Select(e => e.Date))
+            .DefaultIfEmpty(DateOnly.MinValue)
+            .Max();
+
+        DateOnly? lastServiceDate = null;
+        for (var d = latest; d >= day; d = d.AddDays(-1))
+        {
+            if (calendars.Any(c => RunsOn(c, d)))
+            {
+                lastServiceDate = d;
+                break;
+            }
+        }
+
+        return new ServiceOverview(day, active, lastServiceDate);
+    }
+
+    private static bool HasWeekdays(IServiceCalendarModel calendar) =>
+        Enum.GetValues<DayOfWeek>().Any(d => ServiceCalendarRules.RunsOnWeekday(calendar, d));
+
     private async Task<DateOnly> TodayAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
         var agency = await departureRepository.GetPrimaryAgencyAsync(cancellationToken)

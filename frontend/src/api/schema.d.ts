@@ -1446,6 +1446,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/calendars/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    Date?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ServiceOverviewResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/calendars": {
         parameters: {
             query?: never;
@@ -3450,6 +3496,13 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        ServiceOverviewResponse: {
+            /** Format: date */
+            date: string;
+            activeCalendars: components["schemas"]["ServiceCalendarResponse"][];
+            /** Format: date */
+            lastServiceDate: null | string;
         };
         SettingsRequest: {
             displayName?: null | string;

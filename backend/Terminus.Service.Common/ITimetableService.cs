@@ -25,7 +25,22 @@ public interface ITimetableService
 
     /// <summary>Linije koje staju na stanici; za kolodvor na bilo kojem njegovom peronu.</summary>
     Task<IReadOnlyList<IRouteModel>> GetStopRoutesAsync(Guid stopId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Kalendari koji voze zadani dan (bez njega današnji u zoni prijevoznika)
+    /// i zadnji dan od tada na koji vozi ijedan kalendar.
+    /// </summary>
+    Task<ServiceOverview> GetServiceOverviewAsync(
+        DateOnly? date,
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default);
 }
+
+/// <param name="LastServiceDate">Zadnji dan s voznim redom; null ako od <paramref name="Date"/> nijedan kalendar ne vozi.</param>
+public sealed record ServiceOverview(
+    DateOnly Date,
+    IReadOnlyList<IServiceCalendarModel> ActiveCalendars,
+    DateOnly? LastServiceDate);
 
 /// <param name="Date">Dan voznog reda; ne može uz <paramref name="ServiceCalendarId"/>.</param>
 /// <param name="DirectionId">Samo jedan smjer; null za sve vožnje.</param>

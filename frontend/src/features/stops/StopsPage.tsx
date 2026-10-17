@@ -135,7 +135,7 @@ export function StopsPage() {
                           style={{ cursor: 'pointer' }}
                         >
                           <Table.Td>
-                            <Group gap={6} wrap="nowrap">
+                            <Group gap={6}>
                               <Anchor
                                 component={Link}
                                 to={`/stops/${stop.id}`}
