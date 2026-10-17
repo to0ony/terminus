@@ -15,7 +15,7 @@ import {
 import { DatePickerInput } from '@mantine/dates'
 import { useDisclosure } from '@mantine/hooks'
 import { IconArrowLeft, IconCalendar, IconDeviceTv, IconFileTypePdf } from '@tabler/icons-react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { Link, useParams, useSearchParams } from 'react-router'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
 import { RouteBadge } from '@/features/routes/RouteBadge'
@@ -23,13 +23,12 @@ import { formatNumber } from '@/lib/format'
 import { groupByHour } from './departures'
 import { locationTypeLabel, wheelchairLabels } from './locationTypes'
 import { type Stop, useStop, useStopDepartures, useStopRoutes } from './queries'
-import { StopsMap } from './StopsMap'
+import { StopLocation } from './StopLocation'
 import { TimetablePdfDialog } from './TimetablePdfDialog'
 
 /** Stanica: podaci, linije koje na njoj staju i polasci za dan (?date=, ?route=). */
 export function StopDetailPage() {
   const { stopId = '' } = useParams()
-  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const date = searchParams.get('date')
   const routeFilter = searchParams.getAll('route')
@@ -73,7 +72,6 @@ export function StopDetailPage() {
     departures.data?.departures.filter(
       (d) => routeFilter.length === 0 || routeFilter.includes(d.routeId),
     ) ?? []
-  const hasCoordinates = stop.data.latitude !== null && stop.data.longitude !== null
   // Polasci postoje samo za stajališta i kolodvore (location_type 0 i 1).
   const hasBoard = stop.data.locationType <= 1
 
@@ -163,22 +161,7 @@ export function StopDetailPage() {
           </Stack>
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 7 }}>
-          {hasCoordinates && (
-            <Paper withBorder style={{ overflow: 'hidden' }}>
-              <StopsMap
-                key={stop.data.id}
-                h={300}
-                extent={{
-                  minLatitude: stop.data.latitude! - 0.003,
-                  maxLatitude: stop.data.latitude! + 0.003,
-                  minLongitude: stop.data.longitude! - 0.005,
-                  maxLongitude: stop.data.longitude! + 0.005,
-                }}
-                selectedId={stop.data.id}
-                onSelect={(selected) => void navigate(`/stops/${selected.id}`)}
-              />
-            </Paper>
-          )}
+          <StopLocation stop={stop.data} />
         </Grid.Col>
       </Grid>
 
