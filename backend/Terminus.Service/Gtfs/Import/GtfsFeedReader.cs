@@ -43,6 +43,12 @@ internal sealed partial class GtfsFeedReader
     private FeedInfoModel? _feedInfo;
     private string? _feedLang;
     private int _tripsFromFrequencies;
+
+    /// <summary>
+    /// Feed bez calendar.txt i calendar_dates.txt: kalendari se ionako ne uvoze,
+    /// pa vožnje služe samo za prepoznavanje varijanti i ne traže kalendar.
+    /// </summary>
+    private bool _withoutCalendars;
     private int _interpolatedStopTimes;
 
     private GtfsFeedReader(GtfsArchive archive, ImportReportBuilder report)
@@ -68,7 +74,9 @@ internal sealed partial class GtfsFeedReader
             _report.SkippedFiles.Add(new GtfsSkippedFile(file, SkipReason(file)));
         }
 
-        foreach (var required in new[] { "agency.txt", "stops.txt", "routes.txt", "trips.txt", "stop_times.txt" })
+        // Uvozi se osnova (prijevoznici, stanice, linije, trase); vožnje služe samo
+        // za prepoznavanje varijanti linija, pa nisu obavezne.
+        foreach (var required in new[] { "agency.txt", "stops.txt", "routes.txt" })
         {
             if (!_archive.Contains(required))
             {
@@ -76,30 +84,38 @@ internal sealed partial class GtfsFeedReader
             }
         }
 
-        if (!_archive.Contains("calendar.txt") && !_archive.Contains("calendar_dates.txt"))
-        {
-            _report.Error(null, "Feed mora imati calendar.txt ili calendar_dates.txt.");
-        }
-
         if (_report.HasErrors)
         {
             return;
         }
+
+        var withTrips = _archive.Contains("trips.txt") && _archive.Contains("stop_times.txt");
+        if (!withTrips)
+        {
+            _report.Warning(null, "Feed nema trips.txt i stop_times.txt, pa se varijante linija ne mogu prepoznati; napravit ćeš ih u aplikaciji.");
+        }
+        _withoutCalendars = !_archive.Contains("calendar.txt") && !_archive.Contains("calendar_dates.txt");
 
         // feed_info prvi: njegov jezik je zadani jezik prijevoznika.
         ReadFeedInfo();
         ReadAgencies();
         ReadStops();
         ReadRoutes();
-        ReadCalendars();
+        if (!_withoutCalendars)
+        {
+            ReadCalendars();
+        }
         ReadShapes();
-        ReadTrips();
-        ReadStopTimesAndFrequencies();
+        if (withTrips)
+        {
+            ReadTrips();
+            ReadStopTimesAndFrequencies();
+        }
         ReadFares();
 
-        if (!_report.HasErrors && _trips.Count == 0)
+        if (withTrips && !_report.HasErrors && _trips.Count == 0)
         {
-            _report.Error(null, "Nakon provjere u feedu nije ostala nijedna vožnja.");
+            _report.Warning(null, "Nakon provjere u feedu nije ostala nijedna vožnja, pa se varijante linija ne mogu prepoznati.");
         }
     }
 

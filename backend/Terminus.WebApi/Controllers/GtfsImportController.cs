@@ -1,5 +1,7 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
+using Terminus.Common.Exceptions;
 using Terminus.Service.Common;
 using Terminus.WebApi.Contracts.Gtfs;
 using Terminus.WebApi.Infrastructure;
@@ -7,8 +9,10 @@ using Terminus.WebApi.Infrastructure;
 namespace Terminus.WebApi.Controllers;
 
 /// <summary>
-/// Uvoz GTFS feeda u dva koraka: pregled (provjera i izvještaj, bez upisa) pa
-/// uvoz iste datoteke. Uvoz zamjenjuje sve podatke voznog reda instance.
+/// Uvoz osnove iz GTFS feeda u dva koraka: pregled (provjera, izvještaj i
+/// prepoznate varijante linija, bez upisa) pa uvoz iste datoteke. Uvoze se
+/// prijevoznici, stanice, linije, trase, varijante, cijene i feed_info kao
+/// dopuna; kalendari i vožnje se rade u aplikaciji.
 /// </summary>
 [ApiController]
 [Route("api/gtfs/import")]
@@ -37,9 +41,11 @@ public class GtfsImportController(IGtfsImportService importService, IOutputCache
     }
 
     /// <summary>
-    /// Uvozi feed: ako nema grešaka, u jednoj transakciji briše postojeći vozni
-    /// red i upisuje feed te završava čarobnjak prvog pokretanja. S greškama
-    /// vraća 422 i isti izvještaj, a podaci ostaju nepromijenjeni.
+    /// Uvozi osnovu: ako nema grešaka, u jednoj transakciji ažurira zapise s
+    /// istim GTFS ID-em i dodaje nove (sezone, vožnje i ručne varijante ostaju)
+    /// te završava čarobnjak prvog pokretanja. Polje "variants" (JSON popis
+    /// ključeva iz pregleda) bira varijante; bez njega vrijedi zadani izbor. S
+    /// greškama vraća 422 i isti izvještaj, a podaci ostaju nepromijenjeni.
     /// </summary>
     [HttpPost]
     [Consumes("multipart/form-data")]
@@ -48,10 +54,26 @@ public class GtfsImportController(IGtfsImportService importService, IOutputCache
     [ProducesResponseType<GtfsImportReportResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<GtfsImportReportResponse>(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<ActionResult<GtfsImportReportResponse>> Import(IFormFile file, CancellationToken cancellationToken)
+    public async Task<ActionResult<GtfsImportReportResponse>> Import(
+        IFormFile file,
+        [FromForm] string? variants,
+        CancellationToken cancellationToken)
     {
+        IReadOnlyCollection<string>? variantKeys;
+        try
+        {
+            variantKeys = variants is null ? null : JsonSerializer.Deserialize<List<string>>(variants);
+        }
+        catch (JsonException)
+        {
+            throw new ValidationException(new Dictionary<string, string[]>
+            {
+                ["Variants"] = ["Varijante se šalju kao JSON popis ključeva."]
+            });
+        }
+
         await using var zip = file.OpenReadStream();
-        var report = await importService.ImportAsync(zip, cancellationToken);
+        var report = await importService.ImportAsync(zip, variantKeys, cancellationToken);
 
         if (report.Imported)
         {

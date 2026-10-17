@@ -75,7 +75,7 @@ public class GtfsImportServiceTests
     [Fact]
     public async Task ImportAsync_ValidFeed_WritesDataAndCompletesSetup()
     {
-        var report = await Service.ImportAsync(Zip(_files), Ct);
+        var report = await Service.ImportAsync(Zip(_files), null, Ct);
 
         Assert.True(report.Imported, Describe(report));
         Assert.Equal(Now.UtcDateTime, _settings.Settings?.SetupCompletedAt);
@@ -106,7 +106,7 @@ public class GtfsImportServiceTests
     [Fact]
     public async Task ImportAsync_MissingTime_IsInterpolatedByShapeDistance()
     {
-        await Service.ImportAsync(Zip(_files), Ct);
+        await Service.ImportAsync(Zip(_files), null, Ct);
 
         // 5 od 20 m puta: četvrtina od 20 minuta.
         var middle = _repository.Feed!.StopTimes[1];
@@ -133,7 +133,7 @@ public class GtfsImportServiceTests
             T1,06:20:00,06:20:00,C,3
             """;
 
-        await Service.ImportAsync(Zip(_files), Ct);
+        await Service.ImportAsync(Zip(_files), null, Ct);
 
         Assert.Equal(Time("06:18:00"), _repository.Feed!.StopTimes[1].ArrivalTime);
     }
@@ -146,7 +146,7 @@ public class GtfsImportServiceTests
             T1,07:00:00,08:00:00,1200
             """;
 
-        var report = await Service.ImportAsync(Zip(_files), Ct);
+        var report = await Service.ImportAsync(Zip(_files), null, Ct);
 
         Assert.True(report.Imported, Describe(report));
         Assert.Equal(3, report.Counts.TripsFromFrequencies);
@@ -169,7 +169,7 @@ public class GtfsImportServiceTests
             RD,20261231,1
             """;
 
-        var report = await Service.ImportAsync(Zip(_files), Ct);
+        var report = await Service.ImportAsync(Zip(_files), null, Ct);
 
         Assert.True(report.Imported, Describe(report));
         var calendar = Assert.Single(_repository.Feed!.Calendars);
@@ -213,13 +213,13 @@ public class GtfsImportServiceTests
     [Fact]
     public async Task ImportAsync_MissingRequiredFile_IsRejectedWithoutWriting()
     {
-        _files.Remove("stop_times.txt");
+        _files.Remove("routes.txt");
 
-        var report = await Service.ImportAsync(Zip(_files), Ct);
+        var report = await Service.ImportAsync(Zip(_files), null, Ct);
 
         Assert.False(report.CanImport);
         Assert.False(report.Imported);
-        Assert.Contains(report.Errors, e => e.File == "stop_times.txt");
+        Assert.Contains(report.Errors, e => e.File == "routes.txt");
         Assert.Null(_repository.Feed);
         Assert.Null(_settings.Settings?.SetupCompletedAt);
     }
@@ -251,7 +251,7 @@ public class GtfsImportServiceTests
     }
 
     [Fact]
-    public async Task PreviewAsync_NoTripLeft_IsError()
+    public async Task PreviewAsync_NoTripLeft_IsWarning()
     {
         _files["stop_times.txt"] = """
             trip_id,arrival_time,departure_time,stop_id,stop_sequence
@@ -261,9 +261,93 @@ public class GtfsImportServiceTests
 
         var report = await Service.PreviewAsync(Zip(_files), Ct);
 
-        Assert.False(report.CanImport);
+        Assert.True(report.CanImport, Describe(report));
         Assert.Contains(report.Warnings, w => w.Message.Contains("unatrag"));
-        Assert.Contains(report.Errors, e => e.Message.Contains("nijedna vožnja"));
+        Assert.Contains(report.Warnings, w => w.Message.Contains("nijedna vožnja"));
+        Assert.Empty(report.Variants);
+    }
+
+    [Fact]
+    public async Task PreviewAsync_DerivesVariantsWithRunningTimes()
+    {
+        _files["trips.txt"] += "\nL1,RD,T2,Bolnica,0\nL1,RD,T3,Trg,0";
+        _files["stop_times.txt"] += """
+
+            T2,07:00:00,07:00:00,AK-1,1,0
+            T2,07:04:00,07:04:00,B,2,5
+            T2,07:20:00,07:20:00,C,3,20
+            T3,08:00:00,08:00:00,AK-1,1,0
+            T3,08:05:00,08:05:00,B,2,5
+            """;
+
+        var report = await Service.PreviewAsync(Zip(_files), Ct);
+
+        Assert.True(report.CanImport, Describe(report));
+        Assert.Equal(2, report.Variants.Count);
+        var main = report.Variants[0];
+        Assert.Equal(("Autobusni kolodvor → Bolnica", 3, 2, true, true), (main.Name, main.StopCount, main.TripCount, main.Main, main.Included));
+        Assert.Equal(20 * 60, main.Duration);
+        Assert.Equal("1", main.RouteName);
+        // Treća vožnja je trećina smjera, pa se i ona uvozi zadano.
+        Assert.True(report.Variants[1].Included);
+        Assert.Null(_repository.Feed);
+    }
+
+    [Fact]
+    public async Task ImportAsync_ChosenVariantsOnly()
+    {
+        _files["trips.txt"] += "\nL1,RD,T3,Trg,0";
+        _files["stop_times.txt"] += """
+
+            T3,08:00:00,08:00:00,AK-1,1,0
+            T3,08:05:00,08:05:00,B,2,5
+            """;
+        var preview = await Service.PreviewAsync(Zip(_files), Ct);
+        var shortKey = preview.Variants.Single(v => !v.Main).Key;
+
+        var report = await Service.ImportAsync(Zip(_files), [shortKey], Ct);
+
+        Assert.True(report.Imported, Describe(report));
+        var variant = Assert.Single(_repository.Variants);
+        Assert.Equal(2, variant.Stops.Count);
+        Assert.Equal([false, true], report.Variants.Select(v => v.Included));
+    }
+
+    [Fact]
+    public async Task ImportAsync_FeedWithoutTripsAndCalendars_ImportsTheBase()
+    {
+        _files.Remove("trips.txt");
+        _files.Remove("stop_times.txt");
+        _files.Remove("calendar.txt");
+
+        var report = await Service.ImportAsync(Zip(_files), null, Ct);
+
+        Assert.True(report.Imported, Describe(report));
+        Assert.Equal(4, _repository.Feed!.Stops.Count);
+        Assert.Empty(_repository.Variants);
+        Assert.Contains(report.Warnings, w => w.Message.Contains("varijante"));
+    }
+
+    [Fact]
+    public async Task ImportAsync_WithoutCalendars_StillDerivesVariants()
+    {
+        _files.Remove("calendar.txt");
+
+        var report = await Service.ImportAsync(Zip(_files), null, Ct);
+
+        Assert.True(report.Imported, Describe(report));
+        Assert.Single(_repository.Variants);
+    }
+
+    [Fact]
+    public async Task PreviewAsync_ExistingCodes_AreUpdates()
+    {
+        _repository.Existing = new(
+            new HashSet<string> { "GPP" }, new HashSet<string> { "AK", "B" }, new HashSet<string>(), new HashSet<string>());
+
+        var report = await Service.PreviewAsync(Zip(_files), Ct);
+
+        Assert.Equal(new GtfsImportChanges(0, 1, 2, 2, 1, 0, 0, 0), report.Changes);
     }
 
     [Fact]
@@ -333,7 +417,7 @@ public class GtfsImportServiceTests
         source.FeedInfo = new FeedInfoModel { PublisherName = "GPP", PublisherUrl = "https://www.gpp.hr", Lang = "hr", ContactEmail = "gtfs@gpp.hr" };
 
         var exported = await new GtfsExportService(source, new FixedTimeProvider(Now)).ExportAsync(Ct);
-        var report = await Service.ImportAsync(new MemoryStream(exported.Content), Ct);
+        var report = await Service.ImportAsync(new MemoryStream(exported.Content), null, Ct);
 
         Assert.True(report.Imported, Describe(report));
         Assert.Empty(report.Warnings);

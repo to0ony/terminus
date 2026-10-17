@@ -42,7 +42,9 @@ internal sealed partial class GtfsFeedReader
                 continue;
             }
 
-            if (row["service_id"] is not { } serviceCode || !_calendarsByCode.TryGetValue(serviceCode, out var calendar))
+            ServiceCalendarModel? calendar = null;
+            if (!_withoutCalendars
+                && (row["service_id"] is not { } serviceCode || !_calendarsByCode.TryGetValue(serviceCode, out calendar)))
             {
                 _report.Warning(table.FileName, "Vožnja s nepostojećim ili preskočenim kalendarom (service_id) je preskočena.", where);
                 continue;
@@ -65,7 +67,7 @@ internal sealed partial class GtfsFeedReader
             {
                 Id = Guid.CreateVersion7(),
                 RouteId = route.Id,
-                ServiceCalendarId = calendar.Id,
+                ServiceCalendarId = calendar?.Id ?? Guid.Empty,
                 Code = code,
                 Headsign = row["trip_headsign"],
                 ShortName = row["trip_short_name"],

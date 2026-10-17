@@ -3,14 +3,21 @@ using Terminus.Repository.Common;
 
 namespace Terminus.Tests.Fakes;
 
-/// <summary>Pamti zadnji upisani feed.</summary>
+/// <summary>Pamti zadnji upisani feed i varijante.</summary>
 internal sealed class FakeGtfsImportRepository : IGtfsImportRepository
 {
     public GtfsFeedData? Feed { get; private set; }
+    public IReadOnlyList<IRouteVariantModel> Variants { get; private set; } = [];
+    public GtfsExistingCodes Existing { get; set; } = new(
+        new HashSet<string>(), new HashSet<string>(), new HashSet<string>(), new HashSet<string>());
 
-    public Task ReplaceAllAsync(GtfsFeedData feed, CancellationToken cancellationToken = default)
+    public Task<GtfsExistingCodes> GetExistingCodesAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(Existing);
+
+    public Task MergeAsync(GtfsFeedData feed, IReadOnlyList<IRouteVariantModel> variants, CancellationToken cancellationToken = default)
     {
         Feed = feed;
+        Variants = variants;
         return Task.CompletedTask;
     }
 }

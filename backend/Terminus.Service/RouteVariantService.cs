@@ -57,7 +57,8 @@ public class RouteVariantService(
         var current = await variantRepository.GetAsync(id, cancellationToken) ?? throw VariantNotFound(id);
         variant.Id = id;
         variant.RouteId = current.RouteId;
-        variant.Source = current.Source;
+        // Uređena varijanta je ručna, pa je ponovni GTFS uvoz ne zamjenjuje.
+        variant.Source = VariantSource.Manual;
         variant.SortOrder = current.SortOrder;
 
         Normalize(variant);

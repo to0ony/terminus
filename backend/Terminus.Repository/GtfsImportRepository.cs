@@ -4,169 +4,239 @@ using NpgsqlTypes;
 using Terminus.DAL;
 using Terminus.DAL.Entities;
 using Terminus.Model.Common;
+using Terminus.Model.Common.Enums;
 using Terminus.Repository.Common;
+using Terminus.Repository.Mapping;
 
 namespace Terminus.Repository;
 
 /// <summary>
-/// Zamjena voznog reda: TRUNCATE i binarni COPY u jednoj transakciji. COPY je
-/// za red veličine brži od INSERT-a kroz EF, što je bitno za stop_times
-/// (stotine tisuća do milijuni redaka). created_at i updated_at postavlja baza.
+/// Upis osnove iz GTFS-a kao dopuna: zapisi se prepoznaju po GTFS ID-u (code).
+/// Točke trasa idu binarnim COPY-jem, jer ih može biti stotine tisuća.
 /// </summary>
 public class GtfsImportRepository(TerminusDbContext context) : IGtfsImportRepository
 {
     private static readonly TimeSpan CopyTimeout = TimeSpan.FromMinutes(10);
 
-    public async Task ReplaceAllAsync(GtfsFeedData feed, CancellationToken cancellationToken = default)
+    public async Task<GtfsExistingCodes> GetExistingCodesAsync(CancellationToken cancellationToken = default) => new(
+        (await context.Agencies.Select(a => a.Code).ToListAsync(cancellationToken)).ToHashSet(StringComparer.Ordinal),
+        (await context.Stops.Select(s => s.Code).ToListAsync(cancellationToken)).ToHashSet(StringComparer.Ordinal),
+        (await context.Routes.Select(r => r.Code).ToListAsync(cancellationToken)).ToHashSet(StringComparer.Ordinal),
+        (await context.Shapes.Select(s => s.Code).ToListAsync(cancellationToken)).ToHashSet(StringComparer.Ordinal));
+
+    public async Task MergeAsync(GtfsFeedData feed, IReadOnlyList<IRouteVariantModel> variants, CancellationToken cancellationToken = default)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-        var connection = (NpgsqlConnection)context.Database.GetDbConnection();
 
-        await context.Database.ExecuteSqlRawAsync(
-            "TRUNCATE TABLE stop_times, trips, route_variant_stops, route_variants, fare_rules, fares, shape_points, shapes, calendar_dates, " +
-            "season_days, service_calendars, timetable_seasons, routes, stops, agencies, feed_info",
+        // Id iz feeda → Id u bazi (postojeći zapis s istim kodom ili novi).
+        var agencyIds = await UpsertAsync(
+            context.Agencies, feed.Agencies, a => a.Code, e => e.Code, id => new Agency { Id = id },
+            (model, entity, _) => AgencyMapper.Apply(model, entity), cancellationToken);
+
+        var stopIds = await IdsByCodeAsync(context.Stops, feed.Stops, s => s.Code, e => e.Code, cancellationToken);
+        await UpsertAsync(
+            context.Stops, feed.Stops, s => s.Code, e => e.Code, id => new Stop { Id = id },
+            (model, entity, _) =>
+            {
+                StopMapper.Apply(model, entity);
+                entity.ParentStationId = model.ParentStationId is { } parent ? stopIds.GetValueOrDefault(parent, parent) : null;
+            },
             cancellationToken);
 
-        // Redoslijed prati strane ključeve.
-        await CopyAsync(connection, "agencies", feed.Agencies, cancellationToken,
-            ("id", NpgsqlDbType.Uuid, a => a.Id),
-            ("code", NpgsqlDbType.Text, a => a.Code),
-            ("name", NpgsqlDbType.Text, a => a.Name),
-            ("url", NpgsqlDbType.Text, a => a.Url),
-            ("timezone", NpgsqlDbType.Text, a => a.Timezone),
-            ("lang", NpgsqlDbType.Text, a => a.Lang),
-            ("phone", NpgsqlDbType.Text, a => a.Phone),
-            ("fare_url", NpgsqlDbType.Text, a => a.FareUrl),
-            ("email", NpgsqlDbType.Text, a => a.Email));
+        var routeIds = await UpsertAsync(
+            context.Routes, feed.Routes, r => r.Code, e => e.Code, id => new Route { Id = id },
+            (model, entity, _) =>
+            {
+                RouteMapper.Apply(model, entity);
+                entity.AgencyId = agencyIds.GetValueOrDefault(model.AgencyId, model.AgencyId);
+            },
+            cancellationToken);
 
-        // Strani ključ na nadređenu stanicu provjerava se na kraju naredbe, pa redoslijed redaka nije bitan.
-        await CopyAsync(connection, "stops", feed.Stops, cancellationToken,
-            ("id", NpgsqlDbType.Uuid, s => s.Id),
-            ("code", NpgsqlDbType.Text, s => s.Code),
-            ("public_code", NpgsqlDbType.Text, s => s.PublicCode),
-            ("name", NpgsqlDbType.Text, s => s.Name),
-            ("tts_name", NpgsqlDbType.Text, s => s.TtsName),
-            ("description", NpgsqlDbType.Text, s => s.Description),
-            ("latitude", NpgsqlDbType.Double, s => s.Latitude),
-            ("longitude", NpgsqlDbType.Double, s => s.Longitude),
-            ("zone_id", NpgsqlDbType.Text, s => s.ZoneId),
-            ("url", NpgsqlDbType.Text, s => s.Url),
-            ("location_type", NpgsqlDbType.Smallint, s => (short)s.LocationType),
-            ("parent_station_id", NpgsqlDbType.Uuid, s => s.ParentStationId),
-            ("timezone", NpgsqlDbType.Text, s => s.Timezone),
-            ("platform_code", NpgsqlDbType.Text, s => s.PlatformCode),
-            ("wheelchair_boarding", NpgsqlDbType.Smallint, s => (short)s.WheelchairBoarding),
-            ("is_active", NpgsqlDbType.Boolean, s => s.IsActive));
+        var shapeIds = await UpsertAsync(
+            context.Shapes, feed.Shapes, s => s.Code, e => e.Code, id => new Shape { Id = id },
+            (model, entity, _) => entity.Code = model.Code, cancellationToken);
 
-        await CopyAsync(connection, "routes", feed.Routes, cancellationToken,
-            ("id", NpgsqlDbType.Uuid, r => r.Id),
-            ("agency_id", NpgsqlDbType.Uuid, r => r.AgencyId),
-            ("code", NpgsqlDbType.Text, r => r.Code),
-            ("short_name", NpgsqlDbType.Text, r => r.ShortName),
-            ("long_name", NpgsqlDbType.Text, r => r.LongName),
-            ("description", NpgsqlDbType.Text, r => r.Description),
-            ("route_type", NpgsqlDbType.Smallint, r => (short)r.RouteType),
-            ("url", NpgsqlDbType.Text, r => r.Url),
-            ("color", NpgsqlDbType.Char, r => r.Color),
-            ("text_color", NpgsqlDbType.Char, r => r.TextColor),
-            ("sort_order", NpgsqlDbType.Integer, r => r.SortOrder),
-            ("continuous_pickup", NpgsqlDbType.Smallint, r => (short?)r.ContinuousPickup),
-            ("continuous_drop_off", NpgsqlDbType.Smallint, r => (short?)r.ContinuousDropOff),
-            ("network_id", NpgsqlDbType.Text, r => r.NetworkId),
-            ("is_active", NpgsqlDbType.Boolean, r => r.IsActive));
+        await context.SaveChangesAsync(cancellationToken);
 
-        await CopyAsync(connection, "service_calendars", feed.Calendars, cancellationToken,
-            ("id", NpgsqlDbType.Uuid, c => c.Id),
-            ("code", NpgsqlDbType.Text, c => c.Code),
-            ("name", NpgsqlDbType.Text, c => c.Name),
-            ("monday", NpgsqlDbType.Boolean, c => c.Monday),
-            ("tuesday", NpgsqlDbType.Boolean, c => c.Tuesday),
-            ("wednesday", NpgsqlDbType.Boolean, c => c.Wednesday),
-            ("thursday", NpgsqlDbType.Boolean, c => c.Thursday),
-            ("friday", NpgsqlDbType.Boolean, c => c.Friday),
-            ("saturday", NpgsqlDbType.Boolean, c => c.Saturday),
-            ("sunday", NpgsqlDbType.Boolean, c => c.Sunday),
-            ("start_date", NpgsqlDbType.Date, c => c.StartDate),
-            ("end_date", NpgsqlDbType.Date, c => c.EndDate));
-
-        await CopyAsync(connection, "calendar_dates", feed.CalendarDates, cancellationToken,
-            ("service_calendar_id", NpgsqlDbType.Uuid, d => d.ServiceCalendarId),
-            ("date", NpgsqlDbType.Date, d => d.Date),
-            ("exception_type", NpgsqlDbType.Smallint, d => (short)d.ExceptionType));
-
-        await CopyAsync(connection, "shapes", feed.Shapes, cancellationToken,
-            ("id", NpgsqlDbType.Uuid, s => s.Id),
-            ("code", NpgsqlDbType.Text, s => s.Code));
-
+        // Točke trasa se pišu ispočetka.
+        var shapeTargets = feed.Shapes.Select(s => shapeIds[s.Id]).ToList();
+        await context.ShapePoints.Where(p => shapeTargets.Contains(p.ShapeId)).ExecuteDeleteAsync(cancellationToken);
+        var connection = (NpgsqlConnection)context.Database.GetDbConnection();
         await CopyAsync(connection, "shape_points",
-            feed.Shapes.SelectMany(s => s.Points.Select(p => (ShapeId: s.Id, Point: p))), cancellationToken,
+            feed.Shapes.SelectMany(s => s.Points.Select(p => (ShapeId: shapeIds[s.Id], Point: p))), cancellationToken,
             ("shape_id", NpgsqlDbType.Uuid, x => x.ShapeId),
             ("sequence", NpgsqlDbType.Integer, x => x.Point.Sequence),
             ("latitude", NpgsqlDbType.Double, x => x.Point.Latitude),
             ("longitude", NpgsqlDbType.Double, x => x.Point.Longitude),
             ("dist_traveled", NpgsqlDbType.Double, x => x.Point.DistTraveled));
 
-        await CopyAsync(connection, "trips", feed.Trips, cancellationToken,
-            ("id", NpgsqlDbType.Uuid, t => t.Id),
-            ("route_id", NpgsqlDbType.Uuid, t => t.RouteId),
-            ("service_calendar_id", NpgsqlDbType.Uuid, t => t.ServiceCalendarId),
-            ("code", NpgsqlDbType.Text, t => t.Code),
-            ("headsign", NpgsqlDbType.Text, t => t.Headsign),
-            ("short_name", NpgsqlDbType.Text, t => t.ShortName),
-            ("direction_id", NpgsqlDbType.Smallint, t => (short?)t.DirectionId),
-            ("block_id", NpgsqlDbType.Text, t => t.BlockId),
-            ("shape_id", NpgsqlDbType.Uuid, t => t.ShapeId),
-            ("wheelchair_accessible", NpgsqlDbType.Smallint, t => (short)t.WheelchairAccessible),
-            ("bikes_allowed", NpgsqlDbType.Smallint, t => (short)t.BikesAllowed));
+        await MergeVariantsAsync(variants, routeIds, stopIds, shapeIds, cancellationToken);
+        await ReplaceFaresAsync(feed, agencyIds, routeIds, cancellationToken);
+        await ReplaceFeedInfoAsync(feed.FeedInfo, cancellationToken);
 
-        await CopyAsync(connection, "stop_times", feed.StopTimes, cancellationToken,
-            ("trip_id", NpgsqlDbType.Uuid, st => st.TripId),
-            ("stop_sequence", NpgsqlDbType.Integer, st => st.StopSequence),
-            ("stop_id", NpgsqlDbType.Uuid, st => st.StopId),
-            ("arrival_time", NpgsqlDbType.Integer, st => st.ArrivalTime),
-            ("departure_time", NpgsqlDbType.Integer, st => st.DepartureTime),
-            ("stop_headsign", NpgsqlDbType.Text, st => st.StopHeadsign),
-            ("pickup_type", NpgsqlDbType.Smallint, st => (short)st.PickupType),
-            ("drop_off_type", NpgsqlDbType.Smallint, st => (short)st.DropOffType),
-            ("continuous_pickup", NpgsqlDbType.Smallint, st => (short?)st.ContinuousPickup),
-            ("continuous_drop_off", NpgsqlDbType.Smallint, st => (short?)st.ContinuousDropOff),
-            ("shape_dist_traveled", NpgsqlDbType.Double, st => st.ShapeDistTraveled),
-            ("timepoint", NpgsqlDbType.Boolean, st => st.Timepoint));
-
-        await CopyAsync(connection, "fares", feed.Fares, cancellationToken,
-            ("id", NpgsqlDbType.Uuid, f => f.Id),
-            ("code", NpgsqlDbType.Text, f => f.Code),
-            ("price", NpgsqlDbType.Numeric, f => f.Price),
-            ("currency_type", NpgsqlDbType.Char, f => f.CurrencyType),
-            ("payment_method", NpgsqlDbType.Smallint, f => (short)f.PaymentMethod),
-            ("transfers", NpgsqlDbType.Smallint, f => (short?)f.Transfers),
-            ("agency_id", NpgsqlDbType.Uuid, f => f.AgencyId),
-            ("transfer_duration", NpgsqlDbType.Integer, f => f.TransferDuration));
-
-        await CopyAsync(connection, "fare_rules",
-            feed.Fares.SelectMany(f => f.Rules.Select((r, i) => (FareId: f.Id, Sequence: i + 1, Rule: r))), cancellationToken,
-            ("id", NpgsqlDbType.Uuid, x => Guid.CreateVersion7()),
-            ("fare_id", NpgsqlDbType.Uuid, x => x.FareId),
-            ("sequence", NpgsqlDbType.Integer, x => x.Sequence),
-            ("route_id", NpgsqlDbType.Uuid, x => x.Rule.RouteId),
-            ("origin_id", NpgsqlDbType.Text, x => x.Rule.OriginId),
-            ("destination_id", NpgsqlDbType.Text, x => x.Rule.DestinationId),
-            ("contains_id", NpgsqlDbType.Text, x => x.Rule.ContainsId));
-
-        if (feed.FeedInfo is { } info)
-        {
-            await CopyAsync(connection, "feed_info", [info], cancellationToken,
-                ("id", NpgsqlDbType.Smallint, _ => FeedInfo.SingletonId),
-                ("publisher_name", NpgsqlDbType.Text, f => f.PublisherName),
-                ("publisher_url", NpgsqlDbType.Text, f => f.PublisherUrl),
-                ("lang", NpgsqlDbType.Text, f => f.Lang),
-                ("default_lang", NpgsqlDbType.Text, f => f.DefaultLang),
-                ("contact_email", NpgsqlDbType.Text, f => f.ContactEmail),
-                ("contact_url", NpgsqlDbType.Text, f => f.ContactUrl));
-        }
-
+        await context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }
+
+    /// <summary>
+    /// Varijante iz uvoza bez vožnji se zamjenjuju novima; ručne i one s
+    /// vožnjama ostaju, a nova varijanta istog smjera i stanica kao postojeća se
+    /// preskače.
+    /// </summary>
+    private async Task MergeVariantsAsync(
+        IReadOnlyList<IRouteVariantModel> variants,
+        IReadOnlyDictionary<Guid, Guid> routeIds,
+        IReadOnlyDictionary<Guid, Guid> stopIds,
+        IReadOnlyDictionary<Guid, Guid> shapeIds,
+        CancellationToken cancellationToken)
+    {
+        var targetRoutes = variants.Select(v => routeIds[v.RouteId]).Distinct().ToList();
+
+        await context.RouteVariants
+            .Where(v => targetRoutes.Contains(v.RouteId) && v.Source == (short)VariantSource.Gtfs && !v.Trips.Any())
+            .ExecuteDeleteAsync(cancellationToken);
+
+        var kept = await context.RouteVariants
+            .AsNoTracking()
+            .Where(v => targetRoutes.Contains(v.RouteId))
+            .Select(v => new { v.RouteId, v.DirectionId, Stops = v.Stops.OrderBy(s => s.Sequence).Select(s => s.StopId).ToList() })
+            .ToListAsync(cancellationToken);
+        var existing = kept.Select(v => Key(v.RouteId, v.DirectionId, v.Stops)).ToHashSet(StringComparer.Ordinal);
+        var sortOrders = kept.GroupBy(v => (v.RouteId, v.DirectionId)).ToDictionary(g => g.Key, g => g.Count());
+
+        foreach (var variant in variants)
+        {
+            var routeId = routeIds[variant.RouteId];
+            var stops = variant.Stops.Select(s => stopIds.GetValueOrDefault(s.StopId, s.StopId)).ToList();
+            var direction = (short?)variant.DirectionId;
+            if (!existing.Add(Key(routeId, direction, stops)))
+            {
+                continue;
+            }
+
+            var order = sortOrders.GetValueOrDefault((routeId, direction));
+            sortOrders[(routeId, direction)] = order + 1;
+
+            var entity = new RouteVariant { Id = variant.Id };
+            RouteVariantMapper.Apply(variant, entity);
+            entity.RouteId = routeId;
+            entity.ShapeId = variant.ShapeId is { } shape ? shapeIds.GetValueOrDefault(shape, shape) : null;
+            entity.SortOrder = order;
+            foreach (var (stop, i) in entity.Stops.Select((s, i) => (s, i)))
+            {
+                stop.StopId = stops[i];
+            }
+            context.RouteVariants.Add(entity);
+        }
+    }
+
+    private static string Key(Guid routeId, short? direction, IEnumerable<Guid> stops) =>
+        $"{routeId}|{direction}|{string.Join(',', stops)}";
+
+    /// <summary>Cijene ne uređuje nitko osim uvoza, pa se zamjenjuju cijele.</summary>
+    private async Task ReplaceFaresAsync(
+        GtfsFeedData feed,
+        IReadOnlyDictionary<Guid, Guid> agencyIds,
+        IReadOnlyDictionary<Guid, Guid> routeIds,
+        CancellationToken cancellationToken)
+    {
+        await context.Fares.ExecuteDeleteAsync(cancellationToken);
+        foreach (var fare in feed.Fares)
+        {
+            var entity = new Fare { Id = fare.Id };
+            FareMapper.Apply(fare, entity);
+            entity.AgencyId = fare.AgencyId is { } agency ? agencyIds.GetValueOrDefault(agency, agency) : null;
+            entity.Rules = fare.Rules
+                .Select((rule, i) =>
+                {
+                    var row = FareMapper.ToEntity(fare.Id, i + 1, rule);
+                    row.RouteId = rule.RouteId is { } route ? routeIds.GetValueOrDefault(route, route) : null;
+                    return row;
+                })
+                .ToList();
+            context.Fares.Add(entity);
+        }
+    }
+
+    private async Task ReplaceFeedInfoAsync(IFeedInfoModel? info, CancellationToken cancellationToken)
+    {
+        if (info is null)
+        {
+            return;
+        }
+        var entity = await context.FeedInfo.FirstOrDefaultAsync(cancellationToken);
+        if (entity is null)
+        {
+            entity = new FeedInfo();
+            context.FeedInfo.Add(entity);
+        }
+        FeedInfoMapper.Apply(info, entity);
+    }
+
+    /// <summary>Id iz feeda → Id postojećeg zapisa s istim kodom, ili isti Id za novi.</summary>
+    private static async Task<Dictionary<Guid, Guid>> IdsByCodeAsync<TModel, TEntity>(
+        DbSet<TEntity> set,
+        IEnumerable<TModel> models,
+        Func<TModel, string> modelCode,
+        Func<TEntity, string> entityCode,
+        CancellationToken cancellationToken)
+        where TModel : class
+        where TEntity : class
+    {
+        var existing = (await set.AsNoTracking().ToListAsync(cancellationToken))
+            .ToDictionary(entityCode, EntityId, StringComparer.Ordinal);
+        return models.ToDictionary(
+            m => ModelId(m),
+            m => existing.TryGetValue(modelCode(m), out var id) ? id : ModelId(m));
+    }
+
+    /// <summary>Ažurira zapise s istim kodom, a za ostale dodaje nove s Id-em iz feeda.</summary>
+    private static async Task<Dictionary<Guid, Guid>> UpsertAsync<TModel, TEntity>(
+        DbSet<TEntity> set,
+        IEnumerable<TModel> models,
+        Func<TModel, string> modelCode,
+        Func<TEntity, string> entityCode,
+        Func<Guid, TEntity> create,
+        Action<TModel, TEntity, bool> apply,
+        CancellationToken cancellationToken)
+        where TModel : class
+        where TEntity : class
+    {
+        var existing = (await set.ToListAsync(cancellationToken)).ToDictionary(entityCode, StringComparer.Ordinal);
+        var ids = new Dictionary<Guid, Guid>();
+
+        foreach (var model in models)
+        {
+            var isNew = !existing.TryGetValue(modelCode(model), out var entity);
+            if (isNew)
+            {
+                entity = create(ModelId(model));
+                set.Add(entity);
+            }
+            apply(model, entity!, isNew);
+            ids[ModelId(model)] = EntityId(entity!);
+        }
+
+        return ids;
+    }
+
+    private static Guid ModelId(object model) => model switch
+    {
+        IAgencyModel a => a.Id,
+        IStopModel s => s.Id,
+        IRouteModel r => r.Id,
+        IShapeModel s => s.Id,
+        _ => throw new NotSupportedException(model.GetType().Name)
+    };
+
+    private static Guid EntityId(object entity) => entity switch
+    {
+        Agency a => a.Id,
+        Stop s => s.Id,
+        Route r => r.Id,
+        Shape s => s.Id,
+        _ => throw new NotSupportedException(entity.GetType().Name)
+    };
 
     private static async Task CopyAsync<T>(
         NpgsqlConnection connection,
@@ -181,8 +251,6 @@ public class GtfsImportRepository(TerminusDbContext context) : IGtfsImportReposi
             $"COPY {table} ({columnList}) FROM STDIN (FORMAT BINARY)", cancellationToken);
         writer.Timeout = CopyTimeout;
 
-        // Sinkrono pisanje u međuspremnik: async poziv po vrijednosti (milijuni za
-        // stop_times) višestruko usporava upis, a čeka se samo kad se međuspremnik prazni.
         foreach (var row in rows)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -202,13 +270,8 @@ public class GtfsImportRepository(TerminusDbContext context) : IGtfsImportReposi
         {
             case null: writer.WriteNull(); break;
             case Guid v: writer.Write(v, type); break;
-            case string v: writer.Write(v, type); break;
-            case short v: writer.Write(v, type); break;
             case int v: writer.Write(v, type); break;
             case double v: writer.Write(v, type); break;
-            case decimal v: writer.Write(v, type); break;
-            case bool v: writer.Write(v, type); break;
-            case DateOnly v: writer.Write(v, type); break;
             default: throw new NotSupportedException($"COPY ne podržava vrijednost tipa {value.GetType()}.");
         }
     }

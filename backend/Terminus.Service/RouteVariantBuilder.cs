@@ -68,11 +68,17 @@ internal static class RouteVariantBuilder
         return result;
     }
 
-    /// <summary>Medijan, nikad negativan (vremena se ne smiju vraćati).</summary>
+    /// <summary>Medijan (za paran broj prosjek srednjih dviju), nikad negativan.</summary>
     private static int Median(IEnumerable<int> values)
     {
         var sorted = values.Order().ToList();
-        return sorted.Count == 0 ? 0 : Math.Max(0, sorted[sorted.Count / 2]);
+        if (sorted.Count == 0)
+        {
+            return 0;
+        }
+        var middle = sorted.Count / 2;
+        var median = sorted.Count % 2 == 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+        return Math.Max(0, median);
     }
 
     private static T? MostCommon<T>(IEnumerable<T?> values) =>
