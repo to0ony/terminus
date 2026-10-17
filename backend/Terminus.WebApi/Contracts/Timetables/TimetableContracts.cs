@@ -116,6 +116,8 @@ public class StopAreaQuery
 /// <param name="Truncated">true ako u području ima više stanica od vraćenih; treba približiti kartu.</param>
 public record StopsInAreaResponse(IReadOnlyList<TimetableStopResponse> Stops, bool Truncated);
 
+public record GeoBoundsResponse(double MinLatitude, double MinLongitude, double MaxLatitude, double MaxLongitude);
+
 public static class TimetableMappings
 {
     public static TimetableStopResponse ToTimetableResponse(this IStopModel stop) => new(
@@ -183,4 +185,7 @@ public static class TimetableMappings
 
     public static StopsInAreaResponse ToResponse(this StopsInArea result) =>
         new(result.Stops.Select(s => s.ToTimetableResponse()).ToList(), result.Truncated);
+
+    public static GeoBoundsResponse ToResponse(this GeoBounds bounds) =>
+        new(bounds.MinLatitude, bounds.MinLongitude, bounds.MaxLatitude, bounds.MaxLongitude);
 }

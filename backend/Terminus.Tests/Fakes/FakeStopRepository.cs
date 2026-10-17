@@ -34,6 +34,9 @@ internal sealed class FakeStopRepository(IEnumerable<IStopModel> stops) : IStopR
             .Take(limit)
             .ToList());
 
+    public Task<GeoBounds?> GetExtentAsync(CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException();
+
     public Task<bool> HasChildStopsAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(_stops.Any(s => s.ParentStationId == id));
 

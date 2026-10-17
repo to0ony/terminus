@@ -42,6 +42,19 @@ public class StopsController(
         return Ok(result.ToResponse());
     }
 
+    /// <summary>
+    /// Područje koje obuhvaća sve stanice s koordinatama, za početni prikaz
+    /// karte; 204 ako nijedna stanica nema koordinate.
+    /// </summary>
+    [HttpGet("extent")]
+    [ProducesResponseType<GeoBoundsResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<ActionResult<GeoBoundsResponse>> GetExtent(CancellationToken cancellationToken)
+    {
+        var extent = await stopService.GetExtentAsync(cancellationToken);
+        return extent is null ? NoContent() : Ok(extent.ToResponse());
+    }
+
     /// <summary>Linije koje staju na stanici; za kolodvor na bilo kojem peronu.</summary>
     [HttpGet("{id:guid}/routes")]
     [ProducesResponseType<IReadOnlyList<RouteResponse>>(StatusCodes.Status200OK)]

@@ -16,6 +16,9 @@ public interface IStopService
     /// </summary>
     Task<StopsInArea> FindInAreaAsync(GeoBounds bounds, bool? isActive, CancellationToken cancellationToken = default);
 
+    /// <returns>Područje svih stanica (početni prikaz karte); null ako nijedna nema koordinate.</returns>
+    Task<GeoBounds?> GetExtentAsync(CancellationToken cancellationToken = default);
+
     Task<IStopModel> CreateAsync(IStopModel stop, CancellationToken cancellationToken = default);
 
     Task<IStopModel> UpdateAsync(Guid id, IStopModel stop, CancellationToken cancellationToken = default);

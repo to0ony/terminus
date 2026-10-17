@@ -21,6 +21,9 @@ public interface IStopRepository
     /// <returns>Najviše <paramref name="limit"/> stanica.</returns>
     Task<IReadOnlyList<IStopModel>> FindInAreaAsync(GeoBounds bounds, bool? isActive, int limit, CancellationToken cancellationToken = default);
 
+    /// <returns>Područje koje obuhvaća sve stanice s koordinatama; null ako ih nema.</returns>
+    Task<GeoBounds?> GetExtentAsync(CancellationToken cancellationToken = default);
+
     Task<bool> HasChildStopsAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <returns>true ako na stanici staje barem jedna vožnja.</returns>

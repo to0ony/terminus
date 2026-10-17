@@ -57,6 +57,9 @@ public class StopService(IStopRepository repository) : IStopService
             : new StopsInArea(stops, Truncated: false);
     }
 
+    public Task<GeoBounds?> GetExtentAsync(CancellationToken cancellationToken = default) =>
+        repository.GetExtentAsync(cancellationToken);
+
     public async Task<IStopModel> CreateAsync(IStopModel stop, CancellationToken cancellationToken = default)
     {
         stop.Id = Guid.Empty;

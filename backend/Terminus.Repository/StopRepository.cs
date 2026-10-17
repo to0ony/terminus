@@ -109,6 +109,36 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
         return entities.Select(StopMapper.ToModel).ToList();
     }
 
+    public async Task<GeoBounds?> GetExtentAsync(CancellationToken cancellationToken = default)
+    {
+        // Feedovi znaju imati pokoju stanicu s krivim koordinatama (npr. tisuće
+        // km od mreže). Zato se gledaju samo stanice unutar 1. i 99. percentila,
+        // proširenih za pola tog raspona na svaku stranu; rubna naselja ostaju.
+        var rows = await context.Database
+            .SqlQueryRaw<ExtentRow>("""
+                WITH p AS (
+                    SELECT percentile_cont(0.01) WITHIN GROUP (ORDER BY latitude) AS lat_lo,
+                           percentile_cont(0.99) WITHIN GROUP (ORDER BY latitude) AS lat_hi,
+                           percentile_cont(0.01) WITHIN GROUP (ORDER BY longitude) AS lon_lo,
+                           percentile_cont(0.99) WITHIN GROUP (ORDER BY longitude) AS lon_hi
+                    FROM stops
+                    WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+                )
+                SELECT min(s.latitude) AS min_latitude, min(s.longitude) AS min_longitude,
+                       max(s.latitude) AS max_latitude, max(s.longitude) AS max_longitude
+                FROM stops s, p
+                WHERE s.latitude BETWEEN p.lat_lo - (p.lat_hi - p.lat_lo) / 2 AND p.lat_hi + (p.lat_hi - p.lat_lo) / 2
+                  AND s.longitude BETWEEN p.lon_lo - (p.lon_hi - p.lon_lo) / 2 AND p.lon_hi + (p.lon_hi - p.lon_lo) / 2
+                """)
+            .ToListAsync(cancellationToken);
+
+        return rows.SingleOrDefault() is { MinLatitude: double minLat, MinLongitude: double minLon, MaxLatitude: double maxLat, MaxLongitude: double maxLon }
+            ? new GeoBounds(minLat, minLon, maxLat, maxLon)
+            : null;
+    }
+
+    private sealed record ExtentRow(double? MinLatitude, double? MinLongitude, double? MaxLatitude, double? MaxLongitude);
+
     public Task<bool> HasChildStopsAsync(Guid id, CancellationToken cancellationToken = default) =>
         context.Stops.AnyAsync(s => s.ParentStationId == id, cancellationToken);
 

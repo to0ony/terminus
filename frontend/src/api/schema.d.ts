@@ -2430,6 +2430,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stops/extent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GeoBoundsResponse"];
+                    };
+                };
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": unknown;
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stops/{id}/routes": {
         parameters: {
             query?: never;
@@ -3144,6 +3188,16 @@ export interface components {
             lastModified?: null | string;
             entityTag?: null | components["schemas"]["EntityTagHeaderValue"];
             enableRangeProcessing?: boolean;
+        };
+        GeoBoundsResponse: {
+            /** Format: double */
+            minLatitude: number;
+            /** Format: double */
+            minLongitude: number;
+            /** Format: double */
+            maxLatitude: number;
+            /** Format: double */
+            maxLongitude: number;
         };
         GtfsImportCountsResponse: {
             /** Format: int32 */
