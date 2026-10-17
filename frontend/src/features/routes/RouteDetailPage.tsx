@@ -1,6 +1,16 @@
-import { Anchor, Badge, Group, Paper, SegmentedControl, Stack, Text, Title } from '@mantine/core'
+import {
+  Anchor,
+  Badge,
+  Button,
+  Group,
+  Paper,
+  SegmentedControl,
+  Stack,
+  Text,
+  Title,
+} from '@mantine/core'
 import { DatePickerInput } from '@mantine/dates'
-import { IconArrowLeft, IconCalendar } from '@tabler/icons-react'
+import { IconArrowLeft, IconCalendar, IconChartLine } from '@tabler/icons-react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
@@ -64,24 +74,36 @@ export function RouteDetailPage() {
         </Group>
       </Anchor>
 
-      <Stack gap={4}>
-        <Group gap="sm" wrap="nowrap" align="center">
-          <RouteBadge route={route.data} size="lg" />
-          <Title order={2}>{route.data.longName ?? route.data.shortName ?? route.data.code}</Title>
-        </Group>
-        <Group gap="xs">
-          <Text size="sm" c="dimmed">
-            {routeTypeLabel(route.data.routeType)}
-            {agency && ` · ${agency.name}`}
-          </Text>
-          {!route.data.isActive && (
-            <Badge variant="light" color="gray">
-              Neaktivna
-            </Badge>
-          )}
-        </Group>
-        {route.data.description && <Text size="sm">{route.data.description}</Text>}
-      </Stack>
+      <Group justify="space-between" align="flex-start">
+        <Stack gap={4}>
+          <Group gap="sm" wrap="nowrap" align="center">
+            <RouteBadge route={route.data} size="lg" />
+            <Title order={2}>
+              {route.data.longName ?? route.data.shortName ?? route.data.code}
+            </Title>
+          </Group>
+          <Group gap="xs">
+            <Text size="sm" c="dimmed">
+              {routeTypeLabel(route.data.routeType)}
+              {agency && ` · ${agency.name}`}
+            </Text>
+            {!route.data.isActive && (
+              <Badge variant="light" color="gray">
+                Neaktivna
+              </Badge>
+            )}
+          </Group>
+          {route.data.description && <Text size="sm">{route.data.description}</Text>}
+        </Stack>
+        <Button
+          component={Link}
+          to={`/routes/${routeId}/schedule${direction === undefined ? '' : `?dir=${direction}`}`}
+          variant="default"
+          leftSection={<IconChartLine size={16} />}
+        >
+          Grafikon i uređivanje
+        </Button>
+      </Group>
 
       <Group gap="sm" align="flex-end">
         <DatePickerInput

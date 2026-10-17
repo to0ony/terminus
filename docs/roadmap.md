@@ -13,7 +13,7 @@ detaljan opis funkcija je u ostalim dokumentima (npr.
 | 2 Uvoz GTFS-a | ✅ |
 | 3 Dashboard za pregled | ✅ osim trase linije na karti |
 | 4 Za putnike (zaslon na stanici, PDF, javni feed) | ✅ osim PDF-a za sve stanice odjednom |
-| 5 Editor | kalendari (sezone, tipovi dana, praznici) ✅; vožnje, trase i ostalo u planu |
+| 5 Editor | kalendari (sezone, tipovi dana, praznici) ✅, grafikon vožnji ✅; nova linija od nule, trase i ostalo u planu |
 | 6 Produkcija | čeka odluku o hostingu |
 
 ## Cilj
@@ -110,8 +110,8 @@ Detaljno u [departures-and-timetables.md](departures-and-timetables.md).
 |---|---|---|
 | 5.1 | Odluka: vožnje ostaju u GTFS obliku, a uređuju se kroz **grafikon voznog reda** (stanice × vrijeme, vožnja je crta kroz točkice koje se povlače) | — |
 | 5.2 | Uređivanje stanica (karta), prijevoznika i linija; kalendari kroz sezone voznog reda (razdoblje, tipovi dana, iznimke klikom na dan, i za praznu instancu) ✅ | 3.x |
-| 5.3 | Uređivanje vožnji i vremena | 5.1, 3.5 |
-| 5.4 | Brzi unos: kopiranje vožnje s pomakom (npr. +30 min, 10 puta), pomicanje vremena, grupno brisanje | 5.3 |
+| 5.3 | Uređivanje vožnji i vremena u grafikonu (povlačenje vožnje i točkica, točna vremena u panelu, tip dana, poništavanje, spremanje u jednoj transakciji s provjerom sukoba) ✅ | 5.1, 3.5 |
+| 5.4 | Brzi unos: nova vožnja klikom, kopiranje s pomakom (npr. +30 min, 10 puta), generator takta, pomak i brisanje više vožnji ✅ | 5.3 |
 | 5.5 | Praznici: državni praznici s OpenHolidays API-ja i jedno pravilo za sve tipove dana sezone ✅ | 5.2 |
 | 5.6 | Trase (`shapes`): automatski prijedlog po cestama i prugama, ispravljanje povlačenjem; traži ruter (Valhalla ili pfaedle) | 2.4, 5.2, 6.1 |
 | 5.7 | Izrada voznog reda od nule (prazna instanca bez uvoza) | 5.2–5.4 |

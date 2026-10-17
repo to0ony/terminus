@@ -12,6 +12,7 @@ i MapLibre GL. Pokretanje i naredbe su u [lokalnom razvoju](development.md#front
 | `/setup` | čarobnjak prvog pokretanja: uvoz GTFS-a ili početak od nule |
 | `/` | pregled: kalendari koji danas voze, do kada vrijedi vozni red, broj linija i stanica |
 | `/routes`, `/routes/:id` | linije (pretraga, filteri po prijevozniku, vrsti i stanju); vozni red linije po danu i smjeru |
+| `/routes/:id/schedule` | **grafikon voznog reda** linije s uređivanjem vožnji (opis niže) |
 | `/stops`, `/stops/:id` | stanice s kartom; stanica s linijama, polascima za dan, **PDF voznim redom** i poveznicom na zaslon |
 | `/calendars` | sezone voznog reda (i nova sezona) te ostali kalendari, npr. uvezeni iz GTFS-a |
 | `/seasons/:id` | sezona: tipovi dana, pravilo za praznike i svi mjeseci; klik na dan mijenja kako vozi (kao drugi tip dana, ne vozi) uz napomenu |
@@ -82,6 +83,44 @@ Dark, Liberty, Bright ili Fiord. Izbor se pamti u pregledniku
 (`terminus-map-style`) i vrijedi za sve karte; pri promjeni podloge slojevi
 stranice (npr. stanice) ostaju. Stanice se učitavaju za vidljivi dio karte (`/api/stops/area`,
 najviše 2000), a početni prikaz je područje svih stanica (`/api/stops/extent`).
+
+## Grafikon voznog reda
+
+`features/schedule` je editor vožnji jedne linije u obliku grafikona
+(Mareyev dijagram, kao željeznički grafikon prometa):
+
+- **Redci** su stanice smjera: spojeni redoslijed svih obrazaca, isti za sve
+  tipove dana. Razmak između stanica je srednje vrijeme vožnje, pa je
+  pravilna vožnja ravna crta, a sporiji dio se vidi kao lom.
+- **Vodoravno je vrijeme** dana voznog reda, s ponoći označenom crtkano
+  (vožnje iza nje su GTFS vremena 24:xx). Traka gore pokazuje gustoću polazaka
+  cijelog dana i prozor koji se vidi; kotačić zumira, a Shift+kotačić pomiče.
+- **Vožnja je crta kroz točkice polazaka**, u boji tipa dana. Odabrani tip
+  dana se uređuje, a drugi se može prikazati blijedo za usporedbu.
+- **Traka intervala** dolje pokazuje razmak između uzastopnih polazaka.
+
+Uređivanje:
+
+| Radnja | Što radi |
+|---|---|
+| Klik / Ctrl+klik / povlačenje po praznom | odabir vožnje, dodavanje u odabir, odabir okvirom |
+| Povlačenje crte | pomak cijele vožnje (svih odabranih), na minutu |
+| Povlačenje točkice | vrijeme na toj stanici; sa Shiftom i sve stanice iza nje |
+| Klik u retku prve stanice | nova vožnja s vremenima vožnje glavnog obrasca |
+| ← → (Shift: ±5) | pomak odabranih za minutu |
+| Del, Ctrl+Z, Ctrl+Y | brisanje, poništavanje, ponavljanje |
+| Panel desno | točna vremena (dolazak i polazak), natpis smjera, tip dana, kopiranje s pomakom (npr. svakih 10 min, 5 puta), generator takta (od–do svakih N min) |
+
+GTFS pravila (vremena ne padaju, polazak nije prije dolaska, 0–48 h) provjerava
+se odmah: neispravna vožnja je crvena, a spremanje je onemogućeno. Izmjene se
+spremaju zajedno, u jednoj transakciji (`PUT /api/routes/{id}/schedule`).
+Vožnja koju je u međuvremenu promijenio netko drugi vraća 409 i nudi ponovno
+učitavanje. Izlazak sa stranice s nespremljenim izmjenama traži potvrdu.
+
+Stanje je u `useScheduleEditor` (povijest za poništavanje, odabir), a čista
+logika (raspored redaka, pomaci, provjere, nove vožnje, razlika za spremanje) u
+`model.ts` s testovima. Crtanje je na `canvas`u, da i linija sa stotinama
+vožnji ostane glatka pri povlačenju.
 
 ## Zaslon na stanici
 

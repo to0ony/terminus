@@ -1146,6 +1146,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/routes/{id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    DirectionId?: components["schemas"]["TripDirection"];
+                    CalendarId?: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ScheduleResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ScheduleSaveRequest"];
+                    "text/json": components["schemas"]["ScheduleSaveRequest"];
+                    "application/*+json": components["schemas"]["ScheduleSaveRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": unknown;
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/routes": {
         parameters: {
             query?: never;
@@ -4054,6 +4166,99 @@ export interface components {
             trips: components["schemas"]["TimetableTripResponse"][];
         };
         RouteType: number;
+        ScheduleDeleteRequest: {
+            /** Format: uuid */
+            id: null | string;
+            /** Format: date-time */
+            updatedAt: null | string;
+        };
+        ScheduleResponse: {
+            /** Format: uuid */
+            routeId: string;
+            directionId: null | components["schemas"]["TripDirection"];
+            stops: components["schemas"]["ScheduleStopResponse"][];
+            trips: components["schemas"]["ScheduleTripResponse"][];
+            tripCounts: {
+                [key: string]: number;
+            };
+        };
+        ScheduleSaveRequest: {
+            directionId?: null | components["schemas"]["TripDirection"];
+            upserts: null | components["schemas"]["ScheduleTripRequest"][];
+            deletes: null | components["schemas"]["ScheduleDeleteRequest"][];
+        };
+        ScheduleStopResponse: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            platformCode: null | string;
+        };
+        ScheduleStopTimeRequest: {
+            /** Format: uuid */
+            stopId: null | string;
+            /** Format: int32 */
+            arrivalTime?: number;
+            /** Format: int32 */
+            departureTime?: number;
+            stopHeadsign?: null | string;
+            pickupType?: components["schemas"]["PickupDropOffType"];
+            dropOffType?: components["schemas"]["PickupDropOffType"];
+            continuousPickup?: null | components["schemas"]["ContinuousPickupDropOff"];
+            continuousDropOff?: null | components["schemas"]["ContinuousPickupDropOff"];
+            /** Format: double */
+            shapeDistTraveled?: null | number;
+            timepoint?: boolean;
+        };
+        ScheduleStopTimeResponse: {
+            /** Format: uuid */
+            stopId: string;
+            /** Format: int32 */
+            arrivalTime: number;
+            /** Format: int32 */
+            departureTime: number;
+            stopHeadsign: null | string;
+            pickupType: components["schemas"]["PickupDropOffType"];
+            dropOffType: components["schemas"]["PickupDropOffType"];
+            continuousPickup: null | components["schemas"]["ContinuousPickupDropOff"];
+            continuousDropOff: null | components["schemas"]["ContinuousPickupDropOff"];
+            /** Format: double */
+            shapeDistTraveled: null | number;
+            timepoint: boolean;
+        };
+        ScheduleTripRequest: {
+            /** Format: uuid */
+            id?: null | string;
+            /** Format: date-time */
+            updatedAt?: null | string;
+            /** Format: uuid */
+            serviceCalendarId: null | string;
+            headsign?: null | string;
+            shortName?: null | string;
+            blockId?: null | string;
+            /** Format: uuid */
+            shapeId?: null | string;
+            wheelchairAccessible?: components["schemas"]["WheelchairAccessible"];
+            bikesAllowed?: components["schemas"]["BikesAllowed"];
+            stopTimes: null | components["schemas"]["ScheduleStopTimeRequest"][];
+        };
+        ScheduleTripResponse: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            /** Format: uuid */
+            serviceCalendarId: string;
+            headsign: null | string;
+            shortName: null | string;
+            blockId: null | string;
+            /** Format: uuid */
+            shapeId: null | string;
+            wheelchairAccessible: components["schemas"]["WheelchairAccessible"];
+            bikesAllowed: components["schemas"]["BikesAllowed"];
+            /** Format: date-time */
+            updatedAt: string;
+            stopTimes: components["schemas"]["ScheduleStopTimeResponse"][];
+        };
         /** @enum {unknown} */
         SeasonDayMode: "Regular" | "RunsAs" | "NoService";
         SeasonDayRequest: {
