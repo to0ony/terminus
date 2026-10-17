@@ -1,4 +1,10 @@
-import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { unwrap } from '@/api/errors'
 import type { components, paths } from '@/api/schema'
@@ -56,5 +62,20 @@ export function useRouteTimetable(id: string, params: TimetableParams, enabled =
       ),
     placeholderData: keepPreviousData,
     enabled,
+  })
+}
+
+export type RouteRequest = components['schemas']['RouteRequest']
+
+/** Nova linija (bez Id-a) ili izmjena postojeće. */
+export function useSaveRoute(id?: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: RouteRequest) =>
+      id
+        ? unwrap(await api.PUT('/api/routes/{id}', { params: { path: { id } }, body }))
+        : unwrap(await api.POST('/api/routes', { body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: routeKeys.all }),
+    meta: { handlesErrors: true },
   })
 }

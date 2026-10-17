@@ -10,7 +10,8 @@ import {
   Title,
 } from '@mantine/core'
 import { DatePickerInput } from '@mantine/dates'
-import { IconArrowLeft, IconCalendar, IconChartLine } from '@tabler/icons-react'
+import { useDisclosure } from '@mantine/hooks'
+import { IconArrowLeft, IconCalendar, IconChartLine, IconPencil } from '@tabler/icons-react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
@@ -19,6 +20,7 @@ import { formatNumber } from '@/lib/format'
 import { directionOptions } from './directions'
 import { type TimetableParams, useRoute, useRoutePatterns, useRouteTimetable } from './queries'
 import { RouteBadge } from './RouteBadge'
+import { RouteDialog } from './RouteDialog'
 import { routeTypeLabel } from './routeTypes'
 import { TimetableGrid } from './TimetableGrid'
 
@@ -30,6 +32,7 @@ export function RouteDetailPage() {
   const route = useRoute(routeId)
   const patterns = useRoutePatterns(routeId)
   const agencies = useAgencies()
+  const [editOpened, edit] = useDisclosure(false)
 
   const directions = directionOptions(patterns.data ?? [])
   const direction =
@@ -95,15 +98,20 @@ export function RouteDetailPage() {
           </Group>
           {route.data.description && <Text size="sm">{route.data.description}</Text>}
         </Stack>
-        <Button
-          component={Link}
-          to={`/routes/${routeId}/schedule${direction === undefined ? '' : `?dir=${direction}`}`}
-          variant="default"
-          leftSection={<IconChartLine size={16} />}
-        >
-          Grafikon i uređivanje
-        </Button>
+        <Group gap="sm">
+          <Button variant="default" leftSection={<IconPencil size={16} />} onClick={edit.open}>
+            Uredi liniju
+          </Button>
+          <Button
+            component={Link}
+            to={`/routes/${routeId}/schedule${direction === undefined ? '' : `?dir=${direction}`}`}
+            leftSection={<IconChartLine size={16} />}
+          >
+            Grafikon i vožnje
+          </Button>
+        </Group>
       </Group>
+      <RouteDialog route={route.data} opened={editOpened} onClose={edit.close} />
 
       <Group gap="sm" align="flex-end">
         <DatePickerInput

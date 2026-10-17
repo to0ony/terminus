@@ -1,6 +1,7 @@
 import {
   Anchor,
   Badge,
+  Button,
   Group,
   Pagination,
   Paper,
@@ -11,8 +12,8 @@ import {
   TextInput,
   Title,
 } from '@mantine/core'
-import { useDebouncedCallback } from '@mantine/hooks'
-import { IconSearch } from '@tabler/icons-react'
+import { useDebouncedCallback, useDisclosure } from '@mantine/hooks'
+import { IconPlus, IconSearch } from '@tabler/icons-react'
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { PageLoader } from '@/components/PageLoader'
@@ -21,6 +22,7 @@ import { useAgencies } from '@/features/agencies/queries'
 import { formatNumber } from '@/lib/format'
 import { type RouteListParams, useRoutes } from './queries'
 import { RouteBadge } from './RouteBadge'
+import { RouteDialog } from './RouteDialog'
 import { routeTypeLabel, routeTypeOptions } from './routeTypes'
 
 const pageSize = 50
@@ -35,6 +37,7 @@ export function RoutesPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const [search, setSearch] = useState(searchParams.get('q') ?? '')
+  const [newOpened, newRoute] = useDisclosure(false)
 
   const query = searchParams.get('q')
   const agencyId = searchParams.get('agency')
@@ -79,12 +82,18 @@ export function RoutesPage() {
     <Stack gap="md">
       <Group justify="space-between" align="flex-end">
         <Title order={2}>Linije</Title>
-        {routes.data && (
-          <Text c="dimmed" size="sm">
-            {formatNumber(routes.data.totalCount)} linija
-          </Text>
-        )}
+        <Group gap="sm">
+          {routes.data && (
+            <Text c="dimmed" size="sm">
+              {formatNumber(routes.data.totalCount)} linija
+            </Text>
+          )}
+          <Button leftSection={<IconPlus size={16} />} onClick={newRoute.open}>
+            Nova linija
+          </Button>
+        </Group>
       </Group>
+      <RouteDialog opened={newOpened} onClose={newRoute.close} />
 
       <Group gap="sm" align="flex-end">
         <TextInput
