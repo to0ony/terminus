@@ -1,10 +1,37 @@
-import { PagePlaceholder } from '@/components/PagePlaceholder'
+import { Paper, Stack, Title } from '@mantine/core'
+import { PageLoader } from '@/components/PageLoader'
+import { QueryError } from '@/components/QueryError'
+import { InstanceSettingsForm } from './InstanceSettingsForm'
+import { LogoSettings } from './LogoSettings'
+import { PasswordForm } from './PasswordForm'
+import { useSettings } from './queries'
 
+/** Postavke instance (izgled javnih stranica, javni pristup, logo) i lozinka. */
 export function SettingsPage() {
+  const settings = useSettings()
+
   return (
-    <PagePlaceholder
-      title="Postavke"
-      description="Naziv, boje i logo instance, javni GTFS i promjena lozinke."
-    />
+    <Stack gap="lg" maw={760}>
+      <Title order={2}>Postavke</Title>
+
+      {settings.isPending ? (
+        <PageLoader />
+      ) : settings.isError ? (
+        <QueryError error={settings.error} onRetry={() => void settings.refetch()} />
+      ) : (
+        <>
+          <Paper withBorder p="lg">
+            <InstanceSettingsForm settings={settings.data} />
+          </Paper>
+          <Paper withBorder p="lg">
+            <LogoSettings settings={settings.data} />
+          </Paper>
+        </>
+      )}
+
+      <Paper withBorder p="lg">
+        <PasswordForm />
+      </Paper>
+    </Stack>
   )
 }

@@ -14,6 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { ApiError, errorMessage } from '@/api/errors'
+import { isHttpUrl } from '@/lib/url'
 import { useStartBlank } from './queries'
 
 const optionalText = z.string().trim()
@@ -215,13 +216,4 @@ export function BlankSetupForm({ onCreated, onCancel }: BlankSetupFormProps) {
       </Stack>
     </form>
   )
-}
-
-function isHttpUrl(value: string) {
-  try {
-    const { protocol } = new URL(value)
-    return protocol === 'http:' || protocol === 'https:'
-  } catch {
-    return false
-  }
 }
