@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.AspNetCore.RateLimiting;
 using Terminus.Common.Exceptions;
 using Terminus.Service.Common;
+using Terminus.WebApi.Infrastructure;
 
 namespace Terminus.WebApi.Controllers;
 
@@ -12,6 +15,7 @@ namespace Terminus.WebApi.Controllers;
 [ApiController]
 [Route("api/public/gtfs")]
 [AllowAnonymous]
+[EnableRateLimiting(PublicApi.FeedRateLimitPolicy)]
 public class PublicGtfsController(IGtfsExportService gtfsExportService, ISettingsService settingsService) : ControllerBase
 {
     /// <summary>
@@ -19,9 +23,11 @@ public class PublicGtfsController(IGtfsExportService gtfsExportService, ISetting
     /// trenutno nisu ispravni za izvoz.
     /// </summary>
     [HttpGet]
+    [OutputCache(PolicyName = PublicApi.FeedCachePolicy)]
     [ProducesResponseType<FileContentResult>(StatusCodes.Status200OK, "application/zip")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Get(CancellationToken cancellationToken)
     {
         var settings = await settingsService.GetAsync(cancellationToken);

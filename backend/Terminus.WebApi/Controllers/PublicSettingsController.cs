@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Net.Http.Headers;
 using Terminus.Service.Common;
 using Terminus.WebApi.Contracts.Settings;
+using Terminus.WebApi.Infrastructure;
 
 namespace Terminus.WebApi.Controllers;
 
@@ -10,11 +13,14 @@ namespace Terminus.WebApi.Controllers;
 [ApiController]
 [Route("api/public/settings")]
 [AllowAnonymous]
+[EnableRateLimiting(PublicApi.RateLimitPolicy)]
 [Produces("application/json")]
 public class PublicSettingsController(ISettingsService settingsService) : ControllerBase
 {
     [HttpGet]
+    [OutputCache(PolicyName = PublicApi.SettingsCachePolicy)]
     [ProducesResponseType<PublicSettingsResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<PublicSettingsResponse>> Get(CancellationToken cancellationToken)
     {
         var settings = await settingsService.GetPublicAsync(cancellationToken);

@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using Terminus.Service.Common;
 using Terminus.WebApi.Contracts.Gtfs;
+using Terminus.WebApi.Infrastructure;
 
 namespace Terminus.WebApi.Controllers;
 
@@ -11,7 +13,7 @@ namespace Terminus.WebApi.Controllers;
 [ApiController]
 [Route("api/gtfs/import")]
 [Produces("application/json")]
-public class GtfsImportController(IGtfsImportService importService) : ControllerBase
+public class GtfsImportController(IGtfsImportService importService, IOutputCacheStore outputCache) : ControllerBase
 {
     /// <summary>Najveći ZIP koji se prima.</summary>
     public const long MaxUploadBytes = 200L * 1024 * 1024;
@@ -50,6 +52,12 @@ public class GtfsImportController(IGtfsImportService importService) : Controller
     {
         await using var zip = file.OpenReadStream();
         var report = await importService.ImportAsync(zip, cancellationToken);
+
+        if (report.Imported)
+        {
+            // Javni polasci i feed inače bi još neko vrijeme pokazivali stari vozni red.
+            await outputCache.EvictByTagAsync(PublicApi.TimetableTag, cancellationToken);
+        }
 
         return report.Imported
             ? Ok(report.ToResponse())

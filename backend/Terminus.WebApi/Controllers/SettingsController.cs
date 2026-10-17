@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using Terminus.Common.Exceptions;
 using Terminus.Service;
 using Terminus.Service.Common;
 using Terminus.WebApi.Contracts.Settings;
+using Terminus.WebApi.Infrastructure;
 
 namespace Terminus.WebApi.Controllers;
 
@@ -10,7 +12,7 @@ namespace Terminus.WebApi.Controllers;
 [ApiController]
 [Route("api/settings")]
 [Produces("application/json")]
-public class SettingsController(ISettingsService settingsService) : ControllerBase
+public class SettingsController(ISettingsService settingsService, IOutputCacheStore outputCache) : ControllerBase
 {
     /// <summary>Postavke; dok nisu spremljene, zadane vrijednosti.</summary>
     [HttpGet]
@@ -28,6 +30,7 @@ public class SettingsController(ISettingsService settingsService) : ControllerBa
     public async Task<ActionResult<SettingsResponse>> Save(SettingsRequest request, CancellationToken cancellationToken)
     {
         var saved = await settingsService.SaveAsync(request.ToModel(), cancellationToken);
+        await outputCache.EvictByTagAsync(PublicApi.SettingsTag, cancellationToken);
         return Ok(saved.ToResponse());
     }
 
@@ -54,6 +57,7 @@ public class SettingsController(ISettingsService settingsService) : ControllerBa
         await file.CopyToAsync(buffer, cancellationToken);
 
         var saved = await settingsService.SaveLogoAsync(buffer.ToArray(), cancellationToken);
+        await outputCache.EvictByTagAsync(PublicApi.SettingsTag, cancellationToken);
         return Ok(saved.ToResponse());
     }
 
@@ -63,6 +67,7 @@ public class SettingsController(ISettingsService settingsService) : ControllerBa
     public async Task<IActionResult> DeleteLogo(CancellationToken cancellationToken)
     {
         await settingsService.DeleteLogoAsync(cancellationToken);
+        await outputCache.EvictByTagAsync(PublicApi.SettingsTag, cancellationToken);
         return NoContent();
     }
 }

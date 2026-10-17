@@ -99,6 +99,8 @@ builder.Services.AddDataProtection()
     .SetApplicationName("Terminus")
     .PersistKeysToDbContext<TerminusDbContext>();
 
+builder.Services.AddPublicApi(builder.Configuration);
+
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<TerminusDbContext>("database");
 
@@ -154,6 +156,10 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Granica ide prije cachea, da i odgovori iz cachea troše zahtjeve.
+app.UseRateLimiter();
+app.UseOutputCache();
 
 app.MapHealthChecks("/health").AllowAnonymous();
 app.MapControllers();
