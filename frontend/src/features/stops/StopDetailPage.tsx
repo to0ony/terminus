@@ -13,7 +13,8 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { DatePickerInput } from '@mantine/dates'
-import { IconArrowLeft, IconCalendar, IconDeviceTv } from '@tabler/icons-react'
+import { useDisclosure } from '@mantine/hooks'
+import { IconArrowLeft, IconCalendar, IconDeviceTv, IconFileTypePdf } from '@tabler/icons-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
@@ -23,6 +24,7 @@ import { groupByHour } from './departures'
 import { locationTypeLabel, wheelchairLabels } from './locationTypes'
 import { type Stop, useStop, useStopDepartures, useStopRoutes } from './queries'
 import { StopsMap } from './StopsMap'
+import { TimetablePdfDialog } from './TimetablePdfDialog'
 
 /** Stanica: podaci, linije koje na njoj staju i polasci za dan (?date=, ?route=). */
 export function StopDetailPage() {
@@ -35,6 +37,7 @@ export function StopDetailPage() {
   const stop = useStop(stopId)
   const routes = useStopRoutes(stopId)
   const departures = useStopDepartures(stopId, date)
+  const [pdfOpened, pdf] = useDisclosure(false)
 
   const setDate = (value: string | null) =>
     setSearchParams(
@@ -103,17 +106,27 @@ export function StopDetailPage() {
           </Text>
         </Stack>
         {hasBoard && (
-          <Button
-            component="a"
-            href={`/board/${encodeURIComponent(stop.data.code)}`}
-            target="_blank"
-            variant="default"
-            leftSection={<IconDeviceTv size={16} />}
-          >
-            Zaslon polazaka
-          </Button>
+          <Group gap="sm">
+            <Button
+              variant="default"
+              leftSection={<IconFileTypePdf size={16} />}
+              onClick={pdf.open}
+            >
+              PDF vozni red
+            </Button>
+            <Button
+              component="a"
+              href={`/board/${encodeURIComponent(stop.data.code)}`}
+              target="_blank"
+              variant="default"
+              leftSection={<IconDeviceTv size={16} />}
+            >
+              Zaslon polazaka
+            </Button>
+          </Group>
         )}
       </Group>
+      {hasBoard && <TimetablePdfDialog stop={stop.data} opened={pdfOpened} onClose={pdf.close} />}
 
       <Grid gap="md">
         <Grid.Col span={{ base: 12, md: 5 }}>

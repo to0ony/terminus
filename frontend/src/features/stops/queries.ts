@@ -1,7 +1,8 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { unwrap } from '@/api/errors'
 import type { components, paths } from '@/api/schema'
+import { type DownloadedFile, fileNameOf } from '@/lib/download'
 
 export type Stop = components['schemas']['StopResponse']
 export type MapStop = components['schemas']['TimetableStopResponse']
@@ -9,6 +10,9 @@ export type StopDeparture = components['schemas']['StopDayDepartureResponse']
 export type GeoBounds = components['schemas']['GeoBoundsResponse']
 export type StopListParams = NonNullable<paths['/api/stops']['get']['parameters']['query']>
 export type StopAreaParams = paths['/api/stops/area']['get']['parameters']['query']
+export type TimetablePdfParams = NonNullable<
+  paths['/api/stops/{id}/timetable.pdf']['get']['parameters']['query']
+>
 
 export const stopKeys = {
   all: ['stops'] as const,
@@ -72,5 +76,23 @@ export function useStopDepartures(id: string, date: string | null) {
         }),
       ),
     placeholderData: keepPreviousData,
+  })
+}
+
+/**
+ * PDF vozni red stanice. Bez polazaka u razdoblju backend vraća 422, a
+ * ApiError.problems kaže zašto.
+ */
+export function useTimetablePdf(id: string) {
+  return useMutation({
+    mutationFn: async (params: TimetablePdfParams): Promise<DownloadedFile> => {
+      const result = await api.GET('/api/stops/{id}/timetable.pdf', {
+        params: { path: { id }, query: params },
+        parseAs: 'blob',
+      })
+      const blob = unwrap(result) as unknown as Blob
+      return { blob, fileName: fileNameOf(result.response) ?? 'vozni-red.pdf' }
+    },
+    meta: { handlesErrors: true },
   })
 }

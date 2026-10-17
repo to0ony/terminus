@@ -4,8 +4,9 @@ import { IconAlertCircle, IconDownload } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { ApiError, errorMessage } from '@/api/errors'
+import { saveFile } from '@/lib/download'
 import { GtfsImport } from './GtfsImport'
-import { type GtfsExport, useExportGtfs } from './queries'
+import { useExportGtfs } from './queries'
 
 /** Izvoz trenutnog voznog reda i uvoz novog (npr. za novu sezonu). */
 export function GtfsPage() {
@@ -36,7 +37,7 @@ function ExportSection() {
           <Button
             leftSection={<IconDownload size={18} />}
             loading={exportFeed.isPending}
-            onClick={() => exportFeed.mutate(undefined, { onSuccess: download })}
+            onClick={() => exportFeed.mutate(undefined, { onSuccess: saveFile })}
           >
             Preuzmi GTFS
           </Button>
@@ -101,14 +102,4 @@ function ImportSection() {
       </Stack>
     </Paper>
   )
-}
-
-function download({ blob, fileName }: GtfsExport) {
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = fileName
-  link.click()
-  // Preglednik je već preuzeo sadržaj; URL više ne treba.
-  setTimeout(() => URL.revokeObjectURL(url), 0)
 }
