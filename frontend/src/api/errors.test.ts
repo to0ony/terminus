@@ -24,6 +24,16 @@ describe('ApiError', () => {
 
     expect(error.fieldErrors).toEqual({ newPassword: ['Prekratka.'], email: ['Obavezno.'] })
   })
+
+  it('keeps the problem list of a 422', () => {
+    const error = new ApiError(422, {
+      detail: 'GTFS feed se ne može izvesti.',
+      problems: ['Nije unesen nijedan prijevoznik.'],
+    })
+
+    expect(error.problems).toEqual(['Nije unesen nijedan prijevoznik.'])
+    expect(new ApiError(404).problems).toEqual([])
+  })
 })
 
 describe('unwrap', () => {

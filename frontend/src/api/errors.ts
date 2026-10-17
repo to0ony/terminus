@@ -4,6 +4,8 @@ interface ProblemBody {
   detail?: string | null
   status?: number | null
   errors?: Record<string, string[]>
+  /** Popis problema uz 422 (UnprocessableException). */
+  problems?: string[]
 }
 
 /** Greška API-ja s porukom iz ProblemDetails (poruke backenda su na hrvatskom). */
@@ -13,6 +15,8 @@ export class ApiError extends Error {
   readonly detail: string | null
   /** Greške po poljima (400); ključevi su nazivi polja kao u zahtjevu. */
   readonly fieldErrors: Record<string, string[]>
+  /** Što treba ispraviti (422), npr. zašto se GTFS ne može izvesti. */
+  readonly problems: string[]
 
   constructor(status: number, body?: ProblemBody | null) {
     const title = body?.title ?? null
@@ -23,6 +27,7 @@ export class ApiError extends Error {
     this.title = title
     this.detail = detail
     this.fieldErrors = normalizeKeys(body?.errors ?? {})
+    this.problems = body?.problems ?? []
   }
 }
 

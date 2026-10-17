@@ -40,3 +40,33 @@ export function useImportGtfs() {
     meta: { handlesErrors: true },
   })
 }
+
+export interface GtfsExport {
+  blob: Blob
+  fileName: string
+}
+
+/**
+ * Izvoz feeda kao ZIP. Ako podaci nisu spremni, backend vraća 422, a
+ * ApiError.problems kaže što treba ispraviti.
+ */
+export function useExportGtfs() {
+  return useMutation({
+    mutationFn: async (): Promise<GtfsExport> => {
+      const result = await api.GET('/api/gtfs', { parseAs: 'blob' })
+      const blob = unwrap(result) as unknown as Blob
+      return { blob, fileName: fileNameOf(result.response) ?? 'gtfs.zip' }
+    },
+    meta: { handlesErrors: true },
+  })
+}
+
+// Content-Disposition: attachment; filename=gtfs-2026-10-17.zip; filename*=UTF-8''…
+function fileNameOf(response: Response): string | null {
+  const header = response.headers.get('Content-Disposition') ?? ''
+  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(header)
+  if (encoded) {
+    return decodeURIComponent(encoded[1])
+  }
+  return /filename="?([^";]+)"?/i.exec(header)?.[1] ?? null
+}

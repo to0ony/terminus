@@ -27,7 +27,14 @@ export function GtfsImport({ onImported, onCancel }: GtfsImportProps) {
   const importFeed = useImportGtfs()
 
   const report = importFeed.data ?? preview.data
-  const step = importFeed.isPending || importFeed.data ? 2 : file ? 1 : 0
+  // Nakon uspješnog uvoza svi su koraci završeni.
+  const step = importFeed.data?.imported
+    ? 3
+    : importFeed.isPending || importFeed.data
+      ? 2
+      : file
+        ? 1
+        : 0
 
   const selectFile = (selected: File) => {
     setRejection(null)
