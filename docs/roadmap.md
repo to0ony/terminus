@@ -87,9 +87,9 @@ Detaljno u [departures-and-timetables.md](departures-and-timetables.md).
 
 | # | Korak | Ovisi o |
 |---|---|---|
-| 4.1 | Output caching i rate limiting za `/api/public/*` | — |
-| 4.2 | Javna stranica stanice `/board/{stopCode}`: sat i sljedeći polasci prema voznom redu | 1.2, 3.1, 4.1 |
-| 4.3 | PDF vozni red za jednu stanicu i za sve stanice, QR kod na stranicu stanice, preuzimanje iz dashboarda | 3.3, 3.6, 4.2 |
+| 4.1 | Output caching i rate limiting za `/api/public/*` ✅ | — |
+| 4.2 | Javna stranica stanice `/board/{stopCode}`: sat i sljedeći polasci prema voznom redu ✅ | 1.2, 3.1, 4.1 |
+| 4.3 | PDF vozni red za jednu stanicu (A4/A3, hrvatski/engleski, odabrano razdoblje), QR kod na stranicu stanice, preuzimanje iz dashboarda ✅; PDF za sve stanice odjednom | 3.3, 3.6, 4.2 |
 | 4.4 | Javni GTFS feed `GET /api/public/gtfs` (za Google Maps i druge), uključuje se u postavkama ✅; caching dolazi s 4.1 | 4.1 |
 
 ## Faza 5: editor
@@ -159,7 +159,5 @@ prije prvog pilota.
 
 - **Hosting**: gdje će instance raditi (VPS s Dockerom, Azure, vlastiti server)?
   O tome ovisi faza 6.
-- **Dolasci na javnoj stranici stanice**: samo polasci ili i dolasci (npr. na
-  kolodvoru gdje vožnje završavaju)?
-- Pitanja o PDF-u: vidi
-  [departures-and-timetables.md](departures-and-timetables.md#6-otvorena-pitanja).
+- **Licenca za QuestPDF** u produkciji: Community licenca ne vrijedi za javni
+  sektor; vidi [biblioteke](departures-and-timetables.md#34-biblioteke).

@@ -43,9 +43,15 @@ vlastitu instancu i bazu. Unutar instance može postojati više prijevoznika
 - **Prijava administratora** kolačićem, uz zaključavanje računa nakon
   neuspjelih pokušaja.
 - **Postavke instance** – naziv, boje i logo za javne stranice i PDF.
+- **Zaslon na stanici** – javna stranica `/board/{stopCode}` sa sljedećim
+  polascima, za ekrane na stanicama i mobitele; javni API s cacheom i
+  ograničenjem zahtjeva.
+- **PDF vozni red stanice** – A4 ili A3, hrvatski ili engleski, za odabrano
+  razdoblje; stupci po danima u tjednu, praznici i odstupanja kao napomene,
+  QR kod na zaslon stanice.
 
-U planu su PDF vozni redovi, frontend (dashboard i zaslon na stanici) i
-editor voznog reda; vidi [roadmap](docs/roadmap.md).
+U planu su PDF za sve stanice odjednom i editor voznog reda; vidi
+[roadmap](docs/roadmap.md).
 
 ## Tehnologije
 

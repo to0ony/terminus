@@ -232,7 +232,9 @@ vozila (GPS) i GTFS-Realtime, što nije dio ovog plana.
 
 ### 3.1 Izgled
 
-Jedna stranica po stanici (A4, uspravno), klasičan oblik voznog reda na stanicama:
+Klasičan oblik voznog reda na stanicama, uspravno, A4 ili A3 (za kolodvore s
+mnogo linija). Odjeljci teku po stupcima stranice: dva na A4, tri na A3.
+Tekstovi su na hrvatskom ili engleskom, po izboru pri preuzimanju.
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -260,33 +262,43 @@ Jedna stranica po stanici (A4, uspravno), klasičan oblik voznog reda na stanica
 
 ### 3.2 Pravila sadržaja
 
-- **Zaglavlje**: naziv stanice, razdoblje važenja (od najranijeg do najkasnijeg
-  datuma kalendara koji se prikazuju) i QR kod.
-- **Grupiranje**: po liniji i smjeru, a unutar toga po kalendaru. Stupci su nazivi
-  kalendara (`service_calendars.name`), npr. "Radni dan", "Subota",
-  "Nedjelja i praznici", pa ih prijevoznik imenuje kako želi da piše na voznom redu.
+- **Razdoblje**: administrator ga bira; zadano je od danas do zadnjeg dana s
+  voznim redom, a za vozni red koji tek počinje vrijediti bira se kasniji
+  početak. Najviše 366 dana.
+- **Zaglavlje**: naziv i logo instance, naziv stanice, razdoblje i QR kod.
+- **Grupiranje**: po liniji i smjeru (natpis smjera vožnje), a unutar toga po
+  danima u tjednu s istim voznim redom. Stupci se ne uzimaju iz naziva
+  kalendara, nego iz toga koji polasci stvarno voze na koji datum: za svaki dan
+  u tjednu uzima se najčešći skup polazaka u razdoblju, a dani s istim skupom
+  čine stupac ("Radni dan", "Subota", "Nedjelja", "Pon–Čet" itd.). Tako radi i
+  s feedovima koji cijeli raspored drže u `calendar_dates.txt` (npr. ZET), a
+  naslovi stupaca mogu biti na oba jezika.
 - **Rešetka sat | minute**: svaki redak je jedan sat, a u njemu minute polazaka.
-- **Napomene**:
-  - iznimke koje vrijede za cijeli kalendar ispisuju se ispod tablice
-    (npr. "Ne vozi 25.12. i 1.1.");
-  - polasci koji se razlikuju od ostalih označavaju se slovom uz minutu i
-    objašnjavaju u napomeni (npr. `55a` – "ne vozi 24.12. i 31.12.").
+  Vožnje iza ponoći pripadaju danu na koji su krenule i dolaze iza 23 h.
+- **Napomene** za datume koji odstupaju od svog dana u tjednu:
+  - bez polazaka: "Ne vozi 18. 11. i 25. 12.";
+  - s voznim redom drugog stupca: "25. 12. vozi kao „Nedjelja”.";
+  - inače datum ide u stupac s kojim dijeli najviše polazaka, a polasci koji ne
+    voze na sve njegove datume dobivaju slovo uz minutu (npr. `55a` –
+    "ne vozi 24. 12. i 31. 12." ili "vozi samo 26. 12.").
 - **Kolodvori**: za stanicu s peronima uz smjer se navodi i peron.
 - **Podnožje**: naziv prijevoznika i uputa za QR kod.
 - **QR kod** vodi na zaslon te stanice (poglavlje 2), pa putnik na mobitelu vidi
-  sljedeće polaske.
+  sljedeće polaske. Adresa je javna adresa iz postavki + `/board/{stopCode}`;
+  bez javne adrese PDF nema QR kod.
 
 ### 3.3 API (samo administrator)
 
 ```
-GET /api/stops/{stopId}/timetable.pdf
+GET /api/stops/{stopId}/timetable.pdf?from=2026-12-01&to=2027-06-30&paper=A3&language=en
 GET /api/timetables.pdf
 ```
 
-- Prvi vraća PDF za jednu stanicu.
-- Drugi vraća **jedan PDF sa svim aktivnim stanicama**, po jednu stranicu za
-  stanicu, spreman za ispis odjednom. Može se proširiti filtrom (npr. samo
-  stanice jedne linije).
+- Prvi vraća PDF za jednu stanicu ✅. Svi parametri su neobavezni (zadano:
+  danas do kraja voznog reda, A4, hrvatski). 422 ako u razdoblju sa stanice
+  nema polazaka.
+- Drugi (u planu) vraća **jedan PDF sa svim aktivnim stanicama**, spreman za
+  ispis odjednom. Može se proširiti filtrom (npr. samo stanice jedne linije).
 
 PDF se generira tijekom zahtjeva. Za nekoliko stotina stanica to su sekunde; ako
 trajanje postane problem, generiranje se premješta u pozadinski posao s
@@ -294,9 +306,14 @@ preuzimanjem kad je gotov.
 
 ### 3.4 Biblioteke
 
-- [QuestPDF](https://www.questpdf.com/) za izradu PDF-a C# kodom. Community licenca
-  je besplatna za organizacije s godišnjim prihodom ispod 1 milijun USD; uvjete
-  treba provjeriti prije produkcije.
+- [QuestPDF](https://www.questpdf.com/) za izradu PDF-a C# kodom (font Lato dolazi
+  s paketom). Community licenca (verzija 3.0, srpanj 2026.) besplatna je među
+  ostalim za open-source projekte s OSI licencom, organizacije s godišnjim
+  prihodom ispod 1 milijun USD i korisnike čiji kod ne poziva QuestPDF izravno.
+  **Javni sektor i državne agencije nisu obuhvaćeni bez obzira na prihod**, a
+  gradski prijevoznici često su u javnom vlasništvu; prije produkcije treba
+  provjeriti koja licenca vrijedi. Kod za PDF je u jednoj klasi
+  (`StopTimetableDocument`), pa se biblioteka može zamijeniti.
 - QRCoder za QR kod.
 
 Alternativa je HTML predložak pretvoren u PDF headless preglednikom (Playwright):
@@ -328,9 +345,10 @@ Izračun polazaka (poglavlje 1) i javni endpoint (2.2) su gotovi. Redoslijed
 ostalih koraka, zajedno s ostatkom aplikacije, vodi se u
 [roadmapu](roadmap.md) (faza 4).
 
-## 6. Otvorena pitanja
+## 6. Odluke
 
-- **Format PDF-a**: samo A4 ili i veći formati (A3) za kolodvore s mnogo linija?
-- **Dolasci**: prikazuje li zaslon i dolaske na zadnju stanicu (npr. na kolodvoru),
-  ili samo polaske?
-- **Jezik**: treba li zaslon i PDF i na engleskom (turističke linije)?
+- **Format PDF-a**: A4 ili A3, bira se pri preuzimanju.
+- **Jezik PDF-a**: hrvatski ili engleski, bira se pri preuzimanju. Zaslon na
+  stanici je na hrvatskom.
+- **Dolasci**: zaslon prikazuje samo polaske (linija, odredište, vrijeme).
+- **Adresa zaslona**: po GTFS `stop_id` (`/board/{stopCode}`).
