@@ -95,31 +95,6 @@ namespace Terminus.DAL.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "service_calendars",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
-                    code = table.Column<string>(type: "text", nullable: false),
-                    name = table.Column<string>(type: "text", nullable: false),
-                    monday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    tuesday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    wednesday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    thursday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    friday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    saturday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    sunday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    start_date = table.Column<DateOnly>(type: "date", nullable: false),
-                    end_date = table.Column<DateOnly>(type: "date", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
-                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_service_calendars", x => x.id);
-                    table.CheckConstraint("ck_service_calendars_dates", "end_date >= start_date");
-                });
-
-            migrationBuilder.CreateTable(
                 name: "settings",
                 columns: table => new
                 {
@@ -330,26 +305,6 @@ namespace Terminus.DAL.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "calendar_dates",
-                columns: table => new
-                {
-                    service_calendar_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    date = table.Column<DateOnly>(type: "date", nullable: false),
-                    exception_type = table.Column<short>(type: "smallint", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_calendar_dates", x => new { x.service_calendar_id, x.date });
-                    table.CheckConstraint("ck_calendar_dates_type", "exception_type IN (1, 2)");
-                    table.ForeignKey(
-                        name: "fk_calendar_dates_service_calendars_service_calendar_id",
-                        column: x => x.service_calendar_id,
-                        principalTable: "service_calendars",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "shape_points",
                 columns: table => new
                 {
@@ -401,6 +356,91 @@ namespace Terminus.DAL.Migrations
                         principalTable: "routes",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "calendar_dates",
+                columns: table => new
+                {
+                    service_calendar_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    date = table.Column<DateOnly>(type: "date", nullable: false),
+                    exception_type = table.Column<short>(type: "smallint", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_calendar_dates", x => new { x.service_calendar_id, x.date });
+                    table.CheckConstraint("ck_calendar_dates_type", "exception_type IN (1, 2)");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "season_days",
+                columns: table => new
+                {
+                    season_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    date = table.Column<DateOnly>(type: "date", nullable: false),
+                    mode = table.Column<short>(type: "smallint", nullable: false),
+                    calendar_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    source = table.Column<short>(type: "smallint", nullable: false),
+                    note = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_season_days", x => new { x.season_id, x.date });
+                    table.CheckConstraint("ck_season_days_mode", "mode IN (0, 1, 2)");
+                    table.CheckConstraint("ck_season_days_source", "source IN (0, 1)");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "service_calendars",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+                    code = table.Column<string>(type: "text", nullable: false),
+                    name = table.Column<string>(type: "text", nullable: false),
+                    monday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    tuesday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    wednesday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    thursday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    friday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    saturday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    sunday = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    start_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    end_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    season_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_service_calendars", x => x.id);
+                    table.CheckConstraint("ck_service_calendars_dates", "end_date >= start_date");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "timetable_seasons",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+                    name = table.Column<string>(type: "text", nullable: false),
+                    start_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    end_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    holiday_country = table.Column<string>(type: "character varying(2)", maxLength: 2, nullable: true),
+                    holiday_mode = table.Column<short>(type: "smallint", nullable: false),
+                    holiday_calendar_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_timetable_seasons", x => x.id);
+                    table.CheckConstraint("ck_timetable_seasons_dates", "end_date >= start_date");
+                    table.CheckConstraint("ck_timetable_seasons_holiday_mode", "holiday_mode IN (0, 1, 2)");
+                    table.ForeignKey(
+                        name: "fk_timetable_seasons_service_calendars_holiday_calendar_id",
+                        column: x => x.holiday_calendar_id,
+                        principalTable: "service_calendars",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
@@ -554,6 +594,16 @@ namespace Terminus.DAL.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_season_days_calendar_id",
+                table: "season_days",
+                column: "calendar_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_service_calendars_season_id",
+                table: "service_calendars",
+                column: "season_id");
+
+            migrationBuilder.CreateIndex(
                 name: "uq_service_calendars_code",
                 table: "service_calendars",
                 column: "code",
@@ -582,6 +632,11 @@ namespace Terminus.DAL.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_timetable_seasons_holiday_calendar_id",
+                table: "timetable_seasons",
+                column: "holiday_calendar_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_trips_route_id",
                 table: "trips",
                 column: "route_id");
@@ -601,11 +656,47 @@ namespace Terminus.DAL.Migrations
                 table: "trips",
                 column: "code",
                 unique: true);
+
+            migrationBuilder.AddForeignKey(
+                name: "fk_calendar_dates_service_calendars_service_calendar_id",
+                table: "calendar_dates",
+                column: "service_calendar_id",
+                principalTable: "service_calendars",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "fk_season_days_service_calendars_calendar_id",
+                table: "season_days",
+                column: "calendar_id",
+                principalTable: "service_calendars",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "fk_season_days_timetable_seasons_season_id",
+                table: "season_days",
+                column: "season_id",
+                principalTable: "timetable_seasons",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "fk_service_calendars_timetable_seasons_season_id",
+                table: "service_calendars",
+                column: "season_id",
+                principalTable: "timetable_seasons",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Cascade);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "fk_timetable_seasons_service_calendars_holiday_calendar_id",
+                table: "timetable_seasons");
+
             migrationBuilder.DropTable(
                 name: "admin_user_claims");
 
@@ -626,6 +717,9 @@ namespace Terminus.DAL.Migrations
 
             migrationBuilder.DropTable(
                 name: "feed_info");
+
+            migrationBuilder.DropTable(
+                name: "season_days");
 
             migrationBuilder.DropTable(
                 name: "settings");
@@ -652,13 +746,16 @@ namespace Terminus.DAL.Migrations
                 name: "routes");
 
             migrationBuilder.DropTable(
-                name: "service_calendars");
-
-            migrationBuilder.DropTable(
                 name: "shapes");
 
             migrationBuilder.DropTable(
                 name: "agencies");
+
+            migrationBuilder.DropTable(
+                name: "service_calendars");
+
+            migrationBuilder.DropTable(
+                name: "timetable_seasons");
         }
     }
 }
