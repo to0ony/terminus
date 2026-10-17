@@ -1,6 +1,7 @@
 import {
   Anchor,
   Badge,
+  Button,
   Chip,
   Grid,
   Group,
@@ -12,7 +13,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { DatePickerInput } from '@mantine/dates'
-import { IconArrowLeft, IconCalendar } from '@tabler/icons-react'
+import { IconArrowLeft, IconCalendar, IconDeviceTv } from '@tabler/icons-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
@@ -70,6 +71,8 @@ export function StopDetailPage() {
       (d) => routeFilter.length === 0 || routeFilter.includes(d.routeId),
     ) ?? []
   const hasCoordinates = stop.data.latitude !== null && stop.data.longitude !== null
+  // Polasci postoje samo za stajališta i kolodvore (location_type 0 i 1).
+  const hasBoard = stop.data.locationType <= 1
 
   return (
     <Stack gap="md">
@@ -80,24 +83,37 @@ export function StopDetailPage() {
         </Group>
       </Anchor>
 
-      <Stack gap={4}>
-        <Group gap="sm">
-          <Title order={2}>{stop.data.name}</Title>
-          {stop.data.platformCode && (
-            <Badge variant="light" size="lg" tt="none">
-              Peron {stop.data.platformCode}
-            </Badge>
-          )}
-          {!stop.data.isActive && (
-            <Badge variant="light" color="gray">
-              Neaktivna
-            </Badge>
-          )}
-        </Group>
-        <Text size="sm" c="dimmed">
-          {locationTypeLabel(stop.data.locationType)} · {stop.data.publicCode ?? stop.data.code}
-        </Text>
-      </Stack>
+      <Group justify="space-between" align="flex-start">
+        <Stack gap={4}>
+          <Group gap="sm">
+            <Title order={2}>{stop.data.name}</Title>
+            {stop.data.platformCode && (
+              <Badge variant="light" size="lg" tt="none">
+                Peron {stop.data.platformCode}
+              </Badge>
+            )}
+            {!stop.data.isActive && (
+              <Badge variant="light" color="gray">
+                Neaktivna
+              </Badge>
+            )}
+          </Group>
+          <Text size="sm" c="dimmed">
+            {locationTypeLabel(stop.data.locationType)} · {stop.data.publicCode ?? stop.data.code}
+          </Text>
+        </Stack>
+        {hasBoard && (
+          <Button
+            component="a"
+            href={`/board/${encodeURIComponent(stop.data.code)}`}
+            target="_blank"
+            variant="default"
+            leftSection={<IconDeviceTv size={16} />}
+          >
+            Zaslon polazaka
+          </Button>
+        )}
+      </Group>
 
       <Grid gap="md">
         <Grid.Col span={{ base: 12, md: 5 }}>
