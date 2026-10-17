@@ -1587,6 +1587,291 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/routes/{routeId}/variants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    routeId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VariantResponse"][];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    routeId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VariantRequest"];
+                    "text/json": components["schemas"]["VariantRequest"];
+                    "application/*+json": components["schemas"]["VariantRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VariantResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/routes/{routeId}/variants/derive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    routeId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VariantResponse"][];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/variants/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VariantResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VariantRequest"];
+                    "text/json": components["schemas"]["VariantRequest"];
+                    "application/*+json": components["schemas"]["VariantRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VariantResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": unknown;
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/seasons": {
         parameters: {
             query?: never;
@@ -4238,6 +4523,8 @@ export interface components {
             blockId?: null | string;
             /** Format: uuid */
             shapeId?: null | string;
+            /** Format: uuid */
+            variantId?: null | string;
             wheelchairAccessible?: components["schemas"]["WheelchairAccessible"];
             bikesAllowed?: components["schemas"]["BikesAllowed"];
             stopTimes: null | components["schemas"]["ScheduleStopTimeRequest"][];
@@ -4253,6 +4540,8 @@ export interface components {
             blockId: null | string;
             /** Format: uuid */
             shapeId: null | string;
+            /** Format: uuid */
+            variantId: null | string;
             wheelchairAccessible: components["schemas"]["WheelchairAccessible"];
             bikesAllowed: components["schemas"]["BikesAllowed"];
             /** Format: date-time */
@@ -4595,6 +4884,8 @@ export interface components {
             blockId?: null | string;
             /** Format: uuid */
             shapeId?: null | string;
+            /** Format: uuid */
+            variantId?: null | string;
             wheelchairAccessible?: components["schemas"]["WheelchairAccessible"];
             bikesAllowed?: components["schemas"]["BikesAllowed"];
         };
@@ -4612,6 +4903,8 @@ export interface components {
             blockId: null | string;
             /** Format: uuid */
             shapeId: null | string;
+            /** Format: uuid */
+            variantId: null | string;
             wheelchairAccessible: components["schemas"]["WheelchairAccessible"];
             bikesAllowed: components["schemas"]["BikesAllowed"];
             summary: components["schemas"]["TripSummaryResponse"];
@@ -4649,6 +4942,60 @@ export interface components {
             errors?: {
                 [key: string]: string[];
             };
+        };
+        VariantRequest: {
+            name: null | string;
+            directionId?: null | components["schemas"]["TripDirection"];
+            headsign?: null | string;
+            /** Format: uuid */
+            shapeId?: null | string;
+            stops: null | components["schemas"]["VariantStopRequest"][];
+        };
+        VariantResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            routeId: string;
+            name: string;
+            directionId: null | components["schemas"]["TripDirection"];
+            headsign: null | string;
+            /** Format: uuid */
+            shapeId: null | string;
+            /** Format: int32 */
+            sortOrder: number;
+            source: components["schemas"]["VariantSource"];
+            /** Format: int32 */
+            tripCount: number;
+            stops: components["schemas"]["VariantStopResponse"][];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /** @enum {unknown} */
+        VariantSource: "Manual" | "Gtfs";
+        VariantStopRequest: {
+            /** Format: uuid */
+            stopId: null | string;
+            /** Format: int32 */
+            travelTime?: number;
+            /** Format: int32 */
+            dwellTime?: number;
+        };
+        VariantStopResponse: {
+            /** Format: uuid */
+            stopId: string;
+            code: string;
+            name: string;
+            platformCode: null | string;
+            /** Format: double */
+            latitude: null | number;
+            /** Format: double */
+            longitude: null | number;
+            /** Format: int32 */
+            travelTime: number;
+            /** Format: int32 */
+            dwellTime: number;
         };
         WheelchairAccessible: number;
         WheelchairBoarding: number;

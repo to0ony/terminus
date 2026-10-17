@@ -294,6 +294,8 @@ function toRequest(trip: EditorTrip): TripRequest {
     shortName: trip.shortName,
     blockId: trip.blockId,
     shapeId: trip.shapeId,
+    // Bez varijante bi vožnja izgubila vezu na svoj predložak.
+    variantId: trip.variantId,
     wheelchairAccessible: trip.wheelchairAccessible,
     bikesAllowed: trip.bikesAllowed,
     stopTimes: trip.stopTimes.map((st) => ({ ...st })),

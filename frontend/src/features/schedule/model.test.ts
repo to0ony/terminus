@@ -26,6 +26,7 @@ function trip(key: string, stops: string[], start: number, step = 120): EditorTr
     shortName: null,
     blockId: 'b1',
     shapeId: null,
+    variantId: 'v1',
     wheelchairAccessible: 0,
     bikesAllowed: 0,
     stopTimes: stops.map((stopId, i) => ({
@@ -108,6 +109,7 @@ describe('new trips', () => {
     expect(created.id).toBeNull()
     expect(created.blockId).toBeNull()
     expect(created.serviceCalendarId).toBe('sub')
+    expect(created.variantId).toBe('v1')
     expect(created.stopTimes.map((st) => st.departureTime)).toEqual([7200, 7380, 7560])
   })
 
@@ -132,6 +134,7 @@ describe('changes', () => {
     const result = changes(original, current)
 
     expect(result.upserts.map((u) => u.id)).toEqual(['t1', null])
+    expect(result.upserts[0].variantId).toBe('v1')
     expect(result.deletes).toEqual([{ id: 't2', updatedAt: '2026-10-17T10:00:00Z' }])
   })
 
