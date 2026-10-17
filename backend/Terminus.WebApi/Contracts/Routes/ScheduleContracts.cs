@@ -1,0 +1,176 @@
+using System.ComponentModel.DataAnnotations;
+using Terminus.Model;
+using Terminus.Model.Common;
+using Terminus.Model.Common.Enums;
+using Terminus.Service.Common;
+
+namespace Terminus.WebApi.Contracts.Routes;
+
+/// <summary>Query parametri grafikona voznog reda.</summary>
+public class ScheduleQuery
+{
+    /// <summary>Smjer (0 ili 1); bez njega vožnje bez smjera i oba smjera zajedno.</summary>
+    public TripDirection? DirectionId { get; set; }
+
+    /// <summary>Samo vožnje tog kalendara (tipa dana).</summary>
+    public Guid? CalendarId { get; set; }
+}
+
+/// <param name="Stops">Redci grafikona, redom kojim ih vožnje obilaze.</param>
+/// <param name="TripCounts">Broj vožnji smjera po Id-u kalendara.</param>
+public record ScheduleResponse(
+    Guid RouteId,
+    TripDirection? DirectionId,
+    IReadOnlyList<ScheduleStopResponse> Stops,
+    IReadOnlyList<ScheduleTripResponse> Trips,
+    IReadOnlyDictionary<Guid, int> TripCounts);
+
+public record ScheduleStopResponse(Guid Id, string Code, string Name, string? PlatformCode);
+
+/// <param name="UpdatedAt">Vraća se pri spremanju izmjena, za provjeru sukoba.</param>
+public record ScheduleTripResponse(
+    Guid Id,
+    string Code,
+    Guid ServiceCalendarId,
+    string? Headsign,
+    string? ShortName,
+    string? BlockId,
+    Guid? ShapeId,
+    WheelchairAccessible WheelchairAccessible,
+    BikesAllowed BikesAllowed,
+    DateTime UpdatedAt,
+    IReadOnlyList<ScheduleStopTimeResponse> StopTimes);
+
+/// <param name="ArrivalTime">Sekunde od početka dana voznog reda (može biti iznad 24 h).</param>
+/// <param name="DepartureTime">Sekunde od početka dana voznog reda (može biti iznad 24 h).</param>
+public record ScheduleStopTimeResponse(
+    Guid StopId,
+    int ArrivalTime,
+    int DepartureTime,
+    string? StopHeadsign,
+    PickupDropOffType PickupType,
+    PickupDropOffType DropOffType,
+    ContinuousPickupDropOff? ContinuousPickup,
+    ContinuousPickupDropOff? ContinuousDropOff,
+    double? ShapeDistTraveled,
+    bool Timepoint);
+
+/// <summary>Izmjene iz grafikona: nove i izmijenjene vožnje te obrisane.</summary>
+public class ScheduleSaveRequest
+{
+    public TripDirection? DirectionId { get; set; }
+
+    [Required]
+    public List<ScheduleTripRequest>? Upserts { get; set; }
+
+    [Required]
+    public List<ScheduleDeleteRequest>? Deletes { get; set; }
+}
+
+/// <summary>Vožnja; bez Id-a je nova, a postojeća šalje UpdatedAt koji je učitala.</summary>
+public class ScheduleTripRequest
+{
+    public Guid? Id { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+
+    [Required]
+    public Guid? ServiceCalendarId { get; set; }
+
+    public string? Headsign { get; set; }
+    public string? ShortName { get; set; }
+    public string? BlockId { get; set; }
+    public Guid? ShapeId { get; set; }
+    public WheelchairAccessible WheelchairAccessible { get; set; }
+    public BikesAllowed BikesAllowed { get; set; }
+
+    /// <summary>Vremena redom vožnje.</summary>
+    [Required]
+    public List<ScheduleStopTimeRequest>? StopTimes { get; set; }
+}
+
+public class ScheduleStopTimeRequest
+{
+    [Required]
+    public Guid? StopId { get; set; }
+
+    public int ArrivalTime { get; set; }
+    public int DepartureTime { get; set; }
+    public string? StopHeadsign { get; set; }
+    public PickupDropOffType PickupType { get; set; }
+    public PickupDropOffType DropOffType { get; set; }
+    public ContinuousPickupDropOff? ContinuousPickup { get; set; }
+    public ContinuousPickupDropOff? ContinuousDropOff { get; set; }
+    public double? ShapeDistTraveled { get; set; }
+    public bool Timepoint { get; set; } = true;
+}
+
+public class ScheduleDeleteRequest
+{
+    [Required]
+    public Guid? Id { get; set; }
+
+    [Required]
+    public DateTime? UpdatedAt { get; set; }
+}
+
+public static class ScheduleMappings
+{
+    public static ScheduleResponse ToResponse(this RouteSchedule schedule) => new(
+        schedule.Route.Id,
+        schedule.DirectionId,
+        schedule.Stops.Select(s => new ScheduleStopResponse(s.Id, s.Code, s.Name, s.PlatformCode)).ToList(),
+        schedule.Trips.Select(t => new ScheduleTripResponse(
+            t.Trip.Id,
+            t.Trip.Code,
+            t.Trip.ServiceCalendarId,
+            t.Trip.Headsign,
+            t.Trip.ShortName,
+            t.Trip.BlockId,
+            t.Trip.ShapeId,
+            t.Trip.WheelchairAccessible,
+            t.Trip.BikesAllowed,
+            t.Trip.UpdatedAt,
+            t.StopTimes.Select(st => new ScheduleStopTimeResponse(
+                st.StopId,
+                st.ArrivalTime,
+                st.DepartureTime,
+                st.StopHeadsign,
+                st.PickupType,
+                st.DropOffType,
+                st.ContinuousPickup,
+                st.ContinuousDropOff,
+                st.ShapeDistTraveled,
+                st.Timepoint)).ToList())).ToList(),
+        schedule.TripCounts);
+
+    // Obavezna polja ([Required]) je model binding već provjerio.
+    public static ScheduleChanges ToChanges(this ScheduleSaveRequest request) => new(
+        request.DirectionId,
+        request.Upserts!.Select(u => new ScheduleTripChange(
+            new TripModel
+            {
+                Id = u.Id ?? Guid.Empty,
+                ServiceCalendarId = u.ServiceCalendarId!.Value,
+                Headsign = u.Headsign,
+                ShortName = u.ShortName,
+                BlockId = u.BlockId,
+                ShapeId = u.ShapeId,
+                WheelchairAccessible = u.WheelchairAccessible,
+                BikesAllowed = u.BikesAllowed
+            },
+            u.StopTimes!.Select(st => (IStopTimeModel)new StopTimeModel
+            {
+                StopId = st.StopId!.Value,
+                ArrivalTime = st.ArrivalTime,
+                DepartureTime = st.DepartureTime,
+                StopHeadsign = st.StopHeadsign,
+                PickupType = st.PickupType,
+                DropOffType = st.DropOffType,
+                ContinuousPickup = st.ContinuousPickup,
+                ContinuousDropOff = st.ContinuousDropOff,
+                ShapeDistTraveled = st.ShapeDistTraveled,
+                Timepoint = st.Timepoint
+            }).ToList(),
+            u.UpdatedAt)).ToList(),
+        request.Deletes!.Select(d => new TripVersion(d.Id!.Value, d.UpdatedAt!.Value)).ToList());
+}

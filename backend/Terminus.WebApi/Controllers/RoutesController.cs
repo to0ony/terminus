@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using Terminus.Common;
 using Terminus.Service.Common;
 using Terminus.WebApi.Contracts.Routes;
 using Terminus.WebApi.Contracts.Timetables;
+using Terminus.WebApi.Infrastructure;
 
 namespace Terminus.WebApi.Controllers;
 
@@ -12,8 +14,50 @@ namespace Terminus.WebApi.Controllers;
 public class RoutesController(
     IRouteService routeService,
     ITimetableService timetableService,
+    IScheduleService scheduleService,
+    IOutputCacheStore outputCache,
     TimeProvider timeProvider) : ControllerBase
 {
+    /// <summary>
+    /// Vozni red linije za grafikon: stanice smjera (redoslijed svih obrazaca, za
+    /// sve kalendare isti) i vožnje s vremenima u sekundama, po želji samo
+    /// jednog kalendara (tipa dana).
+    /// </summary>
+    [HttpGet("{id:guid}/schedule")]
+    [ProducesResponseType<ScheduleResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ScheduleResponse>> GetSchedule(
+        Guid id,
+        [FromQuery] ScheduleQuery query,
+        CancellationToken cancellationToken)
+    {
+        var schedule = await scheduleService.GetAsync(id, query.DirectionId, query.CalendarId, cancellationToken);
+        return Ok(schedule.ToResponse());
+    }
+
+    /// <summary>
+    /// Sprema izmjene iz grafikona u jednoj transakciji: nove vožnje (bez Id-a),
+    /// izmijenjene (s UpdatedAt koji je klijent učitao) i obrisane. 409 ako je
+    /// vožnju u međuvremenu promijenio netko drugi; 400 ako vremena krše GTFS
+    /// pravila.
+    /// </summary>
+    [HttpPut("{id:guid}/schedule")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> SaveSchedule(
+        Guid id,
+        ScheduleSaveRequest request,
+        CancellationToken cancellationToken)
+    {
+        await scheduleService.SaveAsync(id, request.ToChanges(), cancellationToken);
+        // Zasloni i javni feed odmah vide novi vozni red.
+        await outputCache.EvictByTagAsync(PublicApi.TimetableTag, cancellationToken);
+        return NoContent();
+    }
+
     [HttpGet]
     [ProducesResponseType<PagedResult<RouteResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
