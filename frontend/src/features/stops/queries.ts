@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { unwrap } from '@/api/errors'
 import type { components, paths } from '@/api/schema'
@@ -93,6 +93,21 @@ export function useTimetablePdf(id: string) {
       const blob = unwrap(result) as unknown as Blob
       return { blob, fileName: fileNameOf(result.response) ?? 'vozni-red.pdf' }
     },
+    meta: { handlesErrors: true },
+  })
+}
+
+export type StopRequest = components['schemas']['StopRequest']
+
+/** Nova stanica (bez Id-a) ili izmjena postojeće; osvježava kartu i popise. */
+export function useSaveStop(id?: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: StopRequest) =>
+      id
+        ? unwrap(await api.PUT('/api/stops/{id}', { params: { path: { id } }, body }))
+        : unwrap(await api.POST('/api/stops', { body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: stopKeys.all }),
     meta: { handlesErrors: true },
   })
 }

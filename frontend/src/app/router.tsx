@@ -56,6 +56,13 @@ export const router = createBrowserRouter([
                     }),
                   },
                   {
+                    path: 'routes/:routeId/variants/:variantId',
+                    lazy: async () => ({
+                      Component: (await import('@/features/variants/VariantEditorPage'))
+                        .VariantEditorPage,
+                    }),
+                  },
+                  {
                     path: 'routes/:routeId/schedule',
                     lazy: async () => ({
                       Component: (await import('@/features/schedule/SchedulePage')).SchedulePage,
