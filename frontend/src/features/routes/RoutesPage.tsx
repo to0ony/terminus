@@ -1,4 +1,5 @@
 import {
+  Anchor,
   Badge,
   Group,
   Pagination,
@@ -13,7 +14,7 @@ import {
 import { useDebouncedCallback } from '@mantine/hooks'
 import { IconSearch } from '@tabler/icons-react'
 import { useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
 import { useAgencies } from '@/features/agencies/queries'
@@ -32,6 +33,7 @@ const statusOptions = [
 /** Popis linija s pretragom i filtrima; stanje je u adresi (q, agency, type, active, page). */
 export function RoutesPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [search, setSearch] = useState(searchParams.get('q') ?? '')
 
   const query = searchParams.get('q')
@@ -160,11 +162,25 @@ export function RoutesPage() {
                 </Table.Thead>
                 <Table.Tbody>
                   {routes.data.items.map((route) => (
-                    <Table.Tr key={route.id}>
+                    <Table.Tr
+                      key={route.id}
+                      onClick={() => void navigate(`/routes/${route.id}`)}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <Table.Td>
                         <RouteBadge route={route} />
                       </Table.Td>
-                      <Table.Td>{route.longName ?? route.description ?? '—'}</Table.Td>
+                      <Table.Td>
+                        <Anchor
+                          component={Link}
+                          to={`/routes/${route.id}`}
+                          c="inherit"
+                          size="sm"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          {route.longName ?? route.description ?? route.code}
+                        </Anchor>
+                      </Table.Td>
                       <Table.Td>{routeTypeLabel(route.routeType)}</Table.Td>
                       {showAgency && <Table.Td>{agencyNames.get(route.agencyId) ?? '—'}</Table.Td>}
                       <Table.Td>

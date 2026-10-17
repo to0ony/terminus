@@ -49,6 +49,13 @@ export const router = createBrowserRouter([
                     }),
                   },
                   {
+                    path: 'routes/:routeId',
+                    lazy: async () => ({
+                      Component: (await import('@/features/routes/RouteDetailPage'))
+                        .RouteDetailPage,
+                    }),
+                  },
+                  {
                     path: 'stops',
                     lazy: async () => ({
                       Component: (await import('@/features/stops/StopsPage')).StopsPage,

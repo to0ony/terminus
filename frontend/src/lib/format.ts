@@ -17,3 +17,12 @@ export function formatBytes(bytes: number): string {
 function formatDecimal(value: number): string {
   return value.toLocaleString('hr-HR', { maximumFractionDigits: 1 })
 }
+
+/**
+ * GTFS vrijeme (HH:MM:SS, sati mogu biti iznad 24 za vožnje iza ponoći) kao
+ * sat na satu: "25:10:00" → "01:10".
+ */
+export function formatGtfsTime(value: string): string {
+  const [hours, minutes] = value.split(':')
+  return `${String(Number(hours) % 24).padStart(2, '0')}:${minutes}`
+}
