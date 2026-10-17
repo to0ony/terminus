@@ -1,21 +1,8 @@
-# Polasci, zasloni na stanicama i PDF vozni redovi
+# Polasci, zaslon na stanici i PDF vozni red
 
-> [!IMPORTANT]
-> Ovo je plan: opisuje kako funkcije trebaju raditi i izgledati te redoslijed
-> kojim ih treba izraditi. Kad se pojedini dio implementira, dokument se
-> ažurira. Stanje po koracima je u [roadmapu](roadmap.md).
-
-## Pregled
-
-Planirane su dvije funkcije za putnike:
-
-1. **Zaslon na stanici.** Svaka stanica ima javni URL. Otvoren na ekranu na stanici
-   (ili na mobitelu putnika), prikazuje trenutno vrijeme i nadolazeće polaske.
-2. **PDF vozni red.** Administrator generira vozni red za jednu stanicu ili
-   za sve stanice odjednom. PDF se ispisuje i postavlja na stanicu.
-
-Obje funkcije počivaju na istom temelju, izračunu polazaka, pa se on radi prvi i
-mora biti dobro pokriven testovima:
+Funkcije za putnike: javni **zaslon na stanici** sa sljedećim polascima i
+**PDF vozni red** stanice za ispis. Obje počivaju na istom izračunu polazaka iz
+voznog reda (kalendari, vožnje preko ponoći, vremenska zona, kolodvori):
 
 ```
                     ┌──────────────────────────────┐
@@ -29,9 +16,16 @@ mora biti dobro pokriven testovima:
    (sljedećih N polazaka od "sada")   (svi polasci po danima u tjednu)
 ```
 
+Sadržaj:
+
+1. [Izračun polazaka](#1-izračun-polazaka)
+2. [Zaslon na stanici](#2-zaslon-na-stanici)
+3. [PDF vozni red](#3-pdf-vozni-red)
+4. [Odluke](#4-odluke)
+
 ---
 
-## 1. Temelj: izračun polazaka
+## 1. Izračun polazaka
 
 ### 1.1 Koji kalendari voze na zadani datum
 
@@ -117,18 +111,19 @@ dopušta različite zone.
 
 ## 2. Zaslon na stanici
 
-### 2.1 URL
+### 2.1 Adresa
 
-Svaka stanica dobiva stalnu javnu adresu, primjerice:
+Svaka stanica ima stalnu javnu adresu po GTFS `stop_id` (`stops.code`):
 
 ```
-https://<domena>/board/OS-AK
-                       └─┬─┘
-                      stanica
+https://<domena>/board/OS-AK?limit=8
+                       └─┬─┘ └──┬──┘
+                      stanica   broj polazaka (zadano 12, najviše 30)
 ```
 
-Svaka tvrtka ima vlastitu instancu (i domenu), a `stops.code` je jedinstven u
-bazi, pa kod stanice sam određuje adresu. Nova migracija nije potrebna.
+Svaka tvrtka ima vlastitu instancu (i domenu), a `stops.code` je jedinstven,
+pa kod stanice sam određuje adresu. Na stranici stanice u dashboardu gumb
+**Zaslon polazaka** otvara tu adresu.
 
 ### 2.2 API
 
@@ -140,7 +135,8 @@ GET /api/public/departures/{stopCode}?limit=10
 - `limit`: koliko polazaka vratiti (zadano 10, najviše 30; inače 400).
 - Nepoznat kod stanice vraća 404, a instanca bez prijevoznika 422.
 - `routeName` je kratka oznaka linije, a ako je nema, puni naziv.
-- `minutesUntil` su cijele minute do polaska, zaokružene nadolje.
+- `minutesUntil` su cijele minute do polaska, zaokružene nadolje. Odgovor može
+  biti iz cachea (do 20 s), pa zaslon minute računa sam iz `departureTime`.
 - Implementacija: `PublicDeparturesController` (trenutno vrijeme daje
   `TimeProvider`) poziva `DepartureService.GetNextAsync(stopCode, …)`.
 
@@ -148,10 +144,7 @@ Primjer odgovora:
 
 ```json
 {
-  "stop": {
-    "code": "OS-AK",
-    "name": "Osijek, Autobusni kolodvor"
-  },
+  "stop": { "code": "OS-AK", "name": "Osijek, Autobusni kolodvor" },
   "agencyName": "Test prijevoznik d.o.o.",
   "now": "2026-12-23T06:58:12+01:00",
   "departures": [
@@ -163,192 +156,169 @@ Primjer odgovora:
       "platform": "3",
       "departureTime": "2026-12-23T07:05:00+01:00",
       "minutesUntil": 6
-    },
-    {
-      "routeName": "7",
-      "routeColor": "2E7D32",
-      "routeTextColor": "FFFFFF",
-      "headsign": "Vukovar",
-      "platform": "5",
-      "departureTime": "2026-12-23T07:15:00+01:00",
-      "minutesUntil": 16
     }
   ]
 }
 ```
 
-### 2.3 Izgled zaslona
+### 2.3 Izgled i ponašanje
 
-Zaslon je javna ruta `/board/{stopCode}` u frontend aplikaciji (React, TypeScript,
-Vite; ista aplikacija kao dashboard). Ruta se učitava zasebno (lazy loading), bez
-koda dashboarda i bez prijave. Radi na velikim ekranima u vodoravnom i okomitom
-položaju (monitori na ugibalištima) i čitljiva je na mobitelu. Logo i boje
-dolaze iz postavki instance (`GET /api/public/settings`).
+Zaslon je javna ruta `/board/:stopCode` u frontend aplikaciji
+(`frontend/src/features/board`). Učitava se zasebno, bez koda dashboarda i bez
+Mantine komponenti (vlastiti CSS), pa je brz i na slabijim uređajima.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Osijek, Autobusni kolodvor                          06:58   │
+│ [logo] Zagrebački električni tramvaj                         │
+│        Stanica Trg bana J. Jelačića                   20:56  │
 ├──────────────────────────────────────────────────────────────┤
-│  [12]  Đakovo                     peron 3     07:05   6 min  │
-│  [ 7]  Vukovar                    peron 5     07:15  16 min  │
-│  [12]  Đakovo                     peron 3     07:35  36 min  │
-│  [21]  Našice                     peron 1     07:40  41 min  │
-│  [ 7]  Vukovar                    peron 5     08:15   1 h    │
-├──────────────────────────────────────────────────────────────┤
-│  Vremena su prema voznom redu.                    Terminus   │
+│  [17]  Borongaj                                      stiže   │
+│  [13]  Žitnjak                                    za 1 min   │
+│  [ 6]  Črnomerec                                  za 3 min   │
+│  [14]  Mihaljevac                                    21:14   │
 └──────────────────────────────────────────────────────────────┘
 ```
 
-- Oznaka linije u boji linije (`routeColor` / `routeTextColor`).
-- Sat se osvježava svake sekunde na klijentu; polasci se dohvaćaju svakih ~30 s.
-- Polasci unutar ~1 minute se ističu (npr. "polazi"), a prošli nestaju.
-- Kad nema polazaka do kraja dana: poruka "Nema više polazaka danas" i prvi
-  sljedeći polazak.
-- Ako dohvat ne uspije (nema mreže), prikazuju se zadnji poznati podaci uz
-  diskretnu oznaku da nisu osvježeni.
-- Sat i "za N min" računaju se prema `now` iz odgovora API-ja, a ne prema satu
-  uređaja (ekrani na stanicama često imaju krivo podešen sat).
-- Monitor radi danima bez restarta: stranica se povremeno (npr. jednom dnevno)
-  sama potpuno osvježi, a dohvat ne smije gomilati memoriju.
-- Opcije u URL-u, npr. `/board/OS-AK?limit=8`.
+- Zaglavlje: logo, naziv i boje iz postavki instance (`GET /api/public/settings`).
+- Redak: oznaka linije u boji linije, odredište, peron (kod kolodvora) i vrijeme:
+  "stiže" (manje od minute), "za X min" (do 10 minuta), inače sat polaska.
+- Polasci se dohvaćaju svakih 30 s, a sat i minute osvježavaju se svake sekunde.
+- Minute se računaju po satu **poslužitelja** (`now` i zaglavlje `Age` iz
+  odgovora), jer zasloni na stanicama često imaju krivo namješten sat. Polasci
+  koji su u međuvremenu otišli nestaju i prije sljedećeg dohvata.
+- Ako dohvat ne uspije, ostaju zadnji poznati polasci, a nakon 1,5 minute
+  ispod njih piše od kada nisu osvježeni.
+- Veličina slova prati širinu i visinu ekrana: 12 polazaka stane na položeni
+  zaslon bez pomicanja, a radi i na mobitelu. Tema prati postavku uređaja.
+- Nepoznata stanica: "Stanica „X” ne postoji."; bez polazaka: "Nema polazaka u
+  sljedeća 24 sata."
 
 ### 2.4 Opterećenje i zaštita
 
-Zasloni na svim stanicama neprestano dohvaćaju iste podatke. Zato:
+Zasloni na svim stanicama neprestano dohvaćaju iste podatke, pa su javni
+endpointi zaštićeni (`Terminus.WebApi/Infrastructure/PublicApi.cs`):
 
-- **Output caching**: odgovor za istu stanicu sprema se ~30 s, pa većina zahtjeva
-  ne ide u bazu.
-- **Rate limiting** na `/api/public/*`: ograničenje broja zahtjeva po IP adresi.
+| Endpoint | Cache na poslužitelju | Granica po IP adresi |
+|---|---|---|
+| `/api/public/departures/{stopCode}` | 20 s (po stanici i `limit`) | 120 zahtjeva u minuti |
+| `/api/public/settings` | 5 min | dijeli granicu s polascima |
+| `/api/public/settings/logo` | u pregledniku (verzija u adresi) | dijeli granicu s polascima |
+| `/api/public/gtfs` | 10 min | 5 zahtjeva u minuti |
+
+- Spremanje postavki ili loga briše cache postavki i feeda; GTFS uvoz briše
+  cache polazaka, postavki i feeda.
+- Iznad granice odgovor je `429` s `Retry-After` i ProblemDetails.
+- Granice se mijenjaju konfiguracijom `PublicApi` (vidi
+  [konfiguraciju](development.md#konfiguracija)).
+- Iza reverse proxyja granica se računa po adresi proxyja dok se ne uključe
+  forwarded headers (dio deploya, faza 6 u [roadmapu](roadmap.md)).
 
 ### 2.5 Ograničenje
 
 Zaslon prikazuje **vremena iz voznog reda**, a ne stvarni položaj vozila. Ako
-autobus kasni, zaslon to ne zna. Prikaz stvarnih dolazaka zahtijevao bi praćenje
-vozila (GPS) i GTFS-Realtime, što nije dio ovog plana.
+autobus kasni, zaslon to ne zna. Za stvarne dolaske trebali bi praćenje vozila
+(GPS) i GTFS-Realtime.
 
 ---
 
-## 3. PDF vozni red za stanicu
+## 3. PDF vozni red
 
 ### 3.1 Izgled
 
-Klasičan oblik voznog reda na stanicama, uspravno, A4 ili A3 (za kolodvore s
-mnogo linija). Odjeljci teku po stupcima stranice: dva na A4, tri na A3.
-Tekstovi su na hrvatskom ili engleskom, po izboru pri preuzimanju.
+Klasičan vozni red na stanici, uspravno, **A4** (odjeljci u dva stupca) ili
+**A3** (tri stupca, za kolodvore s mnogo linija), na **hrvatskom ili
+engleskom**:
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  OSIJEK, AUTOBUSNI KOLODVOR                    [QR kod]  │
-│  Vozni red vrijedi od 1.1.2026. do 31.12.2026.           │
+│  Gradski prijevoz Osijek                       [QR kod]  │
+│  Osijek, Autobusni kolodvor                Polasci uživo │
+│  Vrijedi od 1. 12. 2026. do 30. 6. 2027.                 │
 ├──────────────────────────────────────────────────────────┤
-│  [12]  smjer Đakovo                                      │
-│                                                          │
-│        Radni dan          Subota         Nedjelja i      │
-│                                          praznici        │
-│     5 | 45             6 | 30          7 | 30            │
-│     6 | 15  45         7 | 30         10 | 30            │
-│     7 | 05  35  55a    9 | 30         14 | 30            │
-│     8 | 35            12 | 30         18 | 30            │
-│    ...                ...                                │
+│  [12]  smjer Đakovo  ·  peron 3                          │
+│  sat │ Radni dan        │ Subota      │ Nedjelja         │
+│    5 │ 45               │             │                  │
+│    6 │ 15  45           │ 30          │                  │
+│    7 │ 05  35  55a      │ 30          │ 30               │
+│  ...                                                     │
+│  a – ne vozi 24. 12. i 31. 12.                           │
+│  25. 12. i 1. 1. vozi kao „Nedjelja”.                    │
 ├──────────────────────────────────────────────────────────┤
-│  [ 7]  smjer Vukovar                                     │
-│     ...                                                  │
-├──────────────────────────────────────────────────────────┤
-│  a – ne vozi 24.12. i 31.12.                             │
-│  Ne vozi 25.12. i 1.1.                                   │
-│  Skenirajte QR kod za polaske uživo.   Test prijevoznik  │
+│  Gradski prijevoz Osijek · Vremena su prema voznom redu. │
 └──────────────────────────────────────────────────────────┘
 ```
 
 ### 3.2 Pravila sadržaja
 
-- **Razdoblje**: administrator ga bira; zadano je od danas do zadnjeg dana s
-  voznim redom, a za vozni red koji tek počinje vrijediti bira se kasniji
+- **Razdoblje** bira administrator. Zadano je od danas do zadnjeg dana s
+  voznim redom; za vozni red koji tek počinje vrijediti bira se kasniji
   početak. Najviše 366 dana.
 - **Zaglavlje**: naziv i logo instance, naziv stanice, razdoblje i QR kod.
-- **Grupiranje**: po liniji i smjeru (natpis smjera vožnje), a unutar toga po
-  danima u tjednu s istim voznim redom. Stupci se ne uzimaju iz naziva
+- **Odjeljci** po liniji i smjeru (natpis smjera vožnje), a kod kolodvora i po
+  peronu. Poredani su po oznaci linije (2 prije 11).
+- **Stupci** su dani u tjednu s istim voznim redom. Ne uzimaju se iz naziva
   kalendara, nego iz toga koji polasci stvarno voze na koji datum: za svaki dan
   u tjednu uzima se najčešći skup polazaka u razdoblju, a dani s istim skupom
-  čine stupac ("Radni dan", "Subota", "Nedjelja", "Pon–Čet" itd.). Tako radi i
-  s feedovima koji cijeli raspored drže u `calendar_dates.txt` (npr. ZET), a
-  naslovi stupaca mogu biti na oba jezika.
-- **Rešetka sat | minute**: svaki redak je jedan sat, a u njemu minute polazaka.
-  Vožnje iza ponoći pripadaju danu na koji su krenule i dolaze iza 23 h.
+  čine stupac ("Radni dan", "Subota", "Nedjelja", "Pon–Pet, Ned" itd.). Tako
+  radi i s feedovima koji cijeli raspored drže u `calendar_dates.txt` (npr. ZET),
+  a naslovi stupaca postoje na oba jezika.
+- **Rešetka sat | minute**: svaki redak je jedan sat. Vožnje iza ponoći
+  pripadaju danu na koji su krenule i dolaze iza 23 h.
 - **Napomene** za datume koji odstupaju od svog dana u tjednu:
   - bez polazaka: "Ne vozi 18. 11. i 25. 12.";
   - s voznim redom drugog stupca: "25. 12. vozi kao „Nedjelja”.";
   - inače datum ide u stupac s kojim dijeli najviše polazaka, a polasci koji ne
-    voze na sve njegove datume dobivaju slovo uz minutu (npr. `55a` –
-    "ne vozi 24. 12. i 31. 12." ili "vozi samo 26. 12.").
-- **Kolodvori**: za stanicu s peronima uz smjer se navodi i peron.
-- **Podnožje**: naziv prijevoznika i uputa za QR kod.
-- **QR kod** vodi na zaslon te stanice (poglavlje 2), pa putnik na mobitelu vidi
-  sljedeće polaske. Adresa je javna adresa iz postavki + `/board/{stopCode}`;
-  bez javne adrese PDF nema QR kod.
+    voze na sve njegove datume dobivaju slovo uz minutu (`55a` – "ne vozi
+    24. 12. i 31. 12." ili "vozi samo 26. 12.").
+- **QR kod** vodi na zaslon stanice: javna adresa iz postavki +
+  `/board/{stopCode}`. Bez javne adrese PDF nema QR kod (dijalog na to upozorava).
+- **Podnožje**: naziv instance, "Vremena su prema voznom redu." i broj stranice.
 
-### 3.3 API (samo administrator)
+### 3.3 Preuzimanje
+
+Na stranici stanice u dashboardu gumb **PDF vozni red** otvara dijalog s
+razdobljem, formatom i jezikom. API (samo administrator):
 
 ```
 GET /api/stops/{stopId}/timetable.pdf?from=2026-12-01&to=2027-06-30&paper=A3&language=en
-GET /api/timetables.pdf
 ```
 
-- Prvi vraća PDF za jednu stanicu ✅. Svi parametri su neobavezni (zadano:
-  danas do kraja voznog reda, A4, hrvatski). 422 ako u razdoblju sa stanice
-  nema polazaka.
-- Drugi (u planu) vraća **jedan PDF sa svim aktivnim stanicama**, spreman za
-  ispis odjednom. Može se proširiti filtrom (npr. samo stanice jedne linije).
+- Svi parametri su neobavezni (zadano: danas do kraja voznog reda, A4, `hr`).
+- 400 za neispravno razdoblje, 422 ako u razdoblju sa stanice nema polazaka.
+- PDF se izrađuje tijekom zahtjeva; za veliku stanicu (ZET, Trg bana J.
+  Jelačića, 1.374 polaska dnevno) to traje manje od sekunde.
 
-PDF se generira tijekom zahtjeva. Za nekoliko stotina stanica to su sekunde; ako
-trajanje postane problem, generiranje se premješta u pozadinski posao s
-preuzimanjem kad je gotov.
+U planu je i jedan PDF za sve stanice odjednom (vidi [roadmap](roadmap.md)).
 
-### 3.4 Biblioteke
+### 3.4 Implementacija
 
-- [QuestPDF](https://www.questpdf.com/) za izradu PDF-a C# kodom (font Lato dolazi
-  s paketom). Community licenca (verzija 3.0, srpanj 2026.) besplatna je među
-  ostalim za open-source projekte s OSI licencom, organizacije s godišnjim
-  prihodom ispod 1 milijun USD i korisnike čiji kod ne poziva QuestPDF izravno.
-  **Javni sektor i državne agencije nisu obuhvaćeni bez obzira na prihod**, a
-  gradski prijevoznici često su u javnom vlasništvu; prije produkcije treba
-  provjeriti koja licenca vrijedi. Kod za PDF je u jednoj klasi
-  (`StopTimetableDocument`), pa se biblioteka može zamijeniti.
-- QRCoder za QR kod.
+| Dio | Gdje |
+|---|---|
+| Razdoblje, polasci stanice ili kolodvora, provjere | `StopTimetableService` (Terminus.Service) |
+| Odjeljci, stupci i napomene (3.2) | `StopTimetableBuilder`, testovi u `StopTimetableBuilderTests` |
+| Izgled PDF-a | `Pdf/StopTimetableDocument` ([QuestPDF](https://www.questpdf.com/); font Lato dolazi s paketom) |
+| Tekstovi na hrvatskom i engleskom | `Pdf/TimetableTexts` |
+| QR kod (SVG) | [QRCoder](https://github.com/codebude/QRCoder) |
 
-Alternativa je HTML predložak pretvoren u PDF headless preglednikom (Playwright):
-lakše za dizajn, ali zahtjevnije za postavljanje na poslužitelju.
+### 3.5 Licenca za QuestPDF
+
+QuestPDF Community licenca (verzija 3.0, srpanj 2026.) besplatna je među
+ostalim za open-source projekte s OSI licencom, organizacije s godišnjim
+prihodom ispod 1 milijun USD i korisnike čiji kod ne poziva QuestPDF izravno.
+**Javni sektor i državne agencije nisu obuhvaćeni bez obzira na prihod**, a
+gradski prijevoznici često su u javnom vlasništvu. Prije produkcije treba
+provjeriti koja licenca vrijedi. Sav kod koji poziva QuestPDF je u
+`StopTimetableDocument`, pa se biblioteka može zamijeniti (npr. PDFsharp i
+MigraDoc, MIT licenca).
 
 ---
 
-## 4. Preduvjeti i arhitektura
+## 4. Odluke
 
-- **Testovi.** Izračun aktivnih kalendara i polazaka pokriven je unit testovima
-  (rubni slučajevi: ponoć, ljetno računanje vremena, iznimke, kolodvori).
-- **Frontend aplikacija.** Prijevoznik upravlja svime kroz dashboard (stanice,
-  linije, kalendari, vožnje, postavke, pokretanje izrade PDF-a). Ista aplikacija
-  sadrži i javni zaslon stanice. Frontend je u istom repozitoriju kao backend
-  (`frontend/` uz `backend/`) i koristi TypeScript klijent generiran iz
-  OpenAPI opisa API-ja (`/openapi/v1.json`).
-- **Autentikacija.** Sve osim `/api/public/*` traži prijavu. Predviđa se više
-  administratora po instanci; uloge se mogu proširiti kasnije.
-- **Isti origin.** U razvoju Vite proxy šalje `/api` na backend, pa CORS nije
-  potreban. U produkciji su frontend i API iza iste domene.
-- **Postavke instance.** Naziv, logo, boje i javni URL (za QR kodove) čuvaju se
-  u bazi (jedan redak, tablica `settings`, `/api/settings`); javne stranice ih
-  čitaju s `/api/public/settings`. Podaci za `feed_info.txt` su zasebno
-  (`/api/feed-info`).
-
-## 5. Redoslijed implementacije
-
-Izračun polazaka (poglavlje 1) i javni endpoint (2.2) su gotovi. Redoslijed
-ostalih koraka, zajedno s ostatkom aplikacije, vodi se u
-[roadmapu](roadmap.md) (faza 4).
-
-## 6. Odluke
-
-- **Format PDF-a**: A4 ili A3, bira se pri preuzimanju.
-- **Jezik PDF-a**: hrvatski ili engleski, bira se pri preuzimanju. Zaslon na
-  stanici je na hrvatskom.
-- **Dolasci**: zaslon prikazuje samo polaske (linija, odredište, vrijeme).
-- **Adresa zaslona**: po GTFS `stop_id` (`/board/{stopCode}`).
+| Tema | Odluka |
+|---|---|
+| Adresa zaslona | Po GTFS `stop_id` (`/board/{stopCode}`). |
+| Dolasci | Zaslon prikazuje samo polaske (linija, odredište, vrijeme). |
+| Jezik | Zaslon na hrvatskom; PDF na hrvatskom ili engleskom, bira se pri preuzimanju. |
+| Format PDF-a | A4 ili A3, bira se pri preuzimanju. |
+| Stupci PDF-a | Iz stvarnih polazaka po danima u tjednu, ne iz naziva kalendara. |

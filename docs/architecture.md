@@ -2,8 +2,9 @@
 
 Terminus je ASP.NET Core Web API (.NET 10) nad PostgreSQL bazom, organiziran
 u slojeve. Svaki sloj ima zaseban projekt sa sučeljima (`*.Common`) i projekt
-s implementacijom. Svi projekti su u mapi `backend/`; frontend aplikacija bit
-će u `frontend/`.
+s implementacijom. Svi projekti su u mapi `backend/`. Frontend (dashboard i
+javni zaslon stanice) je zasebna React aplikacija u `frontend/`, opisana u
+[frontend.md](frontend.md).
 
 ## Projekti
 
@@ -16,8 +17,8 @@ s implementacijom. Svi projekti su u mapi `backend/`; frontend aplikacija bit
 | `Terminus.Repository.Common` | Sučelja repozitorija. |
 | `Terminus.Repository` | Pristup podacima preko EF Corea; mapiranje entitet ↔ model i prevođenje grešaka baze u iznimke iz `Common`. |
 | `Terminus.Service.Common` | Sučelja servisa. |
-| `Terminus.Service` | Poslovna pravila i validacija. |
-| `Terminus.WebApi` | Kontroleri, request/response DTO-i, obrada grešaka, DI registracija. |
+| `Terminus.Service` | Poslovna pravila i validacija, izračun polazaka, GTFS uvoz i izvoz (`Gtfs/`), PDF vozni red (`Pdf/`, QuestPDF i QRCoder). |
+| `Terminus.WebApi` | Kontroleri, request/response DTO-i, obrada grešaka, prijava, cache i ograničenje zahtjeva javnih endpointa (`Infrastructure/`), DI registracija. |
 | `Terminus.Tests` | Unit testovi (xUnit v3) servisa i pomoćnih klasa, uz lažne repozitorije u memoriji. |
 
 ## Ovisnosti
