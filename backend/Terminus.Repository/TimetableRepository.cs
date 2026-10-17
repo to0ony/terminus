@@ -45,6 +45,7 @@ public class TimetableRepository(TerminusDbContext context) : ITimetableReposito
             .AsNoTracking()
             .Where(r => r.Trips.Any(t => t.StopTimes.Any(st => stopIds.Contains(st.StopId))))
             .OrderBy(r => r.SortOrder)
+            .ThenBy(r => r.ShortName!.Length)
             .ThenBy(r => r.ShortName)
             .ThenBy(r => r.LongName)
             .ThenBy(r => r.Code)

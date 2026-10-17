@@ -54,9 +54,11 @@ public class RouteRepository(TerminusDbContext context) : IRouteRepository
 
         var totalCount = await query.CountAsync(cancellationToken);
 
-        // Redoslijed kao u GTFS-u: route_sort_order (NULL na kraju), zatim oznaka i naziv.
+        // Redoslijed kao u GTFS-u: route_sort_order (NULL na kraju), zatim oznaka (kraća
+        // prije duže, pa 2 dolazi prije 11 i 101) i naziv.
         var entities = await query
             .OrderBy(r => r.SortOrder)
+            .ThenBy(r => r.ShortName!.Length)
             .ThenBy(r => r.ShortName)
             .ThenBy(r => r.LongName)
             .ThenBy(r => r.Code)
