@@ -26,6 +26,15 @@ public class ServiceCalendarConfiguration : IEntityTypeConfiguration<ServiceCale
         builder.Property(e => e.Saturday).HasDefaultValue(false);
         builder.Property(e => e.Sunday).HasDefaultValue(false);
 
+        // Sezona s tipovima dana briše se tek kad ih ne koristi nijedna vožnja (provjerava servis).
+        builder.HasOne(e => e.Season)
+            .WithMany(s => s.Calendars)
+            .HasForeignKey(e => e.SeasonId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(e => e.SeasonId)
+            .HasDatabaseName("ix_service_calendars_season_id");
+
         builder.ConfigureAuditColumns();
 
         builder.HasIndex(e => e.Code)

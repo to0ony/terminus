@@ -14,9 +14,14 @@ public class ServiceCalendar : IAuditable
     public bool Sunday { get; set; }
     public DateOnly StartDate { get; set; }
     public DateOnly EndDate { get; set; }
+
+    /// <summary>Sezona kojoj kalendar pripada kao tip dana; null za uvezene i ručno unesene kalendare.</summary>
+    public Guid? SeasonId { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
+    public TimetableSeason? Season { get; set; }
     public ICollection<CalendarDate> CalendarDates { get; set; } = new List<CalendarDate>();
     public ICollection<Trip> Trips { get; set; } = new List<Trip>();
 }

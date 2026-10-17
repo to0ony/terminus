@@ -660,6 +660,46 @@ namespace Terminus.DAL.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Terminus.DAL.Entities.SeasonDay", b =>
+                {
+                    b.Property<Guid>("SeasonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<Guid?>("CalendarId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("calendar_id");
+
+                    b.Property<short>("Mode")
+                        .HasColumnType("smallint")
+                        .HasColumnName("mode");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("text")
+                        .HasColumnName("note");
+
+                    b.Property<short>("Source")
+                        .HasColumnType("smallint")
+                        .HasColumnName("source");
+
+                    b.HasKey("SeasonId", "Date")
+                        .HasName("pk_season_days");
+
+                    b.HasIndex("CalendarId")
+                        .HasDatabaseName("ix_season_days_calendar_id");
+
+                    b.ToTable("season_days", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_season_days_mode", "mode IN (0, 1, 2)");
+
+                            t.HasCheckConstraint("ck_season_days_source", "source IN (0, 1)");
+                        });
+                });
+
             modelBuilder.Entity("Terminus.DAL.Entities.ServiceCalendar", b =>
                 {
                     b.Property<Guid>("Id")
@@ -706,6 +746,10 @@ namespace Terminus.DAL.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("saturday");
 
+                    b.Property<Guid?>("SeasonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
+
                     b.Property<DateOnly>("StartDate")
                         .HasColumnType("date")
                         .HasColumnName("start_date");
@@ -746,6 +790,9 @@ namespace Terminus.DAL.Migrations
                     b.HasIndex("Code")
                         .IsUnique()
                         .HasDatabaseName("uq_service_calendars_code");
+
+                    b.HasIndex("SeasonId")
+                        .HasDatabaseName("ix_service_calendars_season_id");
 
                     b.ToTable("service_calendars", null, t =>
                         {
@@ -1019,6 +1066,66 @@ namespace Terminus.DAL.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Terminus.DAL.Entities.TimetableSeason", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("end_date");
+
+                    b.Property<Guid?>("HolidayCalendarId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("holiday_calendar_id");
+
+                    b.Property<string>("HolidayCountry")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("holiday_country");
+
+                    b.Property<short>("HolidayMode")
+                        .HasColumnType("smallint")
+                        .HasColumnName("holiday_mode");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("start_date");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id")
+                        .HasName("pk_timetable_seasons");
+
+                    b.HasIndex("HolidayCalendarId")
+                        .HasDatabaseName("ix_timetable_seasons_holiday_calendar_id");
+
+                    b.ToTable("timetable_seasons", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_timetable_seasons_dates", "end_date >= start_date");
+
+                            t.HasCheckConstraint("ck_timetable_seasons_holiday_mode", "holiday_mode IN (0, 1, 2)");
+                        });
+                });
+
             modelBuilder.Entity("Terminus.DAL.Entities.Trip", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1195,6 +1302,35 @@ namespace Terminus.DAL.Migrations
                     b.Navigation("Agency");
                 });
 
+            modelBuilder.Entity("Terminus.DAL.Entities.SeasonDay", b =>
+                {
+                    b.HasOne("Terminus.DAL.Entities.ServiceCalendar", null)
+                        .WithMany()
+                        .HasForeignKey("CalendarId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_season_days_service_calendars_calendar_id");
+
+                    b.HasOne("Terminus.DAL.Entities.TimetableSeason", "Season")
+                        .WithMany("Days")
+                        .HasForeignKey("SeasonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_season_days_timetable_seasons_season_id");
+
+                    b.Navigation("Season");
+                });
+
+            modelBuilder.Entity("Terminus.DAL.Entities.ServiceCalendar", b =>
+                {
+                    b.HasOne("Terminus.DAL.Entities.TimetableSeason", "Season")
+                        .WithMany("Calendars")
+                        .HasForeignKey("SeasonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_service_calendars_timetable_seasons_season_id");
+
+                    b.Navigation("Season");
+                });
+
             modelBuilder.Entity("Terminus.DAL.Entities.ShapePoint", b =>
                 {
                     b.HasOne("Terminus.DAL.Entities.Shape", "Shape")
@@ -1237,6 +1373,15 @@ namespace Terminus.DAL.Migrations
                     b.Navigation("Stop");
 
                     b.Navigation("Trip");
+                });
+
+            modelBuilder.Entity("Terminus.DAL.Entities.TimetableSeason", b =>
+                {
+                    b.HasOne("Terminus.DAL.Entities.ServiceCalendar", null)
+                        .WithMany()
+                        .HasForeignKey("HolidayCalendarId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_timetable_seasons_service_calendars_holiday_calendar_id");
                 });
 
             modelBuilder.Entity("Terminus.DAL.Entities.Trip", b =>
@@ -1306,6 +1451,13 @@ namespace Terminus.DAL.Migrations
                     b.Navigation("ChildStops");
 
                     b.Navigation("StopTimes");
+                });
+
+            modelBuilder.Entity("Terminus.DAL.Entities.TimetableSeason", b =>
+                {
+                    b.Navigation("Calendars");
+
+                    b.Navigation("Days");
                 });
 
             modelBuilder.Entity("Terminus.DAL.Entities.Trip", b =>

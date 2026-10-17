@@ -24,7 +24,7 @@ public class GtfsImportRepository(TerminusDbContext context) : IGtfsImportReposi
 
         await context.Database.ExecuteSqlRawAsync(
             "TRUNCATE TABLE stop_times, trips, fare_rules, fares, shape_points, shapes, calendar_dates, " +
-            "service_calendars, routes, stops, agencies, feed_info",
+            "season_days, service_calendars, timetable_seasons, routes, stops, agencies, feed_info",
             cancellationToken);
 
         // Redoslijed prati strane ključeve.

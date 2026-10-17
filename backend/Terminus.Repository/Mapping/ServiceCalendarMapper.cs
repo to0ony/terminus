@@ -21,6 +21,7 @@ internal static class ServiceCalendarMapper
         Sunday = entity.Sunday,
         StartDate = entity.StartDate,
         EndDate = entity.EndDate,
+        SeasonId = entity.SeasonId,
         CreatedAt = entity.CreatedAt,
         UpdatedAt = entity.UpdatedAt
     };

@@ -33,6 +33,8 @@ internal sealed class ValidationErrors
         messages.Add(message);
     }
 
+    public bool Contains(string property) => _errors.ContainsKey(property);
+
     public void ThrowIfAny()
     {
         if (_errors.Count > 0)

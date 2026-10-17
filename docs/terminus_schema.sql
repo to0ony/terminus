@@ -150,6 +150,7 @@ CREATE TABLE service_calendars (
     sunday      boolean     NOT NULL DEFAULT false,
     start_date  date        NOT NULL,
     end_date    date        NOT NULL,
+    season_id   uuid,                                  -- tip dana sezone (timetable_seasons)
     created_at  timestamptz NOT NULL DEFAULT now(),
     updated_at  timestamptz NOT NULL DEFAULT now(),
 
@@ -158,6 +159,7 @@ CREATE TABLE service_calendars (
 );
 
 CREATE UNIQUE INDEX uq_service_calendars_code ON service_calendars (code);
+CREATE INDEX ix_service_calendars_season_id ON service_calendars (season_id);
 
 -- ---------------------------------------------------------------------
 -- calendar_dates: iznimke kalendara za pojedine datume (praznici,
@@ -176,6 +178,61 @@ CREATE TABLE calendar_dates (
 );
 
 CREATE INDEX ix_calendar_dates_date ON calendar_dates (date);
+
+-- ---------------------------------------------------------------------
+-- timetable_seasons: sezona voznog reda (npr. "Zimski 2026/27"). Njezini
+-- tipovi dana su kalendari (service_calendars.season_id) s razdobljem
+-- sezone; iznimke tih kalendara (calendar_dates) izračunavaju se iz
+-- season_days i ne uređuju se izravno.
+--   holiday_country: ISO kod države za praznike (OpenHolidays API)
+--   holiday_mode:    0 = normalno, 1 = vozi kao holiday_calendar_id, 2 = ne vozi
+-- ---------------------------------------------------------------------
+CREATE TABLE timetable_seasons (
+    id                  uuid        NOT NULL DEFAULT gen_random_uuid(),
+    name                text        NOT NULL,
+    start_date          date        NOT NULL,
+    end_date            date        NOT NULL,
+    holiday_country     varchar(2),
+    holiday_mode        smallint    NOT NULL,
+    holiday_calendar_id uuid,
+    created_at          timestamptz NOT NULL DEFAULT now(),
+    updated_at          timestamptz NOT NULL DEFAULT now(),
+
+    CONSTRAINT pk_timetable_seasons PRIMARY KEY (id),
+    CONSTRAINT fk_timetable_seasons_service_calendars_holiday_calendar_id
+        FOREIGN KEY (holiday_calendar_id) REFERENCES service_calendars (id) ON DELETE SET NULL,
+    CONSTRAINT ck_timetable_seasons_dates CHECK (end_date >= start_date),
+    CONSTRAINT ck_timetable_seasons_holiday_mode CHECK (holiday_mode IN (0, 1, 2))
+);
+
+ALTER TABLE service_calendars
+    ADD CONSTRAINT fk_service_calendars_timetable_seasons_season_id
+        FOREIGN KEY (season_id) REFERENCES timetable_seasons (id) ON DELETE CASCADE;
+
+-- ---------------------------------------------------------------------
+-- season_days: dani sezone koji odstupaju od dana u tjednu
+--   mode:   0 = normalno, 1 = vozi kao calendar_id, 2 = ne vozi
+--   source: 0 = ručno (ostaje kad se promijeni pravilo za praznike),
+--           1 = praznik (note je naziv praznika)
+-- ---------------------------------------------------------------------
+CREATE TABLE season_days (
+    season_id   uuid     NOT NULL,
+    date        date     NOT NULL,
+    mode        smallint NOT NULL,
+    calendar_id uuid,
+    source      smallint NOT NULL,
+    note        text,
+
+    CONSTRAINT pk_season_days PRIMARY KEY (season_id, date),
+    CONSTRAINT fk_season_days_timetable_seasons_season_id
+        FOREIGN KEY (season_id) REFERENCES timetable_seasons (id) ON DELETE CASCADE,
+    CONSTRAINT fk_season_days_service_calendars_calendar_id
+        FOREIGN KEY (calendar_id) REFERENCES service_calendars (id) ON DELETE CASCADE,
+    CONSTRAINT ck_season_days_mode CHECK (mode IN (0, 1, 2)),
+    CONSTRAINT ck_season_days_source CHECK (source IN (0, 1))
+);
+
+CREATE INDEX ix_season_days_calendar_id ON season_days (calendar_id);
 
 -- ---------------------------------------------------------------------
 -- shapes, shape_points: trasa vožnje na karti. GTFS: shapes.txt

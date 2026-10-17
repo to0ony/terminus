@@ -1,5 +1,6 @@
 namespace Terminus.WebApi.Contracts.Calendars;
 
+/// <param name="SeasonId">Sezona kojoj kalendar pripada kao tip dana; takav se uređuje u sezoni.</param>
 public record ServiceCalendarResponse(
     Guid Id,
     string Code,
@@ -13,6 +14,7 @@ public record ServiceCalendarResponse(
     bool Sunday,
     DateOnly StartDate,
     DateOnly EndDate,
+    Guid? SeasonId,
     DateTime CreatedAt,
     DateTime UpdatedAt);
 

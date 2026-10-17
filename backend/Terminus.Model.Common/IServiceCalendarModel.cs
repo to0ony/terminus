@@ -19,6 +19,10 @@ public interface IServiceCalendarModel
     bool Sunday { get; set; }
     DateOnly StartDate { get; set; }
     DateOnly EndDate { get; set; }
+
+    /// <summary>Sezona kojoj kalendar pripada kao tip dana; null izvan sezona. Samo za čitanje.</summary>
+    Guid? SeasonId { get; set; }
+
     DateTime CreatedAt { get; set; }
     DateTime UpdatedAt { get; set; }
 }

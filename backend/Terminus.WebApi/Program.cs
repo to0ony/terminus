@@ -121,6 +121,7 @@ builder.Services.AddScoped<ISettingsRepository, SettingsRepository>();
 builder.Services.AddScoped<ITimetableRepository, TimetableRepository>();
 builder.Services.AddScoped<ISetupRepository, SetupRepository>();
 builder.Services.AddScoped<IGtfsImportRepository, GtfsImportRepository>();
+builder.Services.AddScoped<ISeasonRepository, SeasonRepository>();
 
 // Servisi
 builder.Services.AddScoped<IAgencyService, AgencyService>();
@@ -138,6 +139,16 @@ builder.Services.AddScoped<ITimetableService, TimetableService>();
 builder.Services.AddScoped<IStopTimetableService, StopTimetableService>();
 builder.Services.AddScoped<ISetupService, SetupService>();
 builder.Services.AddScoped<IGtfsImportService, GtfsImportService>();
+builder.Services.AddScoped<ISeasonService, SeasonService>();
+
+// Državni praznici za sezone voznog reda.
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<IPublicHolidaySource, OpenHolidaysSource>(client =>
+{
+    client.BaseAddress = new Uri(OpenHolidaysSource.BaseAddress);
+    client.Timeout = TimeSpan.FromSeconds(10);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Terminus");
+});
 
 builder.Services.AddSingleton(TimeProvider.System);
 

@@ -36,6 +36,7 @@ public class ServiceCalendarService(
 
     public async Task<IServiceCalendarModel> UpdateAsync(Guid id, IServiceCalendarModel calendar, CancellationToken cancellationToken = default)
     {
+        await EnsureNotInSeasonAsync(id, cancellationToken);
         calendar.Id = id;
         Normalize(calendar);
         Validate(calendar);
@@ -45,6 +46,7 @@ public class ServiceCalendarService(
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
+        await EnsureNotInSeasonAsync(id, cancellationToken);
         if (!await calendarRepository.DeleteAsync(id, cancellationToken))
         {
             throw CalendarNotFound(id);
@@ -63,7 +65,7 @@ public class ServiceCalendarService(
         CalendarExceptionType exceptionType,
         CancellationToken cancellationToken = default)
     {
-        await EnsureCalendarExistsAsync(calendarId, cancellationToken);
+        await EnsureNotInSeasonAsync(calendarId, cancellationToken);
 
         if (!Enum.IsDefined(exceptionType))
         {
@@ -83,7 +85,7 @@ public class ServiceCalendarService(
 
     public async Task RemoveDateAsync(Guid calendarId, DateOnly date, CancellationToken cancellationToken = default)
     {
-        await EnsureCalendarExistsAsync(calendarId, cancellationToken);
+        await EnsureNotInSeasonAsync(calendarId, cancellationToken);
 
         if (!await calendarDateRepository.DeleteAsync(calendarId, date, cancellationToken))
         {
@@ -97,6 +99,19 @@ public class ServiceCalendarService(
         if (await calendarRepository.GetAsync(calendarId, cancellationToken) is null)
         {
             throw CalendarNotFound(calendarId);
+        }
+    }
+
+    /// <summary>
+    /// Tipovi dana sezone i njihove iznimke izračunavaju se iz sezone, pa bi
+    /// izravna izmjena nestala pri sljedećoj promjeni sezone.
+    /// </summary>
+    private async Task EnsureNotInSeasonAsync(Guid calendarId, CancellationToken cancellationToken)
+    {
+        var calendar = await calendarRepository.GetAsync(calendarId, cancellationToken) ?? throw CalendarNotFound(calendarId);
+        if (calendar.SeasonId is not null)
+        {
+            throw new ConflictException("Kalendar je tip dana sezone; mijenja se na stranici sezone.");
         }
     }
 

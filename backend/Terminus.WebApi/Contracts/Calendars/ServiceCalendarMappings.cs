@@ -35,6 +35,7 @@ public static class ServiceCalendarMappings
         model.Sunday,
         model.StartDate,
         model.EndDate,
+        model.SeasonId,
         model.CreatedAt,
         model.UpdatedAt);
 

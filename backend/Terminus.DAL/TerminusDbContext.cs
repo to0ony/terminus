@@ -17,6 +17,8 @@ public class TerminusDbContext(DbContextOptions<TerminusDbContext> options)
     public DbSet<Route> Routes => Set<Route>();
     public DbSet<ServiceCalendar> ServiceCalendars => Set<ServiceCalendar>();
     public DbSet<CalendarDate> CalendarDates => Set<CalendarDate>();
+    public DbSet<TimetableSeason> TimetableSeasons => Set<TimetableSeason>();
+    public DbSet<SeasonDay> SeasonDays => Set<SeasonDay>();
     public DbSet<Trip> Trips => Set<Trip>();
     public DbSet<StopTime> StopTimes => Set<StopTime>();
     public DbSet<Shape> Shapes => Set<Shape>();

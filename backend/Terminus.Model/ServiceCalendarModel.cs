@@ -16,6 +16,7 @@ public class ServiceCalendarModel : IServiceCalendarModel
     public bool Sunday { get; set; }
     public DateOnly StartDate { get; set; }
     public DateOnly EndDate { get; set; }
+    public Guid? SeasonId { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
