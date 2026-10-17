@@ -346,7 +346,14 @@ function ScheduleEditor({
     : null
 
   const create = (departures: number[]) => {
-    const created = departures.map((t) => tripFrom(templateTrip(templateSource, t)!, t, dayType.id))
+    // Bez predloška (tip dana bez vožnji i bez usporedbe) nova vožnja nema vremena vožnje.
+    const created = departures.flatMap((t) => {
+      const template = templateTrip(templateSource, t)
+      return template ? [tripFrom(template, t, dayType.id)] : []
+    })
+    if (created.length === 0) {
+      return
+    }
     editor.apply(
       (trips) => [...trips, ...created],
       created.map((t) => t.key),
@@ -574,6 +581,7 @@ function ScheduleEditor({
               onCopy={copy.open}
               onDelete={deleteSelected}
               onTakt={takt.open}
+              canCreate={mainTemplate !== null}
             />
           </Grid.Col>
         </Grid>

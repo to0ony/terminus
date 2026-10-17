@@ -33,6 +33,8 @@ interface TripPanelProps {
   onCopy: () => void
   onDelete: () => void
   onTakt: () => void
+  /** Postoji li predložak za nove vožnje. */
+  canCreate: boolean
 }
 
 /** Detalji odabrane vožnje ili zajedničke radnje za više njih. */
@@ -63,7 +65,7 @@ export function TripPanel(props: TripPanelProps) {
   )
 }
 
-function Overview({ trips, onTakt }: TripPanelProps) {
+function Overview({ trips, onTakt, canCreate }: TripPanelProps) {
   const departures = trips.map(firstDeparture).sort((a, b) => a - b)
   return (
     <Stack gap="sm">
@@ -73,9 +75,15 @@ function Overview({ trips, onTakt }: TripPanelProps) {
           Prvi polazak {formatTime(departures[0])}, zadnji {formatTime(departures.at(-1)!)}
         </Text>
       )}
-      <Button variant="light" onClick={onTakt}>
+      <Button variant="light" onClick={onTakt} disabled={!canCreate}>
         Generator takta…
       </Button>
+      {!canCreate && (
+        <Text size="xs" c="dimmed">
+          Nove vožnje kopiraju vremena vožnje postojeće vožnje. Ovaj tip dana još nema vožnji, pa
+          gore pod „Usporedi s” odaberi tip dana koji ih ima.
+        </Text>
+      )}
       <Stack gap={4}>
         <Text size="xs" fw={600}>
           Upute
