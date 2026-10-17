@@ -9,16 +9,12 @@ import {
 } from 'maplibre-gl'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import { useEffect, useRef, useState } from 'react'
+import { MapStylePicker } from './MapStylePicker'
+import { mapStyleUrl, useMapStyle } from './mapStyles'
 
 // MapLibre traži worker pokraj svog modula, a Vite ga pakira drugamo; ovako
 // worker postaje zasebna datoteka i u razvoju i u buildu.
 setWorkerUrl(workerUrl)
-
-// OpenFreeMap: vektorske karte iz OSM-a, bez ključa i bez ograničenja prometa.
-const styles = {
-  light: 'https://tiles.openfreemap.org/styles/positron',
-  dark: 'https://tiles.openfreemap.org/styles/dark',
-}
 
 interface MapViewProps extends BoxProps {
   /** Početno područje; bez njega cijeli svijet. */
@@ -27,20 +23,25 @@ interface MapViewProps extends BoxProps {
   onReady?: (map: Map) => void
 }
 
-/** MapLibre karta s podlogom u boji teme (svijetla ili tamna) i kontrolama zuma. */
+/**
+ * MapLibre karta s kontrolama zuma i izborom podloge (zadano prema temi:
+ * svijetla ili tamna).
+ */
 export function MapView({ bounds, onReady, ...boxProps }: MapViewProps) {
   const container = useRef<HTMLDivElement>(null)
   const [map, setMap] = useState<Map | null>(null)
   const colorScheme = useComputedColorScheme('light')
+  const [style] = useMapStyle()
+  const styleUrl = mapStyleUrl(style, colorScheme)
 
-  // Karta se stvara jednom; početno područje, tema i onReady čitaju se tada.
-  const initial = useRef({ bounds, colorScheme, onReady })
+  // Karta se stvara jednom; početno područje, podloga i onReady čitaju se tada.
+  const initial = useRef({ bounds, styleUrl, onReady })
 
   useEffect(() => {
-    const { bounds, colorScheme, onReady } = initial.current
+    const { bounds, styleUrl, onReady } = initial.current
     const instance = new Map({
       container: container.current!,
-      style: styles[colorScheme],
+      style: styleUrl,
       bounds,
       fitBoundsOptions: { padding: 32 },
       attributionControl: { compact: true },
@@ -56,15 +57,22 @@ export function MapView({ bounds, onReady, ...boxProps }: MapViewProps) {
     return () => instance.remove()
   }, [])
 
-  // Promjena teme mijenja samo podlogu; izvori i slojevi stranice ostaju.
+  // Promjena podloge ili teme mijenja samo podlogu; izvori i slojevi stranice ostaju.
   useEffect(() => {
-    if (map && initial.current.colorScheme !== colorScheme) {
-      initial.current.colorScheme = colorScheme
-      map.setStyle(styles[colorScheme], { transformStyle: keepOwnLayers })
+    if (map && initial.current.styleUrl !== styleUrl) {
+      initial.current.styleUrl = styleUrl
+      map.setStyle(styleUrl, { transformStyle: keepOwnLayers })
     }
-  }, [map, colorScheme])
+  }, [map, styleUrl])
 
-  return <Box ref={container} {...boxProps} />
+  return (
+    <Box pos="relative" {...boxProps}>
+      <Box ref={container} pos="absolute" inset={0} />
+      <Box pos="absolute" left={10} bottom={10}>
+        <MapStylePicker />
+      </Box>
+    </Box>
+  )
 }
 
 function keepOwnLayers(

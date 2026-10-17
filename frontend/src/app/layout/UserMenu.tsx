@@ -1,12 +1,14 @@
-import { Avatar, Group, Menu, Text, UnstyledButton } from '@mantine/core'
-import { IconChevronDown, IconLogout, IconSettings } from '@tabler/icons-react'
+import { Avatar, Group, Menu, Text, UnstyledButton, useMantineColorScheme } from '@mantine/core'
+import { IconCheck, IconChevronDown, IconLogout, IconSettings } from '@tabler/icons-react'
 import { Link } from 'react-router'
+import { colorSchemes } from '@/features/appearance/colorSchemes'
 import { useCurrentUser, useLogout } from '@/features/auth/queries'
 
-/** Prijavljeni administrator: postavke i odjava. */
+/** Prijavljeni administrator: tema, postavke i odjava. */
 export function UserMenu() {
   const { data: user } = useCurrentUser()
   const logout = useLogout()
+  const { colorScheme, setColorScheme } = useMantineColorScheme()
 
   if (!user) {
     return null
@@ -26,6 +28,18 @@ export function UserMenu() {
         </UnstyledButton>
       </Menu.Target>
       <Menu.Dropdown>
+        <Menu.Label>Tema</Menu.Label>
+        {colorSchemes.map(({ value, label, icon: Icon }) => (
+          <Menu.Item
+            key={value}
+            leftSection={<Icon size={16} />}
+            rightSection={value === colorScheme ? <IconCheck size={16} /> : null}
+            onClick={() => setColorScheme(value)}
+          >
+            {label}
+          </Menu.Item>
+        ))}
+        <Menu.Divider />
         <Menu.Item component={Link} to="/settings" leftSection={<IconSettings size={16} />}>
           Postavke
         </Menu.Item>

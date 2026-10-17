@@ -1,12 +1,13 @@
 import { Paper, Stack, Title } from '@mantine/core'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
+import { AppearanceSettings } from '@/features/appearance/AppearanceSettings'
 import { InstanceSettingsForm } from './InstanceSettingsForm'
 import { LogoSettings } from './LogoSettings'
 import { PasswordForm } from './PasswordForm'
 import { useSettings } from './queries'
 
-/** Postavke instance (izgled javnih stranica, javni pristup, logo) i lozinka. */
+/** Postavke instance (izgled javnih stranica, javni pristup, logo), izgled sučelja i lozinka. */
 export function SettingsPage() {
   const settings = useSettings()
 
@@ -28,6 +29,10 @@ export function SettingsPage() {
           </Paper>
         </>
       )}
+
+      <Paper withBorder p="lg">
+        <AppearanceSettings />
+      </Paper>
 
       <Paper withBorder p="lg">
         <PasswordForm />

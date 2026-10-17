@@ -16,7 +16,7 @@ i MapLibre GL. Pokretanje i naredbe su u [lokalnom razvoju](development.md#front
 | `/calendars`, `/calendars/:id` | kalendari; kalendar s danima u tjednu i iznimkama na mjesečnom prikazu |
 | `/agencies` | prijevoznici s brojem linija |
 | `/gtfs` | GTFS izvoz (s popisom problema ako izvoz nije moguć) i ponovni uvoz |
-| `/settings` | naziv, boje i logo javnih stranica, javna adresa, objava GTFS feeda, promjena lozinke |
+| `/settings` | naziv, boje i logo javnih stranica, javna adresa, objava GTFS feeda, tema i podloga karte, promjena lozinke |
 | `/board/:stopCode` | **javni zaslon stanice**, bez prijave ([opis](departures-and-timetables.md#2-zaslon-na-stanici)) |
 
 Filteri, odabrani datum i stranica popisa čuvaju se u adresi (`?q=&date=&page=`),
@@ -30,7 +30,7 @@ frontend/src/
   app/          providers, router, layout s izbornikom, 404 i greške rute
   components/   zajedničke komponente (učitavanje, greška upita, logo, karta)
   features/     po području: auth, setup, dashboard, routes, stops, calendars,
-                agencies, gtfs, settings, board
+                agencies, gtfs, settings, appearance, board
   lib/          pomoćne funkcije (formati, boje, adrese, preuzimanje datoteka)
   test/         postavke testova i render s providerima
 ```
@@ -68,11 +68,17 @@ obavijest; komponenta koja ih prikazuje sama postavlja
 **Datoteke** (GTFS izvoz, PDF) preuzimaju se kao blob (`parseAs: 'blob'`), a
 naziv datoteke dolazi iz `Content-Disposition` (`lib/download.ts`).
 
-## Karta
+## Tema i karta
+
+Tema sučelja (prema sustavu, svijetla ili tamna) bira se u korisničkom
+izborniku ili na stranici Postavke; Mantine je pamti u pregledniku.
 
 `components/map/MapView` je MapLibre GL s podlogom
-[OpenFreeMap](https://openfreemap.org) (bez API ključa): svijetla ili tamna
-prema temi. Stanice se učitavaju za vidljivi dio karte (`/api/stops/area`,
+[OpenFreeMap](https://openfreemap.org) (bez API ključa). Podloga se bira gumbom
+u donjem lijevom kutu karte ili u Postavkama: prema temi (zadano), Positron,
+Dark, Liberty, Bright ili Fiord. Izbor se pamti u pregledniku
+(`terminus-map-style`) i vrijedi za sve karte; pri promjeni podloge slojevi
+stranice (npr. stanice) ostaju. Stanice se učitavaju za vidljivi dio karte (`/api/stops/area`,
 najviše 2000), a početni prikaz je područje svih stanica (`/api/stops/extent`).
 
 ## Zaslon na stanici
