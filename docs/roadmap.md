@@ -13,7 +13,7 @@ detaljan opis funkcija je u ostalim dokumentima (npr.
 | 2 Uvoz GTFS-a | ✅ |
 | 3 Dashboard za pregled | ✅ osim trase linije na karti |
 | 4 Za putnike (zaslon na stanici, PDF, javni feed) | ✅ osim PDF-a za sve stanice odjednom |
-| 5 Editor | kalendari (sezone, tipovi dana, praznici) ✅, grafikon vožnji ✅, varijante linija (backend) ✅, uvoz kao osnova ✅; editor linija i varijanti, grafikon po varijantama u izradi |
+| 5 Editor | kalendari (sezone, tipovi dana, praznici) ✅, grafikon vožnji ✅, varijante linija ✅, uvoz kao osnova ✅, editor linija i varijanti na karti ✅, grafikon po varijantama ✅; sljedeće deploy pa trase |
 | 6 Produkcija | čeka odluku o hostingu |
 
 ## Cilj
@@ -123,10 +123,10 @@ prijevoznici. Redoslijed:
    (rijetke zadano isključene); ponovni uvoz dopunjava i ne dira sezone ni
    vožnje; čarobnjak vodi dalje (sezona, vožnje) ✅
 3. **Editor linija i varijanti:** nova linija, varijanta klikom na stanice na
-   karti, vremena vožnje po dionici, nova stanica i premještanje na karti.
+   karti, vremena vožnje po dionici, nova stanica i premještanje na karti ✅
 4. **Grafikon po varijantama:** redci iz odabranih varijanti, takt i nova
    vožnja po varijanti, "Nacrtaj vožnju" (dva klika: prva i zadnja stanica,
-   međustanice po vremenima vožnje; po želji stanica po stanica).
+   međustanice po vremenima vožnje; po želji stanica po stanica) ✅
 5. Deploy (faza 6), pa trase za nove varijante (5.6).
 
 ## Faza 6: produkcija

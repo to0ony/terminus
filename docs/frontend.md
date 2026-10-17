@@ -11,9 +11,10 @@ i MapLibre GL. Pokretanje i naredbe su u [lokalnom razvoju](development.md#front
 | `/login` | prijava |
 | `/setup` | čarobnjak prvog pokretanja: uvoz GTFS-a ili početak od nule |
 | `/` | pregled: kalendari koji danas voze, do kada vrijedi vozni red, broj linija i stanica |
-| `/routes`, `/routes/:id` | linije (pretraga, filteri po prijevozniku, vrsti i stanju); vozni red linije po danu i smjeru |
+| `/routes`, `/routes/:id` | linije (pretraga, filteri, nova linija); linija s izmjenom podataka, **varijantama** i voznim redom po danu i smjeru |
+| `/routes/:id/variants/:variantId` | **editor varijante** na karti (`new`, `new?from=` za kopiju) (opis niže) |
 | `/routes/:id/schedule` | **grafikon voznog reda** linije s uređivanjem vožnji (opis niže) |
-| `/stops`, `/stops/:id` | stanice s kartom; stanica s linijama, polascima za dan, **PDF voznim redom** i poveznicom na zaslon |
+| `/stops`, `/stops/:id` | stanice s kartom; stanica s linijama, polascima za dan, premještanjem na karti, **PDF voznim redom** i poveznicom na zaslon |
 | `/calendars` | sezone voznog reda (i nova sezona) te ostali kalendari, npr. uvezeni iz GTFS-a |
 | `/seasons/:id` | sezona: tipovi dana, pravilo za praznike i svi mjeseci; klik na dan mijenja kako vozi (kao drugi tip dana, ne vozi) uz napomenu |
 | `/calendars/:id` | kalendar s danima u tjednu i iznimkama na mjesečnom prikazu |
@@ -84,13 +85,34 @@ Dark, Liberty, Bright ili Fiord. Izbor se pamti u pregledniku
 stranice (npr. stanice) ostaju. Stanice se učitavaju za vidljivi dio karte (`/api/stops/area`,
 najviše 2000), a početni prikaz je područje svih stanica (`/api/stops/extent`).
 
+## Varijante linije
+
+Varijanta je redoslijed stanica jednog smjera s vremenom vožnje od prethodne
+stanice i stajanjem; po njoj nastaju vožnje u grafikonu. Na stranici linije su
+sve varijante (glavna, iz GTFS-a, broj vožnji) s izmjenom, kopiranjem i
+brisanjem (ne dok je koriste vožnje); linija bez varijanti ih može prepoznati
+iz postojećih vožnji.
+
+Editor varijante (`features/variants`):
+
+- **Klik na stanicu** na karti dodaje je na kraj; vrijeme vožnje predlaže se iz
+  zračne udaljenosti (uvećane za trećinu) i brzine vrste prijevoza,
+  zaokruženo na pola minute (`variantMath.ts`). „Predloži vremena” računa sve
+  dionice iznova.
+- **Klik na prazno mjesto** karte otvara novu stanicu na tom mjestu.
+- Stanice se pomiču gore i dolje i uklanjaju; varijanta je na karti
+  numerirana crta. Naziv je zadano „prva → zadnja stanica”.
+- Varijanta koju koriste vožnje zadržava stanice, a mijenjaju se samo vremena
+  (za drugi redoslijed kopija).
+
 ## Grafikon voznog reda
 
 `features/schedule` je editor vožnji jedne linije u obliku grafikona
 (Mareyev dijagram, kao željeznički grafikon prometa):
 
-- **Redci** su stanice smjera: spojeni redoslijed svih obrazaca, isti za sve
-  tipove dana. Razmak između stanica je srednje vrijeme vožnje, pa je
+- **Redci** su stanice smjera: spojeni redoslijed varijanti i vožnji, isti za
+  sve tipove dana. Traka varijanti (s brojem vožnji) skriva ili prikazuje
+  varijantu, a redci prate prikazane. Razmak između stanica je srednje vrijeme vožnje, pa je
   pravilna vožnja ravna crta, a sporiji dio se vidi kao lom.
 - **Vodoravno je vrijeme** dana voznog reda, s ponoći označenom crtkano
   (vožnje iza nje su GTFS vremena 24:xx). Traka gore pokazuje gustoću polazaka
@@ -106,10 +128,11 @@ Uređivanje:
 | Klik / Ctrl+klik / povlačenje po praznom | odabir vožnje, dodavanje u odabir, odabir okvirom |
 | Povlačenje crte | pomak cijele vožnje (svih odabranih), na minutu |
 | Povlačenje točkice | vrijeme na toj stanici; sa Shiftom i sve stanice iza nje |
-| Klik u retku prve stanice | nova vožnja s vremenima vožnje glavnog obrasca |
+| Klik u retku prve stanice | nova vožnja po varijanti odabranoj pod „Nove vožnje po” (linija bez varijanti kopira postojeću vožnju) |
+| „Nacrtaj vožnju” | klik polaska na prvoj stanici, po želji vremena na sljedećim, kraj klikom na zadnjoj stanici ili Enterom; stanice između po vremenima vožnje varijante; Backspace briše zadnju točku, Esc odustaje |
 | ← → (Shift: ±5) | pomak odabranih za minutu |
 | Del, Ctrl+Z, Ctrl+Y | brisanje, poništavanje, ponavljanje |
-| Panel desno | točna vremena (dolazak i polazak), natpis smjera, tip dana, kopiranje s pomakom (npr. svakih 10 min, 5 puta), generator takta (od–do svakih N min) |
+| Panel desno | točna vremena (dolazak i polazak), natpis smjera, tip dana, kopiranje s pomakom (npr. svakih 10 min, 5 puta), generator takta (od–do svakih N min, po odabranoj varijanti) |
 
 GTFS pravila (vremena ne padaju, polazak nije prije dolaska, 0–48 h) provjerava
 se odmah: neispravna vožnja je crvena, a spremanje je onemogućeno. Izmjene se
