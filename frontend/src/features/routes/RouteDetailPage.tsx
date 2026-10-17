@@ -20,6 +20,7 @@ import { formatNumber } from '@/lib/format'
 import { directionOptions } from './directions'
 import { type TimetableParams, useRoute, useRoutePatterns, useRouteTimetable } from './queries'
 import { RouteBadge } from './RouteBadge'
+import { VariantsSection } from '@/features/variants/VariantsSection'
 import { RouteDialog } from './RouteDialog'
 import { routeTypeLabel } from './routeTypes'
 import { TimetableGrid } from './TimetableGrid'
@@ -112,6 +113,10 @@ export function RouteDetailPage() {
         </Group>
       </Group>
       <RouteDialog route={route.data} opened={editOpened} onClose={edit.close} />
+
+      <VariantsSection routeId={routeId} hasTrips={(patterns.data?.length ?? 0) > 0} />
+
+      <Title order={3}>Vozni red po danu</Title>
 
       <Group gap="sm" align="flex-end">
         <DatePickerInput
