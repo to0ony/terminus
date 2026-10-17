@@ -1,4 +1,4 @@
-import { Anchor, Box, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core'
+import { Alert, Anchor, Box, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core'
 import { Calendar } from '@mantine/dates'
 import { useMediaQuery } from '@mantine/hooks'
 import { IconArrowLeft } from '@tabler/icons-react'
@@ -69,6 +69,16 @@ export function CalendarDetailPage() {
           {calendar.data.code}
         </Text>
       </Stack>
+
+      {calendar.data.seasonId && (
+        <Alert variant="light" color="blue">
+          Ovo je tip dana sezone; dani i iznimke mijenjaju se na{' '}
+          <Anchor component={Link} to={`/seasons/${calendar.data.seasonId}`} size="sm">
+            stranici sezone
+          </Anchor>
+          .
+        </Alert>
+      )}
 
       <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
         <Paper withBorder p="md">

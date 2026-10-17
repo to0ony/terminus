@@ -26,12 +26,15 @@ Tablice izvan GTFS-a:
 | `settings` | Postavke instance (naziv, boje, logo, javni URL, objava GTFS-a) i vrijeme završetka čarobnjaka prvog pokretanja; najviše jedan redak. |
 | `admin_users`, `admin_user_claims`, `admin_user_logins`, `admin_user_tokens` | Administratori (ASP.NET Core Identity, bez uloga). Korisničko ime je e-mail. |
 | `data_protection_keys` | Ključevi za šifriranje kolačića prijave (ASP.NET Core Data Protection). |
+| `timetable_seasons` | Sezone voznog reda: razdoblje, država praznika i pravilo za praznike. |
+| `season_days` | Dani sezone koji odstupaju od dana u tjednu (praznici i ručne iznimke). |
 
 Veze:
 
 - `agencies` 1 → N `routes` (prijevoznik koji vozi liniju), `agencies` 1 → N `fares`
 - `stops` 1 → N `stops` (peroni, ulazi i čvorovi stanice; mjesta ukrcavanja perona, preko `parent_station_id`)
 - `service_calendars` 1 → N `calendar_dates`
+- `timetable_seasons` 1 → N `service_calendars` (tipovi dana sezone), `timetable_seasons` 1 → N `season_days`
 - `routes` 1 → N `trips`, `service_calendars` 1 → N `trips`, `shapes` 1 → N `trips`
 - `trips` 1 → N `stop_times`, `stops` 1 → N `stop_times`
 - `shapes` 1 → N `shape_points`
@@ -91,7 +94,20 @@ moraju računati vremena.
 uvezeno.
 
 **Naziv kalendara.** `service_calendars.name` nije dio GTFS-a; to je naziv za
-prikaz ("Radni dan", "Subota") i naslov stupca u PDF voznom redu.
+prikaz ("Radni dan", "Subota").
+
+**Sezone voznog reda.** Sezona (`timetable_seasons`) grupira kalendare kao
+tipove dana: svaki tip dana je jedan kalendar s danima u tjednu i razdobljem
+sezone (zadano radni dan pon–pet, subota, nedjelja). Dani koji odstupaju
+(`season_days`) su državni praznici s [OpenHolidays API-ja](https://openholidaysapi.org)
+(primjenjuje se pravilo sezone: vozi kao tip dana, ne vozi ili normalno) i ručne
+iznimke s napomenom; ručna iznimka ima prednost pred praznikom. Iznimke tih
+kalendara (`calendar_dates`) **izračunavaju se** iz dana sezone pri svakoj
+promjeni (npr. "25. 12. kao nedjelja" je "ne vozi" za radni dan i "vozi" za
+nedjelju), pa se tipovi dana sezone ne uređuju preko `/api/calendars` (409).
+Svaki dan u tjednu pripada najviše jednom tipu dana, a sezone se ne preklapaju.
+Kalendari uvezeni iz GTFS-a nisu u sezoni i ostaju kakvi jesu. GTFS uvoz briše
+i sezone.
 
 **Aktivnost.** `stops.is_active` i `routes.is_active` nisu dio GTFS-a; služe za
 privremeno isključivanje zapisa bez brisanja.

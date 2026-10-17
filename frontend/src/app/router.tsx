@@ -81,6 +81,12 @@ export const router = createBrowserRouter([
                     }),
                   },
                   {
+                    path: 'seasons/:seasonId',
+                    lazy: async () => ({
+                      Component: (await import('@/features/seasons/SeasonPage')).SeasonPage,
+                    }),
+                  },
+                  {
                     path: 'agencies',
                     lazy: async () => ({
                       Component: (await import('@/features/agencies/AgenciesPage')).AgenciesPage,

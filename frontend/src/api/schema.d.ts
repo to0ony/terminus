@@ -1475,6 +1475,448 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/seasons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SeasonResponse"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateSeasonRequest"];
+                    "text/json": components["schemas"]["CreateSeasonRequest"];
+                    "application/*+json": components["schemas"]["CreateSeasonRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SeasonResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/seasons/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SeasonResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateSeasonRequest"];
+                    "text/json": components["schemas"]["UpdateSeasonRequest"];
+                    "application/*+json": components["schemas"]["UpdateSeasonRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SeasonResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": unknown;
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/seasons/{id}/day-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["DayTypesRequest"];
+                    "text/json": components["schemas"]["DayTypesRequest"];
+                    "application/*+json": components["schemas"]["DayTypesRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SeasonResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/seasons/{id}/days/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    date: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SeasonDayRequest"];
+                    "text/json": components["schemas"]["SeasonDayRequest"];
+                    "application/*+json": components["schemas"]["SeasonDayRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SeasonResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    date: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SeasonResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/seasons/holiday-countries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["HolidayCountriesResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/calendars/overview": {
         parameters: {
             query?: never;
@@ -3221,6 +3663,18 @@ export interface components {
             newPassword: null | string;
         };
         ContinuousPickupDropOff: number;
+        CreateSeasonRequest: {
+            name: null | string;
+            /** Format: date */
+            startDate: null | string;
+            /** Format: date */
+            endDate: null | string;
+            dayTypes: null | components["schemas"]["DayTypeRequest"][];
+            holidayCountry?: null | string;
+            holidayMode?: components["schemas"]["SeasonDayMode"];
+            /** Format: int32 */
+            holidayDayTypeIndex?: null | number;
+        };
         CurrentUserResponse: {
             /** Format: uuid */
             id: string;
@@ -3229,6 +3683,36 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             lastLoginAt: null | string;
+        };
+        DayTypeRequest: {
+            /** Format: uuid */
+            id?: null | string;
+            name: null | string;
+            monday?: boolean;
+            tuesday?: boolean;
+            wednesday?: boolean;
+            thursday?: boolean;
+            friday?: boolean;
+            saturday?: boolean;
+            sunday?: boolean;
+        };
+        DayTypeResponse: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            monday: boolean;
+            tuesday: boolean;
+            wednesday: boolean;
+            thursday: boolean;
+            friday: boolean;
+            saturday: boolean;
+            sunday: boolean;
+            /** Format: int32 */
+            tripCount: number;
+        };
+        DayTypesRequest: {
+            dayTypes: null | components["schemas"]["DayTypeRequest"][];
         };
         DepartureResponse: {
             routeName: null | string;
@@ -3392,6 +3876,14 @@ export interface components {
         GtfsSkippedFileResponse: {
             file: string;
             reason: string;
+        };
+        HolidayCountriesResponse: {
+            countries: components["schemas"]["HolidayCountryResponse"][];
+            suggested: null | string;
+        };
+        HolidayCountryResponse: {
+            code: string;
+            name: string;
         };
         /** Format: binary */
         IFormFile: string;
@@ -3562,6 +4054,44 @@ export interface components {
             trips: components["schemas"]["TimetableTripResponse"][];
         };
         RouteType: number;
+        /** @enum {unknown} */
+        SeasonDayMode: "Regular" | "RunsAs" | "NoService";
+        SeasonDayRequest: {
+            mode?: components["schemas"]["SeasonDayMode"];
+            /** Format: uuid */
+            calendarId?: null | string;
+            note?: null | string;
+        };
+        SeasonDayResponse: {
+            /** Format: date */
+            date: string;
+            mode: components["schemas"]["SeasonDayMode"];
+            /** Format: uuid */
+            calendarId: null | string;
+            source: components["schemas"]["SeasonDaySource"];
+            note: null | string;
+        };
+        /** @enum {unknown} */
+        SeasonDaySource: "Manual" | "Holiday";
+        SeasonResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            holidayCountry: null | string;
+            holidayMode: components["schemas"]["SeasonDayMode"];
+            /** Format: uuid */
+            holidayCalendarId: null | string;
+            dayTypes: components["schemas"]["DayTypeResponse"][];
+            days: components["schemas"]["SeasonDayResponse"][];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
         ServiceCalendarRequest: {
             code: null | string;
             name: null | string;
@@ -3593,6 +4123,8 @@ export interface components {
             startDate: string;
             /** Format: date */
             endDate: string;
+            /** Format: uuid */
+            seasonId: null | string;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -3890,6 +4422,17 @@ export interface components {
             firstStopName: null | string;
             lastArrivalTime: null | string;
             lastStopName: null | string;
+        };
+        UpdateSeasonRequest: {
+            name: null | string;
+            /** Format: date */
+            startDate: null | string;
+            /** Format: date */
+            endDate: null | string;
+            holidayCountry?: null | string;
+            holidayMode?: components["schemas"]["SeasonDayMode"];
+            /** Format: uuid */
+            holidayCalendarId?: null | string;
         };
         ValidationProblemDetails: {
             type?: null | string;

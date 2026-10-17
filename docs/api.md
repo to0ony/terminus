@@ -33,6 +33,7 @@ Sve osim `/api/public/*`, `/api/auth/login` i `/health` traži prijavu
 | Stanica: PDF vozni red | `GET /api/stops/{id}/timetable.pdf?from=&to=&paper=&language=` |
 | Linije | `/api/routes`, `/api/routes/{id}/patterns`, `/api/routes/{id}/timetable?date=&directionId=` |
 | Kalendari i iznimke | `/api/calendars`, `/api/calendars/overview?date=`, `/api/calendars/{id}/dates` |
+| Sezone voznog reda | `/api/seasons`, `PUT /api/seasons/{id}/day-types`, `PUT`/`DELETE /api/seasons/{id}/days/{date}`, `GET /api/seasons/holiday-countries` |
 | Vožnje i vremena | `/api/trips`, `/api/trips/{id}/stop-times` |
 | Trase | `/api/shapes` |
 | Cijene karata | `/api/fares` |

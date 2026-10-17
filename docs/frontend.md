@@ -13,7 +13,9 @@ i MapLibre GL. Pokretanje i naredbe su u [lokalnom razvoju](development.md#front
 | `/` | pregled: kalendari koji danas voze, do kada vrijedi vozni red, broj linija i stanica |
 | `/routes`, `/routes/:id` | linije (pretraga, filteri po prijevozniku, vrsti i stanju); vozni red linije po danu i smjeru |
 | `/stops`, `/stops/:id` | stanice s kartom; stanica s linijama, polascima za dan, **PDF voznim redom** i poveznicom na zaslon |
-| `/calendars`, `/calendars/:id` | kalendari; kalendar s danima u tjednu i iznimkama na mjesečnom prikazu |
+| `/calendars` | sezone voznog reda (i nova sezona) te ostali kalendari, npr. uvezeni iz GTFS-a |
+| `/seasons/:id` | sezona: tipovi dana, pravilo za praznike i svi mjeseci; klik na dan mijenja kako vozi (kao drugi tip dana, ne vozi) uz napomenu |
+| `/calendars/:id` | kalendar s danima u tjednu i iznimkama na mjesečnom prikazu |
 | `/agencies` | prijevoznici s brojem linija |
 | `/gtfs` | GTFS izvoz (s popisom problema ako izvoz nije moguć) i ponovni uvoz |
 | `/settings` | naziv, boje i logo javnih stranica, javna adresa, objava GTFS feeda, tema i podloga karte, promjena lozinke |
@@ -30,7 +32,7 @@ frontend/src/
   app/          providers, router, layout s izbornikom, 404 i greške rute
   components/   zajedničke komponente (učitavanje, greška upita, logo, karta)
   features/     po području: auth, setup, dashboard, routes, stops, calendars,
-                agencies, gtfs, settings, appearance, board
+                seasons, agencies, gtfs, settings, appearance, board
   lib/          pomoćne funkcije (formati, boje, adrese, preuzimanje datoteka)
   test/         postavke testova i render s providerima
 ```
