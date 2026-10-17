@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatBytes, formatGtfsTime, formatNumber } from './format'
+import { formatBytes, formatDate, formatGtfsTime, formatNumber } from './format'
 
 describe('format', () => {
   it('groups thousands the Croatian way', () => {
@@ -15,5 +15,9 @@ describe('format', () => {
   it('shows GTFS times past midnight as clock times', () => {
     expect(formatGtfsTime('07:05:00')).toBe('07:05')
     expect(formatGtfsTime('25:10:00')).toBe('01:10')
+  })
+
+  it('formats dates the Croatian way', () => {
+    expect(formatDate('2026-09-28')).toBe('28. 9. 2026.')
   })
 })

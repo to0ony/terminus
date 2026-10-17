@@ -74,6 +74,13 @@ export const router = createBrowserRouter([
                     }),
                   },
                   {
+                    path: 'calendars/:calendarId',
+                    lazy: async () => ({
+                      Component: (await import('@/features/calendars/CalendarDetailPage'))
+                        .CalendarDetailPage,
+                    }),
+                  },
+                  {
                     path: 'agencies',
                     lazy: async () => ({
                       Component: (await import('@/features/agencies/AgenciesPage')).AgenciesPage,
