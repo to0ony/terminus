@@ -31,13 +31,18 @@ public class ScheduleService(
         var route = await routeRepository.GetAsync(routeId, cancellationToken)
             ?? throw new NotFoundException($"Linija {routeId} ne postoji.");
 
-        // Redci se računaju iz svih vožnji smjera, pa se ne mijenjaju s tipom dana.
+        // Redci se računaju iz varijanti i svih vožnji smjera, pa se ne mijenjaju s
+        // tipom dana. Varijante idu prve (glavna prva), da redoslijed prati njih.
         var all = (await timetableRepository.GetRouteTripsAsync(routeId, directionId, null, cancellationToken))
             .Where(t => t.StopTimes.Count > 0)
             .ToList();
+        var variants = (await variantRepository.ListByRouteAsync(routeId, cancellationToken))
+            .Where(v => directionId is null || v.DirectionId == directionId)
+            .ToList();
 
-        var rows = StopSequenceMerger.Merge(all
-            .Select(t => (IReadOnlyList<Guid>)t.StopTimes.Select(st => st.StopId).ToList())
+        var rows = StopSequenceMerger.Merge(variants
+            .Select(v => (IReadOnlyList<Guid>)v.Stops.Select(s => s.StopId).ToList())
+            .Concat(all.Select(t => (IReadOnlyList<Guid>)t.StopTimes.Select(st => st.StopId).ToList()))
             .DistinctBy(s => string.Join(',', s)));
         var stops = (await stopRepository.GetManyAsync(rows, cancellationToken)).ToDictionary(s => s.Id);
 
@@ -51,8 +56,10 @@ public class ScheduleService(
             route,
             directionId,
             rows.Where(stops.ContainsKey).Select(id => stops[id]).ToList(),
+            variants,
             trips,
-            all.CountBy(t => t.Trip.ServiceCalendarId).ToDictionary());
+            all.CountBy(t => t.Trip.ServiceCalendarId).ToDictionary(),
+            all.Where(t => t.Trip.VariantId is not null).CountBy(t => t.Trip.VariantId!.Value).ToDictionary());
     }
 
     public async Task SaveAsync(Guid routeId, ScheduleChanges changes, CancellationToken cancellationToken = default)

@@ -16,14 +16,31 @@ public class ScheduleQuery
     public Guid? CalendarId { get; set; }
 }
 
-/// <param name="Stops">Redci grafikona, redom kojim ih vožnje obilaze.</param>
+/// <param name="Stops">Redci grafikona, redom kojim ih varijante i vožnje obilaze.</param>
+/// <param name="Variants">Varijante smjera (glavna prva): predlošci za nove vožnje.</param>
 /// <param name="TripCounts">Broj vožnji smjera po Id-u kalendara.</param>
 public record ScheduleResponse(
     Guid RouteId,
     TripDirection? DirectionId,
     IReadOnlyList<ScheduleStopResponse> Stops,
+    IReadOnlyList<ScheduleVariantResponse> Variants,
     IReadOnlyList<ScheduleTripResponse> Trips,
     IReadOnlyDictionary<Guid, int> TripCounts);
+
+/// <param name="TripCount">Broj vožnji smjera (svih kalendara) po ovoj varijanti.</param>
+public record ScheduleVariantResponse(
+    Guid Id,
+    string Name,
+    TripDirection? DirectionId,
+    string? Headsign,
+    Guid? ShapeId,
+    int SortOrder,
+    int TripCount,
+    IReadOnlyList<ScheduleVariantStopResponse> Stops);
+
+/// <param name="TravelTime">Sekunde od polaska s prethodne stanice; 0 za prvu.</param>
+/// <param name="DwellTime">Sekunde stajanja.</param>
+public record ScheduleVariantStopResponse(Guid StopId, int TravelTime, int DwellTime);
 
 public record ScheduleStopResponse(Guid Id, string Code, string Name, string? PlatformCode);
 
@@ -124,6 +141,15 @@ public static class ScheduleMappings
         schedule.Route.Id,
         schedule.DirectionId,
         schedule.Stops.Select(s => new ScheduleStopResponse(s.Id, s.Code, s.Name, s.PlatformCode)).ToList(),
+        schedule.Variants.Select(v => new ScheduleVariantResponse(
+            v.Id,
+            v.Name,
+            v.DirectionId,
+            v.Headsign,
+            v.ShapeId,
+            v.SortOrder,
+            schedule.VariantTripCounts.GetValueOrDefault(v.Id),
+            v.Stops.Select(s => new ScheduleVariantStopResponse(s.StopId, s.TravelTime, s.DwellTime)).ToList())).ToList(),
         schedule.Trips.Select(t => new ScheduleTripResponse(
             t.Trip.Id,
             t.Trip.Code,

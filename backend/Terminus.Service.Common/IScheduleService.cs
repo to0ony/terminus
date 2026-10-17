@@ -20,15 +20,22 @@ public interface IScheduleService
     Task SaveAsync(Guid routeId, ScheduleChanges changes, CancellationToken cancellationToken = default);
 }
 
-/// <param name="Stops">Redci grafikona: spojeni redoslijed stanica svih vožnji smjera (svih kalendara).</param>
+/// <param name="Stops">
+/// Redci grafikona: spojeni redoslijed stanica varijanti smjera (redom, glavna
+/// prva) i vožnji svih kalendara.
+/// </param>
+/// <param name="Variants">Varijante smjera, glavna prva.</param>
 /// <param name="Trips">Vožnje traženog kalendara, poredane po prvom polasku.</param>
 /// <param name="TripCounts">Broj vožnji smjera po kalendaru.</param>
+/// <param name="VariantTripCounts">Broj vožnji smjera (svih kalendara) po varijanti.</param>
 public sealed record RouteSchedule(
     IRouteModel Route,
     TripDirection? DirectionId,
     IReadOnlyList<IStopModel> Stops,
+    IReadOnlyList<IRouteVariantModel> Variants,
     IReadOnlyList<TripStopTimes> Trips,
-    IReadOnlyDictionary<Guid, int> TripCounts);
+    IReadOnlyDictionary<Guid, int> TripCounts,
+    IReadOnlyDictionary<Guid, int> VariantTripCounts);
 
 /// <param name="DirectionId">Smjer nove i izmijenjenih vožnji.</param>
 public sealed record ScheduleChanges(

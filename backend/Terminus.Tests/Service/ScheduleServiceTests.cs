@@ -19,6 +19,7 @@ public class ScheduleServiceTests
 
     private readonly FakeTimetableRepository _timetable = new();
     private readonly FakeScheduleRepository _schedule = new();
+    private readonly FakeRouteVariantRepository _variants = new();
     private readonly ScheduleService _service;
 
     public ScheduleServiceTests()
@@ -29,7 +30,7 @@ public class ScheduleServiceTests
         departures.Calendars.Add(_workdays);
         departures.Calendars.Add(_sunday);
 
-        _service = new ScheduleService(routes, _timetable, _schedule, new FakeStopRepository(_stops), departures, new FakeShapeRepository(), new FakeRouteVariantRepository());
+        _service = new ScheduleService(routes, _timetable, _schedule, new FakeStopRepository(_stops), departures, new FakeShapeRepository(), _variants);
     }
 
     [Fact]
@@ -44,6 +45,33 @@ public class ScheduleServiceTests
         var trip = Assert.Single(schedule.Trips);
         Assert.Equal(_workdays.Id, trip.Trip.ServiceCalendarId);
         Assert.Equal(1, schedule.TripCounts[_sunday.Id]);
+    }
+
+    [Fact]
+    public async Task GetAsync_RouteWithoutTrips_HasRowsFromItsVariants()
+    {
+        _variants.Variants.Add(new RouteVariantModel
+        {
+            Id = Guid.NewGuid(),
+            RouteId = _route.Id,
+            Name = "Glavna",
+            DirectionId = TripDirection.Outbound,
+            Stops = [new VariantStop(_stops[0].Id, 0, 0), new VariantStop(_stops[2].Id, 300, 0)]
+        });
+        _variants.Variants.Add(new RouteVariantModel
+        {
+            Id = Guid.NewGuid(),
+            RouteId = _route.Id,
+            Name = "Natrag",
+            DirectionId = TripDirection.Inbound,
+            Stops = [new VariantStop(_stops[2].Id, 0, 0), new VariantStop(_stops[1].Id, 300, 0)]
+        });
+
+        var schedule = await _service.GetAsync(_route.Id, TripDirection.Outbound, _workdays.Id, TestContext.Current.CancellationToken);
+
+        Assert.Equal(["A", "C"], schedule.Stops.Select(s => s.Code));
+        Assert.Equal("Glavna", Assert.Single(schedule.Variants).Name);
+        Assert.Empty(schedule.Trips);
     }
 
     [Fact]
