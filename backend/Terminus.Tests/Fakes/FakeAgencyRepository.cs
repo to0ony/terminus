@@ -44,6 +44,12 @@ internal sealed class FakeAgencyRepository(params IAgencyModel[] agencies) : IAg
         return Task.FromResult<IAgencyModel?>(agency);
     }
 
-    public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
-        throw new NotSupportedException();
+    /// <summary>Zadnji poziv brisanja: prijevoznik i kamo idu njegove linije.</summary>
+    public (Guid Id, Guid? MoveRoutesTo)? LastDelete { get; private set; }
+
+    public Task<bool> DeleteAsync(Guid id, Guid? moveRoutesTo = null, CancellationToken cancellationToken = default)
+    {
+        LastDelete = (id, moveRoutesTo);
+        return Task.FromResult(_agencies.RemoveAll(a => a.Id == id) > 0);
+    }
 }

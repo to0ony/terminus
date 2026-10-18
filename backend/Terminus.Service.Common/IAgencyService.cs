@@ -14,5 +14,9 @@ public interface IAgencyService
 
     Task<IAgencyModel> UpdateAsync(Guid id, IAgencyModel agency, CancellationToken cancellationToken = default);
 
-    Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Briše prijevoznika. Uz <paramref name="moveRoutesTo"/> njegove linije i cijene prelaze na
+    /// tog prijevoznika (npr. kad linije u konzorciju preuzme druga tvrtka).
+    /// </summary>
+    Task DeleteAsync(Guid id, Guid? moveRoutesTo = null, CancellationToken cancellationToken = default);
 }

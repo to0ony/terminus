@@ -86,14 +86,35 @@ public class AgencyRepository(TerminusDbContext context) : IAgencyRepository
         return AgencyMapper.ToModel(entity);
     }
 
-    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(Guid id, Guid? moveRoutesTo = null, CancellationToken cancellationToken = default)
     {
         try
         {
+            // ExecuteUpdate i ExecuteDelete se izvršavaju odmah, pa premještanje i brisanje idu u istu transakciju.
+            await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+
+            if (moveRoutesTo is Guid target)
+            {
+                var now = DateTime.UtcNow;
+
+                await context.Routes
+                    .Where(r => r.AgencyId == id)
+                    .ExecuteUpdateAsync(set => set
+                        .SetProperty(r => r.AgencyId, target)
+                        .SetProperty(r => r.UpdatedAt, now), cancellationToken);
+
+                await context.Fares
+                    .Where(f => f.AgencyId == id)
+                    .ExecuteUpdateAsync(set => set
+                        .SetProperty(f => f.AgencyId, target)
+                        .SetProperty(f => f.UpdatedAt, now), cancellationToken);
+            }
+
             var deleted = await context.Agencies
                 .Where(a => a.Id == id)
                 .ExecuteDeleteAsync(cancellationToken);
 
+            await transaction.CommitAsync(cancellationToken);
             return deleted > 0;
         }
         catch (Exception ex) when (ex.GetBaseException() is PostgresException

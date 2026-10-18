@@ -163,7 +163,7 @@ Pravila koja zahtijevaju upit nad drugim recima provodi servisni sloj:
 
 | Brisanje | Posljedica |
 |---|---|
-| prijevoznika | Odbija se (409) ako prijevoznik ima linije ili cijene (`RESTRICT`). |
+| prijevoznika | Odbija se (409) ako prijevoznik ima linije ili cijene (`RESTRICT`), osim uz `moveRoutesTo`: tada ih u istoj transakciji preuzima drugi prijevoznik. |
 | stanice | Podređeni zapisi ostaju bez nadređene stanice (`SET NULL`); odbija se (409) ako se stanica koristi u `stop_times`. |
 | linije | Kaskadno briše njezine vožnje s vremenima i pravila cijena za tu liniju. |
 | kalendara | Kaskadno briše iznimke; odbija se (409) ako ga koriste vožnje. |

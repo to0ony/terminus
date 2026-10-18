@@ -1,18 +1,70 @@
-import { Anchor, Badge, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core'
+import {
+  ActionIcon,
+  Anchor,
+  Badge,
+  Button,
+  Group,
+  Paper,
+  SimpleGrid,
+  Stack,
+  Text,
+  Title,
+  Tooltip,
+} from '@mantine/core'
+import { useDisclosure } from '@mantine/hooks'
+import { IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
+import { useState } from 'react'
 import { Link } from 'react-router'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
 import { useRoutes } from '@/features/routes/queries'
 import { formatNumber } from '@/lib/format'
+import { AgencyDialog, DeleteAgencyDialog } from './AgencyDialogs'
 import { type Agency, useAgencies } from './queries'
 
-/** Prijevoznici (GTFS agency) s kontaktima i brojem linija. */
+/**
+ * Prijevoznici (GTFS agency) s kontaktima i brojem linija. Linije može voziti više
+ * prijevoznika (npr. konzorcij u gradskom prijevozu): svaka linija ima svog.
+ */
 export function AgenciesPage() {
   const agencies = useAgencies()
+  const [newOpened, newAgency] = useDisclosure(false)
+  const [editing, setEditing] = useState<Agency | null>(null)
+  const [deleting, setDeleting] = useState<{ agency: Agency; routeCount: number } | null>(null)
+
+  // GTFS: svi prijevoznici imaju istu vremensku zonu.
+  const timezone = agencies.data?.[0]?.timezone
 
   return (
     <Stack gap="md">
-      <Title order={2}>Prijevoznici</Title>
+      <Group justify="space-between" align="flex-end">
+        <Title order={2}>Prijevoznici</Title>
+        <Button leftSection={<IconPlus size={16} />} onClick={newAgency.open}>
+          Novi prijevoznik
+        </Button>
+      </Group>
+      <Text size="sm" c="dimmed" maw={720}>
+        Ako linije vozi više tvrtki, npr. konzorcij u gradskom prijevozu, dodaj svaku kao
+        prijevoznika i na liniji odaberi koji je vozi. GTFS izvoz navodi sve prijevoznike, a na
+        zaslonima stanica i u PDF voznim redovima piše naziv iz{' '}
+        <Anchor component={Link} to="/settings" size="sm">
+          Postavki
+        </Anchor>
+        .
+      </Text>
+
+      <AgencyDialog opened={newOpened} onClose={newAgency.close} defaultTimezone={timezone} />
+      <AgencyDialog
+        opened={editing !== null}
+        agency={editing ?? undefined}
+        onClose={() => setEditing(null)}
+      />
+      <DeleteAgencyDialog
+        agency={deleting?.agency ?? null}
+        routeCount={deleting?.routeCount ?? 0}
+        agencies={agencies.data ?? []}
+        onClose={() => setDeleting(null)}
+      />
 
       {agencies.isPending ? (
         <PageLoader />
@@ -21,7 +73,14 @@ export function AgenciesPage() {
       ) : (
         <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
           {agencies.data.map((agency) => (
-            <AgencyCard key={agency.id} agency={agency} />
+            <AgencyCard
+              key={agency.id}
+              agency={agency}
+              // Instanca bez prijevoznika vraća se u čarobnjak prvog pokretanja.
+              canDelete={agencies.data.length > 1}
+              onEdit={() => setEditing(agency)}
+              onDelete={(routeCount) => setDeleting({ agency, routeCount })}
+            />
           ))}
         </SimpleGrid>
       )}
@@ -29,7 +88,14 @@ export function AgenciesPage() {
   )
 }
 
-function AgencyCard({ agency }: { agency: Agency }) {
+interface AgencyCardProps {
+  agency: Agency
+  canDelete: boolean
+  onEdit: () => void
+  onDelete: (routeCount: number) => void
+}
+
+function AgencyCard({ agency, canDelete, onEdit, onDelete }: AgencyCardProps) {
   // Samo ukupan broj; stranica s jednom linijom je najmanji upit.
   const routes = useRoutes({ AgencyId: agency.id, PageSize: 1 })
 
@@ -52,18 +118,36 @@ function AgencyCard({ agency }: { agency: Agency }) {
               GTFS oznaka: {agency.code}
             </Text>
           </Stack>
-          {routes.data && (
-            <Badge
-              component={Link}
-              to={`/routes?agency=${agency.id}`}
-              variant="light"
-              size="lg"
-              tt="none"
-              style={{ cursor: 'pointer', flexShrink: 0 }}
-            >
-              {formatNumber(routes.data.totalCount)} linija
-            </Badge>
-          )}
+          <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
+            {routes.data && (
+              <Badge
+                component={Link}
+                to={`/routes?agency=${agency.id}`}
+                variant="light"
+                size="lg"
+                tt="none"
+                style={{ cursor: 'pointer' }}
+              >
+                {formatNumber(routes.data.totalCount)} linija
+              </Badge>
+            )}
+            <Tooltip label="Uredi">
+              <ActionIcon variant="subtle" onClick={onEdit} aria-label={`Uredi ${agency.name}`}>
+                <IconPencil size={18} />
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip label={canDelete ? 'Obriši' : 'Instanca mora imati barem jednog prijevoznika'}>
+              <ActionIcon
+                variant="subtle"
+                color="red"
+                onClick={() => onDelete(routes.data?.totalCount ?? 0)}
+                disabled={!canDelete || !routes.data}
+                aria-label={`Obriši ${agency.name}`}
+              >
+                <IconTrash size={18} />
+              </ActionIcon>
+            </Tooltip>
+          </Group>
         </Group>
         <SimpleGrid cols={2} spacing="sm" verticalSpacing="xs">
           {facts.map((fact) => (

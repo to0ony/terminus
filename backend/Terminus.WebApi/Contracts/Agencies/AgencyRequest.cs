@@ -5,8 +5,7 @@ namespace Terminus.WebApi.Contracts.Agencies;
 /// <summary>Tijelo zahtjeva za stvaranje (POST) i potpunu izmjenu (PUT) agencije.</summary>
 public class AgencyRequest
 {
-    /// <summary>GTFS agency_id, jedinstven.</summary>
-    [Required]
+    /// <summary>GTFS agency_id, jedinstven. Kod stvaranja se bez njega izvodi iz naziva.</summary>
     public string? Code { get; set; }
 
     [Required]

@@ -15,9 +15,13 @@ public interface IAgencyRepository
     /// <returns>Ažurirana agencija ili null ako ne postoji.</returns>
     Task<IAgencyModel?> UpdateAsync(IAgencyModel agency, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Briše agenciju. Uz <paramref name="moveRoutesTo"/> njene linije i cijene karata prvo
+    /// prelaze na tu agenciju, u istoj transakciji.
+    /// </summary>
     /// <returns>false ako agencija ne postoji.</returns>
-    /// <exception cref="Terminus.Common.Exceptions.ConflictException">Agencija ima linije.</exception>
-    Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+    /// <exception cref="Terminus.Common.Exceptions.ConflictException">Agencija ima linije, a nije zadano kamo ih premjestiti.</exception>
+    Task<bool> DeleteAsync(Guid id, Guid? moveRoutesTo = null, CancellationToken cancellationToken = default);
 
     /// <returns>Vremenska zona nekog drugog prijevoznika koja se razlikuje od zadane, ili null.</returns>
     Task<string?> GetOtherTimezoneAsync(Guid exceptId, string timezone, CancellationToken cancellationToken = default);

@@ -27,7 +27,7 @@ Sve osim `/api/public/*`, `/api/auth/login` i `/health` traži prijavu
 | Prijava | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `PUT /api/auth/password` |
 | Prvo pokretanje | `GET /api/setup`, `POST /api/setup/blank` |
 | Postavke instance | `GET`/`PUT /api/settings`, `PUT`/`DELETE /api/settings/logo` |
-| Prijevoznici | `/api/agencies` |
+| Prijevoznici | `/api/agencies`; `DELETE /api/agencies/{id}?moveRoutesTo=` linije i cijene prvo prebacuje na drugog prijevoznika |
 | Stanice | `/api/stops`, `/api/stops/area`, `/api/stops/extent` |
 | Stanica: linije i polasci | `/api/stops/{id}/routes`, `/api/stops/{id}/departures?date=` |
 | Stanica: PDF vozni red | `GET /api/stops/{id}/timetable.pdf?from=&to=&paper=&language=` |

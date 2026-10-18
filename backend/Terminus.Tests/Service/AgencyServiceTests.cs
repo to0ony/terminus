@@ -50,16 +50,78 @@ public class AgencyServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_WithoutCode_ThrowsValidationError()
+    public async Task CreateAsync_WithoutCode_DerivesCodeFromName()
     {
         var service = new AgencyService(new FakeAgencyRepository());
         var agency = Agency("Europe/Zagreb");
         agency.Code = " ";
+        agency.Name = "Autotrans Čakovec";
+
+        var created = await service.CreateAsync(agency, TestContext.Current.CancellationToken);
+
+        Assert.False(string.IsNullOrWhiteSpace(created.Code));
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithoutCode_ThrowsValidationError()
+    {
+        var existing = Agency("Europe/Zagreb");
+        var service = new AgencyService(new FakeAgencyRepository(existing));
+        var agency = Agency("Europe/Zagreb");
+        agency.Code = " ";
 
         var ex = await Assert.ThrowsAsync<ValidationException>(
-            () => service.CreateAsync(agency, TestContext.Current.CancellationToken));
+            () => service.UpdateAsync(existing.Id, agency, TestContext.Current.CancellationToken));
 
         Assert.Contains(nameof(AgencyModel.Code), ex.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_MoveRoutesToOtherAgency_DeletesAndMovesRoutes()
+    {
+        var leaving = Agency("Europe/Zagreb");
+        var staying = Agency("Europe/Zagreb");
+        var repository = new FakeAgencyRepository(leaving, staying);
+        var service = new AgencyService(repository);
+
+        await service.DeleteAsync(leaving.Id, staying.Id, TestContext.Current.CancellationToken);
+
+        Assert.Equal((leaving.Id, (Guid?)staying.Id), repository.LastDelete);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_MoveRoutesToItself_ThrowsValidationError()
+    {
+        var agency = Agency("Europe/Zagreb");
+        var repository = new FakeAgencyRepository(agency);
+        var service = new AgencyService(repository);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            () => service.DeleteAsync(agency.Id, agency.Id, TestContext.Current.CancellationToken));
+
+        Assert.Contains("moveRoutesTo", ex.Errors.Keys);
+        Assert.Null(repository.LastDelete);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_MoveRoutesToMissingAgency_ThrowsValidationError()
+    {
+        var agency = Agency("Europe/Zagreb");
+        var service = new AgencyService(new FakeAgencyRepository(agency));
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            () => service.DeleteAsync(agency.Id, Guid.NewGuid(), TestContext.Current.CancellationToken));
+
+        Assert.Contains("moveRoutesTo", ex.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_MissingAgency_ThrowsNotFound()
+    {
+        var service = new AgencyService(new FakeAgencyRepository());
+
+        await Assert.ThrowsAsync<NotFoundException>(
+            () => service.DeleteAsync(Guid.NewGuid(), cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]

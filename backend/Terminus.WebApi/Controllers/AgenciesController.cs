@@ -52,14 +52,19 @@ public class AgenciesController(IAgencyService agencyService) : ControllerBase
         return Ok(updated.ToResponse());
     }
 
-    /// <summary>Briše prijevoznika. Prijevoznik koji ima linije ne može se obrisati (409).</summary>
+    /// <summary>
+    /// Briše prijevoznika. Prijevoznik koji ima linije može se obrisati samo uz
+    /// <paramref name="moveRoutesTo"/>: njegove linije i cijene prelaze na tog prijevoznika;
+    /// bez toga 409.
+    /// </summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(Guid id, [FromQuery] Guid? moveRoutesTo, CancellationToken cancellationToken)
     {
-        await agencyService.DeleteAsync(id, cancellationToken);
+        await agencyService.DeleteAsync(id, moveRoutesTo, cancellationToken);
         return NoContent();
     }
 }

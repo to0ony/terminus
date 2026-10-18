@@ -6,10 +6,11 @@ namespace Terminus.WebApi.Contracts.Agencies;
 
 public static class AgencyMappings
 {
-    // Code, Name i Url su [Required]; prazne Timezone i Lang servis zamjenjuje zadanim vrijednostima.
+    // Name i Url su [Required]; prazan Code servis kod stvaranja izvodi iz naziva,
+    // a prazne Timezone i Lang zamjenjuje zadanim vrijednostima.
     public static IAgencyModel ToModel(this AgencyRequest request) => new AgencyModel
     {
-        Code = request.Code!,
+        Code = request.Code ?? string.Empty,
         Name = request.Name!,
         Url = request.Url!,
         Timezone = request.Timezone ?? string.Empty,

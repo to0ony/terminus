@@ -112,7 +112,7 @@ Detaljno u [departures-and-timetables.md](departures-and-timetables.md).
 | 5.7 | Izrada voznog reda od nule (prazna instanca bez uvoza) | 5.2–5.4 |
 | 5.8 | Upravljanje administratorima: dodavanje, uklanjanje, reset lozinke | 1.1 |
 | 5.9 | Upozorenja kod izvoza koja ne blokiraju izvoz (npr. feed istječe za 7 dana) | — |
-| 5.10 | Uređivanje prijevoznika iz sučelja (sad ih stvara samo čarobnjak ili uvoz) | — |
+| 5.10 | Prijevoznici iz sučelja: novi, izmjena, brisanje s preuzimanjem linija; više prijevoznika (konzorcij) po linijama ✅ | — |
 
 **Plan editora (dogovoreno 18. 10. 2026.)** Aplikacija je alat u kojem se vozni
 red radi, a GTFS uvoz je samo pomoć na početku. Ciljani su mali i srednji

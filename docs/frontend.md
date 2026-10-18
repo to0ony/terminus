@@ -18,7 +18,7 @@ i MapLibre GL. Pokretanje i naredbe su u [lokalnom razvoju](development.md#front
 | `/calendars` | sezone voznog reda (i nova sezona) te ostali kalendari, npr. uvezeni iz GTFS-a |
 | `/seasons/:id` | sezona: tipovi dana, pravilo za praznike i svi mjeseci; klik na dan mijenja kako vozi (kao drugi tip dana, ne vozi) uz napomenu |
 | `/calendars/:id` | kalendar s danima u tjednu i iznimkama na mjesečnom prikazu |
-| `/agencies` | prijevoznici s brojem linija |
+| `/agencies` | prijevoznici s brojem linija; **novi prijevoznik**, izmjena i brisanje (opis niže) |
 | `/gtfs` | GTFS izvoz (s popisom problema ako izvoz nije moguć) i ponovni uvoz |
 | `/settings` | naziv, boje i logo javnih stranica, javna adresa, objava GTFS feeda, tema i podloga karte, promjena lozinke |
 | `/board/:stopCode` | **javni zaslon stanice**, bez prijave ([opis](departures-and-timetables.md#2-zaslon-na-stanici)) |
@@ -109,6 +109,25 @@ ako je zauzet dodaje se broj (`-2`, `-3`). Kolodvor na svojoj stranici popisuje
 perone i nudi „Dodaj peron” (na mjestu kolodvora, pa se premjesti). Stanica
 koju koriste vožnje ili varijante ne može se obrisati; nju se označi
 neaktivnom.
+
+## Prijevoznici
+
+Na stranici Prijevoznici dodaju se, uređuju i brišu prijevoznici (GTFS
+`agency`). Forma je ista kao u čarobnjaku prvog pokretanja
+(`features/agencies/AgencyForm.tsx`): GTFS oznaka novog prijevoznika bez
+upisa izvodi se iz naziva, a vremenska zona je ista kao kod postojećih jer je
+GTFS traži istu za cijeli feed.
+
+**Više prijevoznika (konzorcij).** Kad gradski prijevoz vozi više tvrtki,
+svaka je zaseban prijevoznik, a svaka linija ima svog (izbor u dijalogu linije
+pojavi se čim postoje barem dva). GTFS izvoz navodi sve prijevoznike, popis
+linija dobiva filter i stupac Prijevoznik, a zaslon stanice i PDF prikazuju
+naziv iz Postavki, pa putnik vidi jedan naziv sustava.
+
+**Brisanje.** Prijevoznik bez linija briše se odmah. Prijevoznik s linijama
+briše se tek kad se odabere tko ih preuzima: linije i cijene karata prelaze
+na tog prijevoznika, a vožnje i vozni red ostaju. Zadnji prijevoznik se ne
+može obrisati.
 
 ## Varijante linije
 

@@ -173,7 +173,9 @@ export interface paths {
         post?: never;
         delete: {
             parameters: {
-                query?: never;
+                query?: {
+                    moveRoutesTo?: string;
+                };
                 header?: never;
                 path: {
                     id: string;
@@ -189,6 +191,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": unknown;
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationProblemDetails"];
                     };
                 };
                 /** @description Not Found */
@@ -4022,7 +4033,7 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         AgencyRequest: {
-            code: null | string;
+            code?: null | string;
             name: null | string;
             url: null | string;
             timezone?: null | string;

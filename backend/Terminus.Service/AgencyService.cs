@@ -29,6 +29,13 @@ public class AgencyService(IAgencyRepository repository) : IAgencyService
     {
         agency.Id = Guid.Empty;
         Normalize(agency);
+
+        // Kao u čarobnjaku: bez upisanog koda GTFS agency_id se izvodi iz naziva.
+        if (agency.Code.Length == 0 && agency.Name.Length > 0)
+        {
+            agency.Code = Slug.From(agency.Name, fallback: "1");
+        }
+
         await ValidateAsync(agency, cancellationToken);
 
         return await repository.InsertAsync(agency, cancellationToken);
@@ -43,9 +50,25 @@ public class AgencyService(IAgencyRepository repository) : IAgencyService
         return await repository.UpdateAsync(agency, cancellationToken) ?? throw AgencyNotFound(id);
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid id, Guid? moveRoutesTo = null, CancellationToken cancellationToken = default)
     {
-        if (!await repository.DeleteAsync(id, cancellationToken))
+        if (moveRoutesTo is Guid target)
+        {
+            var errors = new ValidationErrors();
+
+            if (target == id)
+            {
+                errors.Add(nameof(moveRoutesTo), "Linije se ne mogu premjestiti na prijevoznika koji se briše.");
+            }
+            else if (await repository.GetAsync(target, cancellationToken) is null)
+            {
+                errors.Add(nameof(moveRoutesTo), $"Prijevoznik {target} ne postoji.");
+            }
+
+            errors.ThrowIfAny();
+        }
+
+        if (!await repository.DeleteAsync(id, moveRoutesTo, cancellationToken))
         {
             throw AgencyNotFound(id);
         }
