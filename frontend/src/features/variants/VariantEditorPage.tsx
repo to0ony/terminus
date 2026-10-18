@@ -34,7 +34,8 @@ import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
 import { useRoute } from '@/features/routes/queries'
 import { RouteBadge } from '@/features/routes/RouteBadge'
-import { type MapStop, useSaveStop, useStopsExtent } from '@/features/stops/queries'
+import { type MapStop, useStopsExtent } from '@/features/stops/queries'
+import { StopDialog } from '@/features/stops/StopDialog'
 import { type MapOverlay, StopsMap } from '@/features/stops/StopsMap'
 import {
   type Variant,
@@ -536,13 +537,11 @@ function VariantEditor({
         </Grid.Col>
       </Grid>
 
-      <NewStopDialog
-        position={newStopAt}
+      <StopDialog
+        create={newStopAt}
+        opened={newStopAt !== null}
         onClose={() => setNewStopAt(null)}
-        onCreated={(stop) => {
-          setNewStopAt(null)
-          append(stop)
-        }}
+        onSaved={append}
       />
 
       <Modal
@@ -563,94 +562,6 @@ function VariantEditor({
           </Group>
         </Stack>
       </Modal>
-    </Stack>
-  )
-}
-
-interface NewStopDialogProps {
-  position: { latitude: number; longitude: number } | null
-  onClose: () => void
-  onCreated: (stop: MapStop) => void
-}
-
-/** Nova stanica na kliknutom mjestu karte. */
-function NewStopDialog({ position, onClose, onCreated }: NewStopDialogProps) {
-  return (
-    <Modal opened={position !== null} onClose={onClose} title="Nova stanica" size="sm">
-      {position && <NewStopForm position={position} onClose={onClose} onCreated={onCreated} />}
-    </Modal>
-  )
-}
-
-function NewStopForm({
-  position,
-  onClose,
-  onCreated,
-}: NewStopDialogProps & { position: { latitude: number; longitude: number } }) {
-  const save = useSaveStop()
-  const [name, setName] = useState('')
-  const [code, setCode] = useState('')
-  const [platformCode, setPlatformCode] = useState('')
-  const error = save.error instanceof ApiError ? save.error : null
-  const fieldError = (key: string) => error?.fieldErrors[key]?.[0]
-
-  const submit = () =>
-    save.mutate(
-      {
-        name: name.trim(),
-        // GTFS stop_id mora biti jedinstven; bez upisanog nastaje iz vremena.
-        code: code.trim() || `T${Date.now().toString(36).toUpperCase()}`,
-        platformCode: platformCode.trim() || null,
-        latitude: Math.round(position.latitude * 1e6) / 1e6,
-        longitude: Math.round(position.longitude * 1e6) / 1e6,
-        locationType: 0,
-        isActive: true,
-      },
-      {
-        onSuccess: (stop) => onCreated({ ...stop, parentStationId: stop.parentStationId ?? null }),
-      },
-    )
-
-  return (
-    <Stack gap="sm">
-      <TextInput
-        label="Naziv"
-        value={name}
-        onChange={(event) => setName(event.currentTarget.value)}
-        error={fieldError('name')}
-        data-autofocus
-      />
-      <Group grow>
-        <TextInput
-          label="GTFS ID"
-          placeholder="automatski"
-          value={code}
-          onChange={(event) => setCode(event.currentTarget.value)}
-          error={fieldError('code')}
-        />
-        <TextInput
-          label="Peron"
-          placeholder="npr. A"
-          value={platformCode}
-          onChange={(event) => setPlatformCode(event.currentTarget.value)}
-        />
-      </Group>
-      <Text size="xs" c="dimmed">
-        {position.latitude.toFixed(5)}, {position.longitude.toFixed(5)}
-      </Text>
-      {save.isError && !error?.fieldErrors.name && !error?.fieldErrors.code && (
-        <Alert color="red" variant="light">
-          {errorMessage(save.error)}
-        </Alert>
-      )}
-      <Group justify="flex-end">
-        <Button variant="default" onClick={onClose}>
-          Odustani
-        </Button>
-        <Button onClick={submit} loading={save.isPending} disabled={!name.trim()}>
-          Dodaj stanicu
-        </Button>
-      </Group>
     </Stack>
   )
 }

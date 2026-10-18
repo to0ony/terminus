@@ -111,3 +111,13 @@ export function useSaveStop(id?: string) {
     meta: { handlesErrors: true },
   })
 }
+
+export function useDeleteStop() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) =>
+      unwrap(await api.DELETE('/api/stops/{id}', { params: { path: { id } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: stopKeys.all }),
+    meta: { handlesErrors: true },
+  })
+}

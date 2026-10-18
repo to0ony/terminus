@@ -14,15 +14,27 @@ import {
 } from '@mantine/core'
 import { DatePickerInput } from '@mantine/dates'
 import { useDisclosure } from '@mantine/hooks'
-import { IconArrowLeft, IconCalendar, IconDeviceTv, IconFileTypePdf } from '@tabler/icons-react'
-import { Link, useParams, useSearchParams } from 'react-router'
+import { modals } from '@mantine/modals'
+import { notifications } from '@mantine/notifications'
+import {
+  IconArrowLeft,
+  IconCalendar,
+  IconDeviceTv,
+  IconFileTypePdf,
+  IconPencil,
+  IconTrash,
+} from '@tabler/icons-react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { errorMessage } from '@/api/errors'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
 import { RouteBadge } from '@/features/routes/RouteBadge'
 import { formatNumber } from '@/lib/format'
 import { groupByHour } from './departures'
 import { locationTypeLabel, wheelchairLabels } from './locationTypes'
-import { type Stop, useStop, useStopDepartures, useStopRoutes } from './queries'
+import { type Stop, useDeleteStop, useStop, useStopDepartures, useStopRoutes } from './queries'
+import { StationPlatforms } from './StationPlatforms'
+import { StopDialog } from './StopDialog'
 import { StopLocation } from './StopLocation'
 import { TimetablePdfDialog } from './TimetablePdfDialog'
 
@@ -37,6 +49,33 @@ export function StopDetailPage() {
   const routes = useStopRoutes(stopId)
   const departures = useStopDepartures(stopId, date)
   const [pdfOpened, pdf] = useDisclosure(false)
+  const [editOpened, edit] = useDisclosure(false)
+  const navigate = useNavigate()
+  const remove = useDeleteStop()
+
+  const confirmDelete = (target: Stop) =>
+    modals.openConfirmModal({
+      title: 'Obriši stanicu',
+      children: (
+        <Text size="sm">
+          Stanica „{target.name}” bit će obrisana.
+          {target.locationType === 1 && ' Njezini peroni ostaju, ali bez kolodvora.'} Stanica koju
+          koriste vožnje ili varijante ne može se obrisati; nju označi neaktivnom.
+        </Text>
+      ),
+      labels: { confirm: 'Obriši', cancel: 'Odustani' },
+      confirmProps: { color: 'red' },
+      onConfirm: () =>
+        remove.mutate(target.id, {
+          onSuccess: () => void navigate('/stops'),
+          onError: (error) =>
+            notifications.show({
+              color: 'red',
+              title: 'Stanica nije obrisana',
+              message: errorMessage(error),
+            }),
+        }),
+    })
 
   const setDate = (value: string | null) =>
     setSearchParams(
@@ -103,33 +142,48 @@ export function StopDetailPage() {
             {locationTypeLabel(stop.data.locationType)} · {stop.data.publicCode ?? stop.data.code}
           </Text>
         </Stack>
-        {hasBoard && (
-          <Group gap="sm">
-            <Button
-              variant="default"
-              leftSection={<IconFileTypePdf size={16} />}
-              onClick={pdf.open}
-            >
-              PDF vozni red
-            </Button>
-            <Button
-              component="a"
-              href={`/board/${encodeURIComponent(stop.data.code)}`}
-              target="_blank"
-              variant="default"
-              leftSection={<IconDeviceTv size={16} />}
-            >
-              Zaslon polazaka
-            </Button>
-          </Group>
-        )}
+        <Group gap="sm">
+          <Button variant="default" leftSection={<IconPencil size={16} />} onClick={edit.open}>
+            Uredi
+          </Button>
+          <Button
+            variant="light"
+            color="red"
+            leftSection={<IconTrash size={16} />}
+            onClick={() => confirmDelete(stop.data)}
+          >
+            Obriši
+          </Button>
+          {hasBoard && (
+            <>
+              <Button
+                variant="default"
+                leftSection={<IconFileTypePdf size={16} />}
+                onClick={pdf.open}
+              >
+                PDF vozni red
+              </Button>
+              <Button
+                component="a"
+                href={`/board/${encodeURIComponent(stop.data.code)}`}
+                target="_blank"
+                variant="default"
+                leftSection={<IconDeviceTv size={16} />}
+              >
+                Zaslon polazaka
+              </Button>
+            </>
+          )}
+        </Group>
       </Group>
+      <StopDialog stop={stop.data} opened={editOpened} onClose={edit.close} />
       {hasBoard && <TimetablePdfDialog stop={stop.data} opened={pdfOpened} onClose={pdf.close} />}
 
       <Grid gap="md">
         <Grid.Col span={{ base: 12, md: 5 }}>
           <Stack gap="md">
             <StopFacts stop={stop.data} />
+            {stop.data.locationType === 1 && <StationPlatforms station={stop.data} />}
             <Paper withBorder p="md">
               <Text fw={600} size="sm" mb="xs">
                 Linije
