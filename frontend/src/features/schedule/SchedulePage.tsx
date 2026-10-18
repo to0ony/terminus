@@ -459,6 +459,20 @@ function ScheduleEditor({
     )
   }
 
+  /** Kopije s istim vremenima u drugom tipu dana; tamo se vide nakon spremanja. */
+  const copyToDayType = (calendarId: string, keys: string[] | null) => {
+    const sources = keys ? editor.trips.filter((t) => keys.includes(t.key)) : visible
+    const created = sources.map((source) => tripFrom(source, firstDeparture(source), calendarId))
+    if (created.length === 0) {
+      return
+    }
+    editor.apply((trips) => [...trips, ...created])
+    const target = dayTypes.find((d) => d.id === calendarId)?.label ?? 'drugi tip dana'
+    notifications.show({
+      message: `${created.length} ${created.length === 1 ? 'vožnja kopirana' : 'vožnji kopirano'} u „${target}”. Nakon spremanja ih uredi u tom tipu dana.`,
+    })
+  }
+
   // Tipkovnica: pomak, brisanje, poništavanje, spremanje.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -731,11 +745,13 @@ function ScheduleEditor({
               errors={errors}
               stopName={stopName}
               calendars={dayTypes.map((d) => ({ value: d.id, label: d.label }))}
+              dayTypeId={dayType.id}
               onChange={(key, update) =>
                 editor.apply((trips) => trips.map((t) => (t.key === key ? update(t) : t)))
               }
               onShift={shiftSelected}
               onCopy={copy.open}
+              onCopyTo={copyToDayType}
               onDelete={deleteSelected}
               onTakt={takt.open}
               canCreate={canCreate}

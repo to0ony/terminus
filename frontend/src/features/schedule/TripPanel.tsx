@@ -3,6 +3,7 @@ import {
   Button,
   Group,
   Kbd,
+  Menu,
   Paper,
   ScrollArea,
   Select,
@@ -11,7 +12,7 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
-import { IconCopy, IconTrash } from '@tabler/icons-react'
+import { IconCalendarPlus, IconCopy, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import {
   type EditorTrip,
@@ -28,9 +29,13 @@ interface TripPanelProps {
   errors: Map<string, string>
   stopName: (id: string) => string
   calendars: { value: string; label: string }[]
+  /** Tip dana koji se uređuje; ostali su ponuđeni za kopiranje. */
+  dayTypeId: string
   onChange: (key: string, update: (trip: EditorTrip) => EditorTrip) => void
   onShift: (delta: number) => void
   onCopy: () => void
+  /** Kopira odabrane vožnje (ili sve, za null) u drugi tip dana. */
+  onCopyTo: (calendarId: string, keys: string[] | null) => void
   onDelete: () => void
   onTakt: () => void
   /** Postoji li predložak za nove vožnje. */
@@ -54,6 +59,11 @@ export function TripPanel(props: TripPanelProps) {
           <Text fw={600}>{chosen.length} vožnji odabrano</Text>
           <ShiftButtons onShift={props.onShift} />
           <Actions onCopy={props.onCopy} onDelete={props.onDelete} />
+          <CopyToMenu
+            {...props}
+            label="Kopiraj u tip dana…"
+            onPick={(id) => props.onCopyTo(id, selected)}
+          />
           {chosen.some((t) => props.errors.has(t.key)) && (
             <Alert color="red" variant="light">
               Neke odabrane vožnje imaju neispravna vremena.
@@ -65,7 +75,8 @@ export function TripPanel(props: TripPanelProps) {
   )
 }
 
-function Overview({ trips, onTakt, canCreate }: TripPanelProps) {
+function Overview(props: TripPanelProps) {
+  const { trips, onTakt, canCreate } = props
   const departures = trips.map(firstDeparture).sort((a, b) => a - b)
   return (
     <Stack gap="sm">
@@ -78,6 +89,13 @@ function Overview({ trips, onTakt, canCreate }: TripPanelProps) {
       <Button variant="light" onClick={onTakt} disabled={!canCreate}>
         Generator takta…
       </Button>
+      {trips.length > 0 && (
+        <CopyToMenu
+          {...props}
+          label="Kopiraj sve u tip dana…"
+          onPick={(id) => props.onCopyTo(id, null)}
+        />
+      )}
       {!canCreate && (
         <Text size="xs" c="dimmed">
           Nove vožnje trebaju varijantu linije ili postojeću vožnju za vremena vožnje. Dodaj
@@ -119,6 +137,7 @@ function TripDetails({
   onShift,
   onCopy,
   onDelete,
+  ...props
 }: TripPanelProps & { trip: EditorTrip }) {
   const [headsign, setHeadsign] = useState(trip.headsign ?? '')
   const error = errors.get(trip.key)
@@ -209,6 +228,12 @@ function TripDetails({
       </ScrollArea.Autosize>
 
       <Actions onCopy={onCopy} onDelete={onDelete} />
+      <CopyToMenu
+        calendars={calendars}
+        dayTypeId={props.dayTypeId}
+        label="Kopiraj u tip dana…"
+        onPick={(id) => props.onCopyTo(id, [trip.key])}
+      />
     </Stack>
   )
 }
@@ -261,6 +286,43 @@ function ShiftButtons({ onShift }: { onShift: (delta: number) => void }) {
         </Button>
       ))}
     </Group>
+  )
+}
+
+/**
+ * Kopija u drugi tip dana, s istim vremenima; npr. subota kao radni dan bez
+ * jutarnjeg vrha: kopiraj sve, pa u suboti obriši višak.
+ */
+function CopyToMenu({
+  calendars,
+  dayTypeId,
+  label,
+  onPick,
+}: {
+  calendars: { value: string; label: string }[]
+  dayTypeId: string
+  label: string
+  onPick: (calendarId: string) => void
+}) {
+  const targets = calendars.filter((c) => c.value !== dayTypeId)
+  if (targets.length === 0) {
+    return null
+  }
+  return (
+    <Menu position="bottom-start">
+      <Menu.Target>
+        <Button size="xs" variant="default" leftSection={<IconCalendarPlus size={14} />}>
+          {label}
+        </Button>
+      </Menu.Target>
+      <Menu.Dropdown>
+        {targets.map((t) => (
+          <Menu.Item key={t.value} onClick={() => onPick(t.value)}>
+            {t.label}
+          </Menu.Item>
+        ))}
+      </Menu.Dropdown>
+    </Menu>
   )
 }
 
