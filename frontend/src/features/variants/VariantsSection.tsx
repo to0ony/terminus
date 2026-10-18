@@ -13,7 +13,14 @@ import {
 } from '@mantine/core'
 import { modals } from '@mantine/modals'
 import { notifications } from '@mantine/notifications'
-import { IconCopy, IconPencil, IconPlus, IconTrash, IconWand } from '@tabler/icons-react'
+import {
+  IconArrowsExchange,
+  IconCopy,
+  IconPencil,
+  IconPlus,
+  IconTrash,
+  IconWand,
+} from '@tabler/icons-react'
 import { Link, useNavigate } from 'react-router'
 import { errorMessage } from '@/api/errors'
 import { PageLoader } from '@/components/PageLoader'
@@ -163,6 +170,16 @@ export function VariantsSection({ routeId, hasTrips }: VariantsSectionProps) {
                             aria-label="Kopiraj varijantu"
                           >
                             <IconCopy size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                        <Tooltip label="Napravi povratni smjer">
+                          <ActionIcon
+                            variant="subtle"
+                            component={Link}
+                            to={`/routes/${routeId}/variants/new?reverse=${variant.id}`}
+                            aria-label="Napravi povratni smjer"
+                          >
+                            <IconArrowsExchange size={16} />
                           </ActionIcon>
                         </Tooltip>
                         <Tooltip label={variant.tripCount > 0 ? 'Koriste je vožnje' : 'Obriši'}>

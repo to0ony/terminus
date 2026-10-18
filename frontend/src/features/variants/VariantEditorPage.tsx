@@ -2,6 +2,7 @@ import {
   ActionIcon,
   Alert,
   Anchor,
+  Badge,
   Button,
   Grid,
   Group,
@@ -34,7 +35,7 @@ import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
 import { useRoute } from '@/features/routes/queries'
 import { RouteBadge } from '@/features/routes/RouteBadge'
-import { type MapStop, useStopsExtent } from '@/features/stops/queries'
+import { type MapStop, useStopsExtent, useStopsInArea } from '@/features/stops/queries'
 import { StopDialog } from '@/features/stops/StopDialog'
 import { type MapOverlay, StopsMap } from '@/features/stops/StopsMap'
 import {
@@ -44,6 +45,7 @@ import {
   useUpdateVariant,
   useVariant,
 } from './queries'
+import { reverseStops } from './reverse'
 import { distance, duration, suggestTravelTime } from './variantMath'
 
 /** Stanica varijante u editoru; key razlikuje istu stanicu dvaput na kružnoj liniji. */
@@ -57,6 +59,8 @@ interface EditorStop {
   /** Sekunde od prethodne stanice; prva stanica 0. */
   travelTime: number
   dwellTime: number
+  /** Povratni smjer: stanica nema para s druge strane, pa je ostala ista. */
+  unpaired?: boolean
 }
 
 let nextKey = 1
@@ -64,7 +68,12 @@ let nextKey = 1
 /** Stanica bez ključa, za usporedbu s početnim stanjem. */
 const comparable = (s: EditorStop) => [s.stopId, s.travelTime, s.dwellTime]
 
-function fromVariant(variant: Variant): EditorStop[] {
+/** Polazište editora: postojeća varijanta ili povratni smjer koji još nije spremljen. */
+type Template = Pick<Variant, 'name' | 'directionId' | 'headsign'> & {
+  stops: Omit<EditorStop, 'key'>[]
+}
+
+function fromVariant(variant: Template): EditorStop[] {
   return variant.stops.map((s) => ({
     key: nextKey++,
     stopId: s.stopId,
@@ -74,18 +83,71 @@ function fromVariant(variant: Variant): EditorStop[] {
     longitude: s.longitude,
     travelTime: s.travelTime,
     dwellTime: s.dwellTime,
+    unpaired: s.unpaired,
   }))
 }
 
-/** Varijanta linije: stanice se dodaju klikom na kartu, vremena vožnje predlažu iz udaljenosti. */
+/** Okvir oko stanica s rubom u stupnjevima; null ako nijedna nema koordinate. */
+function bounds(stops: Pick<EditorStop, 'latitude' | 'longitude'>[], margin: number) {
+  const placed = stops.filter((s) => s.latitude !== null && s.longitude !== null)
+  if (placed.length === 0) {
+    return null
+  }
+  const lats = placed.map((s) => s.latitude!)
+  const lons = placed.map((s) => s.longitude!)
+  return {
+    minLatitude: Math.min(...lats) - margin,
+    maxLatitude: Math.max(...lats) + margin,
+    minLongitude: Math.min(...lons) - margin * 1.5,
+    maxLongitude: Math.max(...lons) + margin * 1.5,
+  }
+}
+
+/**
+ * Varijanta linije: stanice se dodaju klikom na kartu, vremena vožnje predlažu iz udaljenosti.
+ * `new?from=` je kopija varijante, a `new?reverse=` njezin povratni smjer.
+ */
 export function VariantEditorPage() {
   const { routeId = '', variantId = 'new' } = useParams()
   const [searchParams] = useSearchParams()
   const isNew = variantId === 'new'
-  const sourceId = isNew ? searchParams.get('from') : variantId
+  const reverseId = isNew ? searchParams.get('reverse') : null
+  const sourceId = isNew ? (reverseId ?? searchParams.get('from')) : variantId
   const route = useRoute(routeId)
   const source = useVariant(sourceId ?? '', sourceId !== null)
   const extent = useStopsExtent()
+  // Parovi s druge strane ceste traže se među stanicama oko polaznog smjera (oko 500 m).
+  const around = reverseId && source.data ? bounds(source.data.stops, 0.005) : null
+  const nearby = useStopsInArea(
+    around && {
+      MinLatitude: around.minLatitude,
+      MaxLatitude: around.maxLatitude,
+      MinLongitude: around.minLongitude,
+      MaxLongitude: around.maxLongitude,
+    },
+  )
+
+  const hasArea = around !== null
+
+  const template = useMemo((): Template | null => {
+    if (!source.data) {
+      return null
+    }
+    if (!reverseId) {
+      return source.data
+    }
+    // Polazni smjer bez koordinata nema kamo tražiti parove.
+    if (hasArea && !nearby.data) {
+      return null
+    }
+    return {
+      // Naziv i natpis smjera slijede iz novih krajnjih stanica.
+      name: '',
+      headsign: null,
+      directionId: source.data.directionId === 1 ? 0 : 1,
+      stops: reverseStops(source.data.stops, nearby.data?.stops ?? []),
+    }
+  }, [source.data, reverseId, hasArea, nearby.data])
 
   if (route.isError) {
     return <QueryError error={route.error} onRetry={() => void route.refetch()} />
@@ -93,19 +155,23 @@ export function VariantEditorPage() {
   if (source.isError) {
     return <QueryError error={source.error} onRetry={() => void source.refetch()} />
   }
-  if (route.isPending || (sourceId !== null && source.isPending) || extent.isPending) {
+  if (nearby.isError) {
+    return <QueryError error={nearby.error} onRetry={() => void nearby.refetch()} />
+  }
+  if (route.isPending || (sourceId !== null && template === null) || extent.isPending) {
     return <PageLoader />
   }
 
   return (
     <VariantEditor
-      key={variantId + (sourceId ?? '')}
+      key={variantId + (sourceId ?? '') + (reverseId ? '-reverse' : '')}
       routeId={routeId}
       routeType={route.data.routeType}
       routeBadge={<RouteBadge route={route.data} />}
-      // Kopija postaje nova varijanta; izmjena zadržava Id.
+      // Kopija i povratni smjer postaju nova varijanta; izmjena zadržava Id.
       variant={isNew ? null : (source.data ?? null)}
-      template={source.data ?? null}
+      template={template}
+      reversed={reverseId !== null}
       extent={extent.data ?? null}
     />
   )
@@ -116,7 +182,9 @@ interface VariantEditorProps {
   routeType: number
   routeBadge: React.ReactNode
   variant: Variant | null
-  template: Variant | null
+  template: Template | null
+  /** Povratni smjer druge varijante: naziv se ne preuzima. */
+  reversed: boolean
   extent: {
     minLatitude: number
     minLongitude: number
@@ -131,6 +199,7 @@ function VariantEditor({
   routeBadge,
   variant,
   template,
+  reversed,
   extent,
 }: VariantEditorProps) {
   const navigate = useNavigate()
@@ -140,12 +209,12 @@ function VariantEditor({
 
   const initial = useMemo(
     () => ({
-      name: template ? (variant ? template.name : `${template.name} (kopija)`) : '',
+      name: !template || reversed ? '' : variant ? template.name : `${template.name} (kopija)`,
       direction: template?.directionId ?? 0,
       headsign: template?.headsign ?? '',
       stops: template ? fromVariant(template) : [],
     }),
-    [template, variant],
+    [template, variant, reversed],
   )
   const [name, setName] = useState(initial.name)
   const [direction, setDirection] = useState<number>(initial.direction)
@@ -247,20 +316,8 @@ function VariantEditor({
   }, [stops])
 
   // Karta se otvara na stanicama varijante, a nova varijanta na svim stanicama.
-  const [mapExtent] = useState(() => {
-    const placed = initial.stops.filter((s) => s.latitude !== null && s.longitude !== null)
-    if (placed.length === 0) {
-      return extent
-    }
-    const lats = placed.map((s) => s.latitude!)
-    const lons = placed.map((s) => s.longitude!)
-    return {
-      minLatitude: Math.min(...lats) - 0.002,
-      maxLatitude: Math.max(...lats) + 0.002,
-      minLongitude: Math.min(...lons) - 0.003,
-      maxLongitude: Math.max(...lons) + 0.003,
-    }
-  })
+  const [mapExtent] = useState(() => bounds(initial.stops, 0.002) ?? extent)
+  const unpaired = stops.filter((s) => s.unpaired).length
 
   // Nespremljene izmjene: upozorenje pri odlasku; spremanje ga preskače.
   const leaving = useRef(false)
@@ -403,6 +460,15 @@ function VariantEditor({
                     </Text>
                   </Alert>
                 )}
+                {unpaired > 0 && (
+                  <Alert variant="light" color="yellow" p="xs">
+                    <Text size="sm">
+                      Za {unpaired} {unpaired === 1 ? 'stanicu' : 'stanica'} nije nađena stanica
+                      istog naziva s druge strane ceste, pa je ostala ista kao u polaznom smjeru
+                      (označene su). Provjeri ih, posebno okretišta i jednosmjerne ulice.
+                    </Text>
+                  </Alert>
+                )}
                 {stops.length === 0 ? (
                   <Text size="sm" c="dimmed">
                     Klikni stanice na karti redom kojim ih linija obilazi. Klik na prazno mjesto
@@ -444,6 +510,11 @@ function VariantEditor({
                                     {' '}
                                     · {stop.platformCode}
                                   </Text>
+                                )}
+                                {stop.unpaired && (
+                                  <Badge size="xs" variant="light" color="yellow" ml={6}>
+                                    provjeri
+                                  </Badge>
                                 )}
                               </Text>
                             </Table.Td>
