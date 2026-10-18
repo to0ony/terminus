@@ -12,11 +12,11 @@ i MapLibre GL. Pokretanje i naredbe su u [lokalnom razvoju](development.md#front
 | `/setup` | čarobnjak prvog pokretanja: uvoz GTFS-a ili početak od nule |
 | `/` | pregled: kalendari koji danas voze, do kada vrijedi vozni red, broj linija i stanica |
 | `/routes`, `/routes/:id` | linije (pretraga, filteri, nova linija); linija s izmjenom podataka, **varijantama** i voznim redom po danu i smjeru |
-| `/routes/:id/variants/:variantId` | **editor varijante** na karti (`new`, `new?from=` za kopiju) (opis niže) |
+| `/routes/:id/variants/:variantId` | **editor varijante** na karti (`new`, `new?from=` za kopiju, `new?reverse=` za povratni smjer) (opis niže) |
 | `/routes/:id/schedule` | **grafikon voznog reda** linije s uređivanjem vožnji (opis niže) |
 | `/stops`, `/stops/:id` | stanice s kartom, **nova stanica klikom** i **prijedlozi iz OpenStreetMapa**; stanica s izmjenom, brisanjem, peronima kolodvora, linijama, polascima za dan, premještanjem na karti, **PDF voznim redom** i poveznicom na zaslon |
 | `/calendars` | sezone voznog reda (i nova sezona) te ostali kalendari, npr. uvezeni iz GTFS-a |
-| `/seasons/:id` | sezona: tipovi dana, pravilo za praznike i svi mjeseci; klik na dan mijenja kako vozi (kao drugi tip dana, ne vozi) uz napomenu |
+| `/seasons/:id` | sezona: tipovi dana, pravilo za praznike i svi mjeseci; klik na dan mijenja kako vozi (kao drugi tip dana, ne vozi) uz napomenu; **kopiranje sezone** za sljedeću godinu (zadano isti datumi godinu kasnije, godine u nazivu +1), po želji s vožnjama |
 | `/calendars/:id` | kalendar s danima u tjednu i iznimkama na mjesečnom prikazu |
 | `/agencies` | prijevoznici s brojem linija; **novi prijevoznik**, izmjena i brisanje (opis niže) |
 | `/gtfs` | GTFS izvoz (s popisom problema ako izvoz nije moguć) i ponovni uvoz |
@@ -149,6 +149,12 @@ Editor varijante (`features/variants`):
   numerirana crta. Naziv je zadano „prva → zadnja stanica”.
 - Varijanta koju koriste vožnje zadržava stanice, a mijenjaju se samo vremena
   (za drugi redoslijed kopija).
+- **Povratni smjer** (gumb uz varijantu na stranici linije) otvara novu
+  varijantu suprotnog smjera: stanice su obrnutim redom, a svaka je zamijenjena
+  najbližom aktivnom stanicom istog naziva do 400 m koja nije u polaznom smjeru
+  (stajalište s druge strane ceste ili drugi peron). Stanice bez para (npr.
+  okretište) ostaju iste i označene su za provjeru. Vremena vožnje dionica
+  ostaju ista, samo u suprotnom smjeru (`reverse.ts`).
 
 ## Grafikon voznog reda
 
@@ -178,6 +184,7 @@ Uređivanje:
 | ← → (Shift: ±5) | pomak odabranih za minutu |
 | Del, Ctrl+Z, Ctrl+Y | brisanje, poništavanje, ponavljanje |
 | Panel desno | točna vremena (dolazak i polazak), natpis smjera, tip dana, kopiranje s pomakom (npr. svakih 10 min, 5 puta), generator takta (od–do svakih N min, po odabranoj varijanti) |
+| „Kopiraj u tip dana” | odabrane vožnje ili sve vožnje tipa dana dobivaju kopiju s istim vremenima u drugom tipu dana, i druge sezone (npr. subota = radni dan bez jutarnjeg vrha: kopiraj sve, pa u suboti obriši višak); kopije se spremaju s ostalim izmjenama i uređuju u tom tipu dana |
 
 GTFS pravila (vremena ne padaju, polazak nije prije dolaska, 0–48 h) provjerava
 se odmah: neispravna vožnja je crvena, a spremanje je onemogućeno. Izmjene se

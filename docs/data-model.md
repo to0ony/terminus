@@ -108,6 +108,10 @@ kalendara (`calendar_dates`) **izračunavaju se** iz dana sezone pri svakoj
 promjeni (npr. "25. 12. kao nedjelja" je "ne vozi" za radni dan i "vozi" za
 nedjelju), pa se tipovi dana sezone ne uređuju preko `/api/calendars` (409).
 Svaki dan u tjednu pripada najviše jednom tipu dana, a sezone se ne preklapaju.
+Kopija sezone (npr. isti vozni red sljedeće godine) dobiva nove kalendare s
+istim tipovima dana i pravilom za praznike, a po želji i kopije svih vožnji
+(nove vožnje s istim vremenima, varijantom i trasom), u jednoj transakciji;
+ručne iznimke se ne kopiraju jer su vezane uz datume.
 Kalendari uvezeni iz GTFS-a nisu u sezoni i ostaju kakvi jesu. GTFS uvoz briše
 i sezone.
 

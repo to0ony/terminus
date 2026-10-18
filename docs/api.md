@@ -35,7 +35,7 @@ Sve osim `/api/public/*`, `/api/auth/login` i `/health` traži prijavu
 | Varijante linija | `/api/routes/{id}/variants`, `POST /api/routes/{id}/variants/derive` (iz vožnji), `/api/variants/{id}` |
 | Linija: grafikon voznog reda | `GET`/`PUT /api/routes/{id}/schedule?directionId=&calendarId=` (vožnje s vremenima u sekundama; spremanje izmjena u jednoj transakciji, 409 kod sukoba) |
 | Kalendari i iznimke | `/api/calendars`, `/api/calendars/overview?date=`, `/api/calendars/{id}/dates` |
-| Sezone voznog reda | `/api/seasons`, `PUT /api/seasons/{id}/day-types`, `PUT`/`DELETE /api/seasons/{id}/days/{date}`, `GET /api/seasons/holiday-countries` |
+| Sezone voznog reda | `/api/seasons`, `POST /api/seasons/{id}/copy` (kopija za drugo razdoblje, po želji s vožnjama), `PUT /api/seasons/{id}/day-types`, `PUT`/`DELETE /api/seasons/{id}/days/{date}`, `GET /api/seasons/holiday-countries` |
 | Vožnje i vremena | `/api/trips`, `/api/trips/{id}/stop-times` |
 | Trase | `/api/shapes` |
 | Cijene karata | `/api/fares` |

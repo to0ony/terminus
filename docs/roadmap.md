@@ -128,7 +128,9 @@ prijevoznici. Redoslijed:
 4. **Grafikon po varijantama:** redci iz odabranih varijanti, takt i nova
    vožnja po varijanti, "Nacrtaj vožnju" (dva klika: prva i zadnja stanica,
    međustanice po vremenima vožnje; po želji stanica po stanica) ✅
-5. Deploy (faza 6), pa trase za nove varijante (5.6).
+5. Brži unos: povratni smjer iz polazne varijante, kopiranje sezone (s
+   vožnjama) i kopiranje vožnji u drugi tip dana ✅
+6. Deploy (faza 6), pa trase za nove varijante (5.6).
 
 ## Faza 6: produkcija
 
