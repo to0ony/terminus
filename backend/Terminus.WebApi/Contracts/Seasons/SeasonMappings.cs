@@ -40,6 +40,13 @@ public static class SeasonMappings
         HolidayMode = request.HolidayMode
     };
 
+    public static ITimetableSeasonModel ToModel(this CopySeasonRequest request) => new TimetableSeasonModel
+    {
+        Name = request.Name!,
+        StartDate = request.StartDate!.Value,
+        EndDate = request.EndDate!.Value
+    };
+
     public static ITimetableSeasonModel ToModel(this UpdateSeasonRequest request) => new TimetableSeasonModel
     {
         Name = request.Name!,

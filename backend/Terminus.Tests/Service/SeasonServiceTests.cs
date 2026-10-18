@@ -183,6 +183,56 @@ public class SeasonServiceTests
     }
 
     [Fact]
+    public async Task CopyAsync_CopiesDayTypesHolidayRuleAndTrips()
+    {
+        var source = await CreateAsync();
+        var sourceIds = source.State.DayTypes.Select(d => d.Id).ToList();
+
+        var copy = await _service.CopyAsync(
+            source.State.Season.Id, Period("Zimski 2027/28", new DateOnly(2027, 9, 1), new DateOnly(2028, 6, 14)),
+            withTrips: true, TestContext.Current.CancellationToken);
+
+        var season = copy.State.Season;
+        Assert.NotEqual(source.State.Season.Id, season.Id);
+        Assert.Equal("HR", season.HolidayCountry);
+        Assert.Equal(SeasonDayMode.RunsAs, season.HolidayMode);
+        Assert.Equal(["Radni dan", "Subota", "Nedjelja"], copy.State.DayTypes.Select(d => d.Name));
+        Assert.All(copy.State.DayTypes, d =>
+        {
+            Assert.DoesNotContain(d.Id, sourceIds);
+            Assert.Equal(season.EndDate, d.EndDate);
+        });
+        // Praznici voze kao nedjelja i u kopiji.
+        Assert.Equal(copy.State.DayTypes[2].Id, season.HolidayCalendarId);
+
+        var copied = _repository.CopiedTrips!;
+        Assert.Equal(sourceIds.Order(), copied.Keys.Order());
+        Assert.Equal(copy.State.DayTypes[1].Id, copied[sourceIds[1]]);
+    }
+
+    [Fact]
+    public async Task CopyAsync_WithoutTrips_CopiesNoTrips()
+    {
+        var source = await CreateAsync();
+
+        await _service.CopyAsync(
+            source.State.Season.Id, Period("Ljeto 2027", new DateOnly(2027, 6, 15), new DateOnly(2027, 8, 31)),
+            withTrips: false, TestContext.Current.CancellationToken);
+
+        Assert.Null(_repository.CopiedTrips);
+    }
+
+    [Fact]
+    public async Task CopyAsync_OverlappingPeriod_IsConflict()
+    {
+        var source = await CreateAsync();
+
+        await Assert.ThrowsAsync<ConflictException>(() => _service.CopyAsync(
+            source.State.Season.Id, Period("Kopija", new DateOnly(2027, 6, 1), new DateOnly(2027, 8, 31)),
+            withTrips: true, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task GetHolidayCountriesAsync_SuggestsCountryFromAgencyTimezone()
     {
         var countries = await _service.GetHolidayCountriesAsync(TestContext.Current.CancellationToken);
@@ -216,6 +266,13 @@ public class SeasonServiceTests
 
         return _service.CreateAsync(season, dayTypes, holidayIndex, TestContext.Current.CancellationToken);
     }
+
+    private static ITimetableSeasonModel Period(string name, DateOnly start, DateOnly end) => new TimetableSeasonModel
+    {
+        Name = name,
+        StartDate = start,
+        EndDate = end
+    };
 
     private static ITimetableSeasonModel Copy(ITimetableSeasonModel season, SeasonDayMode mode) => new TimetableSeasonModel
     {

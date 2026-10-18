@@ -15,7 +15,7 @@ import {
 import { useDisclosure } from '@mantine/hooks'
 import { modals } from '@mantine/modals'
 import { notifications } from '@mantine/notifications'
-import { IconArrowLeft, IconPencil, IconTrash } from '@tabler/icons-react'
+import { IconArrowLeft, IconCopy, IconPencil, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { errorMessage } from '@/api/errors'
@@ -24,6 +24,7 @@ import { QueryError } from '@/components/QueryError'
 import { formatDate, formatNumber } from '@/lib/format'
 import { DayDialog } from './DayDialog'
 import { DayTypesDialog } from './DayTypesDialog'
+import { CopySeasonDialog } from './CopySeasonDialog'
 import { EditSeasonDialog } from './EditSeasonDialog'
 import { type Season, useDeleteSeason, useSeason } from './queries'
 import { SeasonMonths } from './SeasonMonths'
@@ -43,6 +44,7 @@ export function SeasonPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [editOpened, edit] = useDisclosure(false)
   const [typesOpened, types] = useDisclosure(false)
+  const [copyOpened, copy] = useDisclosure(false)
 
   if (season.isPending) {
     return <PageLoader />
@@ -97,6 +99,9 @@ export function SeasonPage() {
           <Button variant="default" leftSection={<IconPencil size={16} />} onClick={edit.open}>
             Uredi
           </Button>
+          <Button variant="default" leftSection={<IconCopy size={16} />} onClick={copy.open}>
+            Kopiraj
+          </Button>
           <Button
             variant="subtle"
             color="red"
@@ -150,6 +155,7 @@ export function SeasonPage() {
 
       <DayDialog season={data} date={selectedDate} onClose={() => setSelectedDate(null)} />
       <EditSeasonDialog season={data} opened={editOpened} onClose={edit.close} />
+      <CopySeasonDialog season={data} opened={copyOpened} onClose={copy.close} />
       <DayTypesDialog season={data} opened={typesOpened} onClose={types.close} />
     </Stack>
   )

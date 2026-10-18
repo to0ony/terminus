@@ -51,6 +51,23 @@ public class SeasonsController(ISeasonService seasonService, IOutputCacheStore o
         return CreatedAtAction(nameof(Get), new { id = season.State.Season.Id }, season.ToResponse());
     }
 
+    /// <summary>
+    /// Kopija sezone za drugo razdoblje: isti tipovi dana i pravilo za praznike, a uz
+    /// WithTrips i sve vožnje. Ručne iznimke se ne kopiraju. 409 ako se razdoblje preklapa.
+    /// </summary>
+    [HttpPost("{id:guid}/copy")]
+    [ProducesResponseType<SeasonResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<SeasonResponse>> Copy(Guid id, CopySeasonRequest request, CancellationToken cancellationToken)
+    {
+        var season = await seasonService.CopyAsync(id, request.ToModel(), request.WithTrips, cancellationToken);
+        await EvictAsync(cancellationToken);
+        return CreatedAtAction(nameof(Get), new { id = season.State.Season.Id }, season.ToResponse());
+    }
+
     /// <summary>Naziv, razdoblje, država i pravilo za praznike; praznici se ponovno dohvaćaju.</summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType<SeasonResponse>(StatusCodes.Status200OK)]

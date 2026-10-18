@@ -72,6 +72,15 @@ export function useUpdateSeason(id: string) {
   )
 }
 
+export type CopySeasonRequest = components['schemas']['CopySeasonRequest']
+
+/** Kopija sezone (s vožnjama ili bez njih) za drugo razdoblje. */
+export function useCopySeason(id: string) {
+  return useSeasonMutation(async (body: CopySeasonRequest) =>
+    unwrap(await api.POST('/api/seasons/{id}/copy', { params: { path: { id } }, body })),
+  )
+}
+
 export function useSaveDayTypes(id: string) {
   return useSeasonMutation(async (dayTypes: DayTypeRequest[]) =>
     unwrap(

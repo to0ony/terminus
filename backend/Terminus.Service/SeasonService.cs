@@ -97,6 +97,52 @@ public class SeasonService(
         return await SaveAsync(state, cancellationToken);
     }
 
+    public async Task<SeasonDetail> CopyAsync(Guid id, ITimetableSeasonModel season, bool withTrips, CancellationToken cancellationToken = default)
+    {
+        var source = await LoadAsync(id, cancellationToken);
+
+        season.Id = Guid.NewGuid();
+        season.HolidayCountry = source.Season.HolidayCountry;
+        season.HolidayMode = source.Season.HolidayMode;
+
+        // Stari tip dana → novi, za praznike i vožnje.
+        var calendars = new Dictionary<Guid, Guid>();
+        var dayTypes = source.DayTypes.Select(d =>
+        {
+            var copy = new ServiceCalendarModel
+            {
+                Id = Guid.NewGuid(),
+                Code = NewCode(season.StartDate),
+                Name = d.Name,
+                Monday = d.Monday,
+                Tuesday = d.Tuesday,
+                Wednesday = d.Wednesday,
+                Thursday = d.Thursday,
+                Friday = d.Friday,
+                Saturday = d.Saturday,
+                Sunday = d.Sunday
+            };
+            calendars[d.Id] = copy.Id;
+            return (IServiceCalendarModel)copy;
+        }).ToList();
+
+        season.HolidayCalendarId = source.Season.HolidayCalendarId is { } holiday && calendars.TryGetValue(holiday, out var mapped)
+            ? mapped
+            : null;
+
+        Normalize(season, dayTypes);
+        var errors = new ValidationErrors();
+        Validate(season, dayTypes, errors);
+        errors.ThrowIfAny();
+
+        await EnsureNoOverlapAsync(season, cancellationToken);
+
+        var holidays = await FetchHolidaysAsync(season, cancellationToken);
+        var state = new SeasonState(season, dayTypes, SeasonCalendarBuilder.ApplyHolidays(season, [], holidays));
+
+        return await SaveAsync(state, cancellationToken, withTrips ? calendars : null);
+    }
+
     public async Task<SeasonDetail> UpdateAsync(Guid id, ITimetableSeasonModel season, CancellationToken cancellationToken = default)
     {
         var current = await LoadAsync(id, cancellationToken);
@@ -271,10 +317,13 @@ public class SeasonService(
         await seasonRepository.GetAsync(id, cancellationToken)
             ?? throw new NotFoundException($"Sezona {id} ne postoji.");
 
-    private async Task<SeasonDetail> SaveAsync(SeasonState state, CancellationToken cancellationToken)
+    private async Task<SeasonDetail> SaveAsync(
+        SeasonState state,
+        CancellationToken cancellationToken,
+        IReadOnlyDictionary<Guid, Guid>? copyTrips = null)
     {
         var calendarDates = SeasonCalendarBuilder.CalendarDates(state.Season, state.DayTypes, state.Days);
-        await seasonRepository.SaveAsync(state, calendarDates, cancellationToken);
+        await seasonRepository.SaveAsync(state, calendarDates, copyTrips, cancellationToken);
 
         // Natrag iz baze, s vremenima izmjene koja postavlja baza.
         return await GetAsync(state.Season.Id, cancellationToken);

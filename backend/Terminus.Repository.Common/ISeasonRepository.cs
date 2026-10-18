@@ -21,7 +21,15 @@ public interface ISeasonRepository
     /// dodaju, nenavedeni brišu), dane i iznimke kalendara sezone. Id-eve novih
     /// zapisa zadaje pozivatelj.
     /// </summary>
-    Task SaveAsync(SeasonState state, IReadOnlyList<ICalendarDateModel> calendarDates, CancellationToken cancellationToken = default);
+    /// <param name="copyTrips">
+    /// Kalendar → tip dana ove sezone: vožnje tih kalendara (s vremenima) kopiraju se u
+    /// odgovarajući tip dana, u istoj transakciji. Koristi se kod kopiranja sezone.
+    /// </param>
+    Task SaveAsync(
+        SeasonState state,
+        IReadOnlyList<ICalendarDateModel> calendarDates,
+        IReadOnlyDictionary<Guid, Guid>? copyTrips = null,
+        CancellationToken cancellationToken = default);
 
     /// <returns>false ako sezona ne postoji.</returns>
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);

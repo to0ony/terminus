@@ -25,10 +25,18 @@ internal sealed class FakeSeasonRepository : ISeasonRepository
             .Select(s => s.Season)
             .FirstOrDefault(s => s.Id != exceptId && s.StartDate <= end && s.EndDate >= start));
 
-    public Task SaveAsync(SeasonState state, IReadOnlyList<ICalendarDateModel> calendarDates, CancellationToken cancellationToken = default)
+    /// <summary>Zadnje kopiranje vožnji: kalendar → tip dana nove sezone.</summary>
+    public IReadOnlyDictionary<Guid, Guid>? CopiedTrips { get; private set; }
+
+    public Task SaveAsync(
+        SeasonState state,
+        IReadOnlyList<ICalendarDateModel> calendarDates,
+        IReadOnlyDictionary<Guid, Guid>? copyTrips = null,
+        CancellationToken cancellationToken = default)
     {
         Seasons[state.Season.Id] = state;
         CalendarDates = calendarDates;
+        CopiedTrips = copyTrips;
         return Task.CompletedTask;
     }
 

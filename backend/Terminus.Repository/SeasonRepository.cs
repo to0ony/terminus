@@ -57,7 +57,11 @@ public class SeasonRepository(TerminusDbContext context) : ISeasonRepository
         return season is null ? null : ToModel(season);
     }
 
-    public async Task SaveAsync(SeasonState state, IReadOnlyList<ICalendarDateModel> calendarDates, CancellationToken cancellationToken = default)
+    public async Task SaveAsync(
+        SeasonState state,
+        IReadOnlyList<ICalendarDateModel> calendarDates,
+        IReadOnlyDictionary<Guid, Guid>? copyTrips = null,
+        CancellationToken cancellationToken = default)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
         var model = state.Season;
@@ -122,8 +126,62 @@ public class SeasonRepository(TerminusDbContext context) : ISeasonRepository
             ExceptionType = (short)d.ExceptionType
         }));
 
+        if (copyTrips is { Count: > 0 })
+        {
+            await AddTripCopiesAsync(copyTrips, cancellationToken);
+        }
+
         await SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+    }
+
+    /// <summary>Kopije vožnji s istim vremenima, varijantom i trasom u novim tipovima dana.</summary>
+    private async Task AddTripCopiesAsync(IReadOnlyDictionary<Guid, Guid> calendars, CancellationToken cancellationToken)
+    {
+        var sourceIds = calendars.Keys.ToList();
+        var trips = await context.Trips
+            .AsNoTracking()
+            .Where(t => sourceIds.Contains(t.ServiceCalendarId))
+            .Include(t => t.StopTimes)
+            .Include(t => t.Route)
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+
+        foreach (var source in trips)
+        {
+            var id = Guid.NewGuid();
+            context.Trips.Add(new Trip
+            {
+                Id = id,
+                RouteId = source.RouteId,
+                ServiceCalendarId = calendars[source.ServiceCalendarId],
+                // Isti oblik kao kod novih vožnji u grafikonu.
+                Code = $"{source.Route.Code}-{id.ToString("N")[..8]}",
+                Headsign = source.Headsign,
+                ShortName = source.ShortName,
+                DirectionId = source.DirectionId,
+                BlockId = source.BlockId,
+                ShapeId = source.ShapeId,
+                VariantId = source.VariantId,
+                WheelchairAccessible = source.WheelchairAccessible,
+                BikesAllowed = source.BikesAllowed,
+                StopTimes = source.StopTimes.Select(st => new StopTime
+                {
+                    TripId = id,
+                    StopSequence = st.StopSequence,
+                    StopId = st.StopId,
+                    ArrivalTime = st.ArrivalTime,
+                    DepartureTime = st.DepartureTime,
+                    StopHeadsign = st.StopHeadsign,
+                    PickupType = st.PickupType,
+                    DropOffType = st.DropOffType,
+                    ContinuousPickup = st.ContinuousPickup,
+                    ContinuousDropOff = st.ContinuousDropOff,
+                    ShapeDistTraveled = st.ShapeDistTraveled,
+                    Timepoint = st.Timepoint
+                }).ToList()
+            });
+        }
     }
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)

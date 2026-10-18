@@ -43,6 +43,14 @@ public interface ISeasonService
     /// <summary>Uklanja ručnu iznimku; za praznik ponovno vrijedi pravilo za praznike.</summary>
     Task<SeasonDetail> ResetDayAsync(Guid id, DateOnly date, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Nova sezona za drugo razdoblje s istim tipovima dana i pravilom za praznike
+    /// (praznici se dohvaćaju za novo razdoblje, ručne iznimke se ne kopiraju jer su
+    /// vezane uz datume). Uz <paramref name="withTrips"/> kopiraju se i sve vožnje.
+    /// </summary>
+    /// <param name="season">Naziv i razdoblje nove sezone.</param>
+    Task<SeasonDetail> CopyAsync(Guid id, ITimetableSeasonModel season, bool withTrips, CancellationToken cancellationToken = default);
+
     /// <summary>Briše sezonu s tipovima dana; ne smije ih koristiti nijedna vožnja.</summary>
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 

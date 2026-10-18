@@ -87,6 +87,22 @@ public class UpdateSeasonRequest
     public Guid? HolidayCalendarId { get; set; }
 }
 
+/// <summary>Kopija sezone za drugo razdoblje.</summary>
+public class CopySeasonRequest
+{
+    [Required]
+    public string? Name { get; set; }
+
+    [Required]
+    public DateOnly? StartDate { get; set; }
+
+    [Required]
+    public DateOnly? EndDate { get; set; }
+
+    /// <summary>Kopiraju se i sve vožnje sezone u odgovarajuće tipove dana.</summary>
+    public bool WithTrips { get; set; } = true;
+}
+
 public class DayTypesRequest
 {
     [Required]
