@@ -1,5 +1,6 @@
 import {
   ActionIcon,
+  Alert,
   Anchor,
   Badge,
   Button,
@@ -12,12 +13,13 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import { IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
+import { IconAlertTriangle, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
 import { useRoutes } from '@/features/routes/queries'
+import { useSettings } from '@/features/settings/queries'
 import { formatNumber } from '@/lib/format'
 import { AgencyDialog, DeleteAgencyDialog } from './AgencyDialogs'
 import { type Agency, useAgencies } from './queries'
@@ -28,12 +30,16 @@ import { type Agency, useAgencies } from './queries'
  */
 export function AgenciesPage() {
   const agencies = useAgencies()
+  const settings = useSettings()
   const [newOpened, newAgency] = useDisclosure(false)
   const [editing, setEditing] = useState<Agency | null>(null)
   const [deleting, setDeleting] = useState<{ agency: Agency; routeCount: number } | null>(null)
 
   // GTFS: svi prijevoznici imaju istu vremensku zonu.
   const timezone = agencies.data?.[0]?.timezone
+  // Bez naziva u Postavkama javne stranice prikazuju naziv prvog unesenog prijevoznika.
+  const missingDisplayName =
+    (agencies.data?.length ?? 0) > 1 && settings.data !== undefined && !settings.data.displayName
 
   return (
     <Stack gap="md">
@@ -52,6 +58,22 @@ export function AgenciesPage() {
         </Anchor>
         .
       </Text>
+      {missingDisplayName && (
+        <Alert
+          color="yellow"
+          variant="light"
+          icon={<IconAlertTriangle />}
+          title="Upiši naziv za javne stranice"
+        >
+          Linije vozi više prijevoznika, a u Postavkama nije upisan naziv, pa zasloni stanica i PDF
+          vozni redovi prikazuju naziv samo jednog od njih. Upiši naziv sustava (npr. Gradski
+          prijevoz) u{' '}
+          <Anchor component={Link} to="/settings" size="sm">
+            Postavkama
+          </Anchor>
+          .
+        </Alert>
+      )}
 
       <AgencyDialog opened={newOpened} onClose={newAgency.close} defaultTimezone={timezone} />
       <AgencyDialog

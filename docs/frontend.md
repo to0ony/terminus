@@ -122,7 +122,8 @@ GTFS traži istu za cijeli feed.
 svaka je zaseban prijevoznik, a svaka linija ima svog (izbor u dijalogu linije
 pojavi se čim postoje barem dva). GTFS izvoz navodi sve prijevoznike, popis
 linija dobiva filter i stupac Prijevoznik, a zaslon stanice i PDF prikazuju
-naziv iz Postavki, pa putnik vidi jedan naziv sustava.
+naziv iz Postavki, pa putnik vidi jedan naziv sustava. Dok taj naziv nije
+upisan, a prijevoznika je više, stranica Prijevoznici upozorava na to.
 
 **Brisanje.** Prijevoznik bez linija briše se odmah. Prijevoznik s linijama
 briše se tek kad se odabere tko ih preuzima: linije i cijene karata prelaze
