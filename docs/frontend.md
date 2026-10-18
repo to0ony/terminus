@@ -156,6 +156,28 @@ Editor varijante (`features/variants`):
   okretište) ostaju iste i označene su za provjeru. Vremena vožnje dionica
   ostaju ista, samo u suprotnom smjeru (`reverse.ts`).
 
+**Trasa** (prekidač „Stanice / Trasa” u editoru varijante) prati ceste
+(autobus, trolejbus) ili pruge (tramvaj, vlak, metro) iz OpenStreetMapa, bez
+rutera:
+
+- Jedan Overpass upit vraća ceste ili pruge u koridoru oko stanica (300 m,
+  šire za duge međugradske dionice), a najkraći put od stanice do stanice
+  računa se u pregledniku (`osmNetwork.ts`). Poštuju se jednosmjerne ulice
+  (i kružni tokovi), osim gdje je autobusu dopušteno (`oneway:bus=no`);
+  privatne ceste i parkirališta ne ulaze u mrežu. Stanica se spaja na najbližu
+  ulicu, a servisni put ima prednost samo ako je bitno bliži.
+- Trasa je po dionicama između uzastopnih stanica (`variantShape.ts`,
+  `useVariantShape.ts`). Povlačenje crte dodaje međutočku i ponovno računa
+  samo tu dionicu, povlačenje međutočke je pomiče, a desni klik je briše.
+  Dionica bez puta (rupa u OSM-u) je crvena ravna crta; ručna dionica je ravna
+  crta kroz međutočke. Ako put nije nađen, dohvaća se širi koridor te dionice.
+- Spremljena trasa se pri otvaranju dijeli po stanicama (najbliža točka trase
+  redom), pa nakon dodane ili premještene stanice nastaju samo nove dionice, a
+  popravci ostalih ostaju; nove se izračunaju pri ulasku u trasu ili spremanju.
+- Trasa se sprema s varijantom kao nova GTFS trasa (`POST /api/shapes`) i
+  prelazi na sve vožnje varijante. Kopija varijante preuzima trasu izvorne, a
+  povratni smjer je računa iznova.
+
 ## Grafikon voznog reda
 
 `features/schedule` je editor vožnji jedne linije u obliku grafikona

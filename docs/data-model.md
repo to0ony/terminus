@@ -172,5 +172,5 @@ Pravila koja zahtijevaju upit nad drugim recima provodi servisni sloj:
 | linije | Kaskadno briše njezine vožnje s vremenima i pravila cijena za tu liniju. |
 | kalendara | Kaskadno briše iznimke; odbija se (409) ako ga koriste vožnje. |
 | vožnje | Kaskadno briše njezina vremena. |
-| trase | Kaskadno briše točke; vožnje ostaju bez trase (`SET NULL`). |
+| trase | Kaskadno briše točke; vožnje ostaju bez trase (`SET NULL`). Kad varijanta dobije novu trasu, dobivaju je i njezine vožnje, a stara se briše ako je više ništa ne koristi. |
 | cijene | Kaskadno briše njezina pravila. |

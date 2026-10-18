@@ -13,7 +13,7 @@ detaljan opis funkcija je u ostalim dokumentima (npr.
 | 2 Uvoz GTFS-a | ✅ |
 | 3 Dashboard za pregled | ✅ osim trase linije na karti |
 | 4 Za putnike (zaslon na stanici, PDF, javni feed) | ✅ osim PDF-a za sve stanice odjednom |
-| 5 Editor | kalendari (sezone, tipovi dana, praznici) ✅, grafikon vožnji ✅, varijante linija ✅, uvoz kao osnova ✅, editor linija i varijanti na karti ✅, grafikon po varijantama ✅; sljedeće deploy pa trase |
+| 5 Editor | kalendari (sezone, tipovi dana, praznici) ✅, grafikon vožnji ✅, varijante linija ✅, uvoz kao osnova ✅, editor linija i varijanti na karti ✅, grafikon po varijantama ✅, trase po cestama i prugama iz OSM-a ✅; sljedeće deploy |
 | 6 Produkcija | čeka odluku o hostingu |
 
 ## Cilj
@@ -108,7 +108,7 @@ Detaljno u [departures-and-timetables.md](departures-and-timetables.md).
 | 5.3 | Uređivanje vožnji i vremena u grafikonu (povlačenje vožnje i točkica, točna vremena u panelu, tip dana, poništavanje, spremanje u jednoj transakciji s provjerom sukoba) ✅ | 5.1, 3.5 |
 | 5.4 | Brzi unos: nova vožnja klikom, kopiranje s pomakom (npr. +30 min, 10 puta), generator takta, pomak i brisanje više vožnji ✅ | 5.3 |
 | 5.5 | Praznici: državni praznici s OpenHolidays API-ja i jedno pravilo za sve tipove dana sezone ✅ | 5.2 |
-| 5.6 | Trase (`shapes`): automatski prijedlog po cestama i prugama, ispravljanje povlačenjem; traži ruter (Valhalla ili pfaedle) | 2.4, 5.2, 6.1 |
+| 5.6 | Trase (`shapes`): automatski po cestama ili prugama iz OpenStreetMapa (bez rutera), dorada povlačenjem i ručne dionice ✅; trase za sve varijante linije odjednom | 2.4, 5.2 |
 | 5.7 | Izrada voznog reda od nule (prazna instanca bez uvoza) | 5.2–5.4 |
 | 5.8 | Upravljanje administratorima: dodavanje, uklanjanje, reset lozinke | 1.1 |
 | 5.9 | Upozorenja kod izvoza koja ne blokiraju izvoz (npr. feed istječe za 7 dana) | — |
@@ -130,7 +130,8 @@ prijevoznici. Redoslijed:
    međustanice po vremenima vožnje; po želji stanica po stanica) ✅
 5. Brži unos: povratni smjer iz polazne varijante, kopiranje sezone (s
    vožnjama) i kopiranje vožnji u drugi tip dana ✅
-6. Deploy (faza 6), pa trase za nove varijante (5.6).
+6. Trase varijanti po cestama i prugama iz OSM-a, s doradom (5.6) ✅
+7. Deploy (faza 6).
 
 ## Faza 6: produkcija
 
@@ -176,6 +177,7 @@ prije prvog pilota.
 | UI | Mantine; zaslon na stanici bez Mantinea (vlastiti CSS) | Gotove tablice, forme, upload, obavijesti i datumi za dashboard; zaslon ostaje lagan. |
 | Karta | MapLibre GL s podlogom OpenFreeMap | Besplatno, bez API ključa i brzo s tisućama stanica. |
 | Mjesta i stajališta | Photon (pretraga mjesta) i Overpass API (stajališta iz OSM-a), izravno iz preglednika | Besplatno i bez ključa; prijevoznik bez GTFS-a dobije stanice u nekoliko minuta. |
+| Trase | Ceste ili pruge iz OSM-a (Overpass) u koridoru oko stanica i najkraći put u pregledniku, uz jednosmjerne ulice; bez rutera (Valhalla, OSRM) | Mali i srednji prijevoznici trebaju trasu koja prati ulicu, ne bus trake ni pravila skretanja; bez dodatnog servisa u produkciji. |
 | PDF | QuestPDF i QRCoder | Vidi [departures-and-timetables.md](departures-and-timetables.md#35-licenca-za-questpdf) zbog licence. |
 
 ## Otvorena pitanja
