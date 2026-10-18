@@ -14,7 +14,7 @@ i MapLibre GL. Pokretanje i naredbe su u [lokalnom razvoju](development.md#front
 | `/routes`, `/routes/:id` | linije (pretraga, filteri, nova linija); linija s izmjenom podataka, **varijantama** i voznim redom po danu i smjeru |
 | `/routes/:id/variants/:variantId` | **editor varijante** na karti (`new`, `new?from=` za kopiju) (opis niže) |
 | `/routes/:id/schedule` | **grafikon voznog reda** linije s uređivanjem vožnji (opis niže) |
-| `/stops`, `/stops/:id` | stanice s kartom; stanica s linijama, polascima za dan, premještanjem na karti, **PDF voznim redom** i poveznicom na zaslon |
+| `/stops`, `/stops/:id` | stanice s kartom, **nova stanica klikom** i **prijedlozi iz OpenStreetMapa**; stanica s izmjenom, brisanjem, peronima kolodvora, linijama, polascima za dan, premještanjem na karti, **PDF voznim redom** i poveznicom na zaslon |
 | `/calendars` | sezone voznog reda (i nova sezona) te ostali kalendari, npr. uvezeni iz GTFS-a |
 | `/seasons/:id` | sezona: tipovi dana, pravilo za praznike i svi mjeseci; klik na dan mijenja kako vozi (kao drugi tip dana, ne vozi) uz napomenu |
 | `/calendars/:id` | kalendar s danima u tjednu i iznimkama na mjesečnom prikazu |
@@ -84,6 +84,31 @@ Dark, Liberty, Bright ili Fiord. Izbor se pamti u pregledniku
 (`terminus-map-style`) i vrijedi za sve karte; pri promjeni podloge slojevi
 stranice (npr. stanice) ostaju. Stanice se učitavaju za vidljivi dio karte (`/api/stops/area`,
 najviše 2000), a početni prikaz je područje svih stanica (`/api/stops/extent`).
+
+## Stanice
+
+Instanca koja kreće od nule stanice radi na stranici Stanice:
+
+- **Tražilica mjesta** gore lijevo na karti (geokoder
+  [Photon](https://photon.komoot.io), podaci OpenStreetMapa, bez ključa)
+  pomiče kartu na grad ili adresu.
+- **„Nova stanica”** uključuje postavljanje: klik na kartu otvara dijalog
+  stanice na tom mjestu, a postavljanje ostaje uključeno za sljedeću. Klik
+  unutar 150 m od upravo dodane predlaže isti naziv, za drugi peron.
+- **„Iz OpenStreetMapa”** učitava stajališta autobusa, tramvaja i vlaka u
+  vidljivom dijelu karte (javni [Overpass API](https://overpass-api.de),
+  područje do oko 25 km). Stajališta bez naziva i ona unutar 20 m od postojeće
+  stanice se ne nude. Klik odabire sivu točku, a odabrane postaju stanice s
+  nazivom, peronom (`local_ref`), oznakom za putnike (`ref`) i pristupačnošću
+  iz OSM-a (`features/stops/osm.ts`).
+
+Dijalog stanice (nova i izmjena) ima naziv, peron, oznaku za putnike, vrstu
+(stajalište ili kolodvor), kolodvor kojem pripada, pristupačnost i GTFS ID.
+GTFS ID nove stanice je naziv i peron bez dijakritike (`glavni-kolodvor-a`), a
+ako je zauzet dodaje se broj (`-2`, `-3`). Kolodvor na svojoj stranici popisuje
+perone i nudi „Dodaj peron” (na mjestu kolodvora, pa se premjesti). Stanica
+koju koriste vožnje ili varijante ne može se obrisati; nju se označi
+neaktivnom.
 
 ## Varijante linije
 

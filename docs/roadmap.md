@@ -104,7 +104,7 @@ Detaljno u [departures-and-timetables.md](departures-and-timetables.md).
 | # | Korak | Ovisi o |
 |---|---|---|
 | 5.1 | Odluka: vožnje ostaju u GTFS obliku i uređuju se kroz **grafikon voznog reda**; **varijante linije** (redoslijed stanica smjera s vremenima vožnje) su pravi zapis i predložak za nove vožnje ✅ | — |
-| 5.2 | Uređivanje stanica (karta), prijevoznika i linija; kalendari kroz sezone voznog reda (razdoblje, tipovi dana, iznimke klikom na dan, i za praznu instancu) ✅ | 3.x |
+| 5.2 | Uređivanje stanica (nova klikom na kartu, prijedlozi iz OpenStreetMapa, peroni kolodvora, premještanje, brisanje) i linija; kalendari kroz sezone voznog reda (razdoblje, tipovi dana, iznimke klikom na dan, i za praznu instancu) ✅ | 3.x |
 | 5.3 | Uređivanje vožnji i vremena u grafikonu (povlačenje vožnje i točkica, točna vremena u panelu, tip dana, poništavanje, spremanje u jednoj transakciji s provjerom sukoba) ✅ | 5.1, 3.5 |
 | 5.4 | Brzi unos: nova vožnja klikom, kopiranje s pomakom (npr. +30 min, 10 puta), generator takta, pomak i brisanje više vožnji ✅ | 5.3 |
 | 5.5 | Praznici: državni praznici s OpenHolidays API-ja i jedno pravilo za sve tipove dana sezone ✅ | 5.2 |
@@ -112,6 +112,7 @@ Detaljno u [departures-and-timetables.md](departures-and-timetables.md).
 | 5.7 | Izrada voznog reda od nule (prazna instanca bez uvoza) | 5.2–5.4 |
 | 5.8 | Upravljanje administratorima: dodavanje, uklanjanje, reset lozinke | 1.1 |
 | 5.9 | Upozorenja kod izvoza koja ne blokiraju izvoz (npr. feed istječe za 7 dana) | — |
+| 5.10 | Uređivanje prijevoznika iz sučelja (sad ih stvara samo čarobnjak ili uvoz) | — |
 
 **Plan editora (dogovoreno 18. 10. 2026.)** Aplikacija je alat u kojem se vozni
 red radi, a GTFS uvoz je samo pomoć na početku. Ciljani su mali i srednji
@@ -172,6 +173,7 @@ prije prvog pilota.
 | Frontend | React, TypeScript, Vite, React Router, TanStack Query, `openapi-typescript` + `openapi-fetch` | Tipovi iz OpenAPI opisa, cache i stanja učitavanja bez ručnog koda. |
 | UI | Mantine; zaslon na stanici bez Mantinea (vlastiti CSS) | Gotove tablice, forme, upload, obavijesti i datumi za dashboard; zaslon ostaje lagan. |
 | Karta | MapLibre GL s podlogom OpenFreeMap | Besplatno, bez API ključa i brzo s tisućama stanica. |
+| Mjesta i stajališta | Photon (pretraga mjesta) i Overpass API (stajališta iz OSM-a), izravno iz preglednika | Besplatno i bez ključa; prijevoznik bez GTFS-a dobije stanice u nekoliko minuta. |
 | PDF | QuestPDF i QRCoder | Vidi [departures-and-timetables.md](departures-and-timetables.md#35-licenca-za-questpdf) zbog licence. |
 
 ## Otvorena pitanja
