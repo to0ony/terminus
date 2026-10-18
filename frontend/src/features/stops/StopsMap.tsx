@@ -1,7 +1,7 @@
 import { Badge, Box, type BoxProps } from '@mantine/core'
 import type { FeatureCollection, LineString, Point } from 'geojson'
 import { type GeoJSONSource, type Map, Popup } from 'maplibre-gl'
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { MapView } from '@/components/map/MapView'
 import { PlaceSearch } from '@/components/map/PlaceSearch'
 import { type GeoBounds, type MapStop, type StopAreaParams, useStopsInArea } from './queries'
@@ -28,6 +28,8 @@ interface StopsMapProps extends BoxProps {
   onMapClick?: (position: { latitude: number; longitude: number }) => void
   /** Tražilica mjesta gore lijevo. */
   searchable?: boolean
+  /** Dodatni sloj i ploča gore desno (npr. prijedlozi iz OSM-a), kad je karta spremna. */
+  panel?: (map: Map) => ReactNode
 }
 
 /**
@@ -41,6 +43,7 @@ export function StopsMap({
   overlay = null,
   onMapClick,
   searchable = false,
+  panel,
   ...boxProps
 }: StopsMapProps) {
   const [map, setMap] = useState<Map | null>(null)
@@ -194,6 +197,11 @@ export function StopsMap({
         }
         onReady={handleReady}
       />
+      {panel && map && (
+        <Box pos="absolute" top={10} right={50}>
+          {panel(map)}
+        </Box>
+      )}
       {searchable && map && (
         <Box pos="absolute" top={10} left={10}>
           <PlaceSearch map={map} />

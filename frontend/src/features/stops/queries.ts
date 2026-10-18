@@ -1,8 +1,9 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api/client'
-import { unwrap } from '@/api/errors'
+import { ApiError, unwrap } from '@/api/errors'
 import type { components, paths } from '@/api/schema'
 import { type DownloadedFile, fileNameOf } from '@/lib/download'
+import { nextStopCode } from './stopCode'
 
 export type Stop = components['schemas']['StopResponse']
 export type MapStop = components['schemas']['TimetableStopResponse']
@@ -99,14 +100,31 @@ export function useTimetablePdf(id: string) {
 
 export type StopRequest = components['schemas']['StopRequest']
 
+/**
+ * Nova stanica. Predloženi kod (`autoCode`) može biti zauzet, npr. isti naziv
+ * na drugom mjestu, pa se tada dodaje broj: "x-2", "x-3", …
+ */
+export async function createStop(body: StopRequest, autoCode = false): Promise<Stop> {
+  for (let attempt = 0; ; attempt++) {
+    const code = autoCode ? nextStopCode(body.code ?? '', attempt) : body.code
+    try {
+      return unwrap(await api.POST('/api/stops', { body: { ...body, code } }))
+    } catch (error) {
+      if (!(autoCode && error instanceof ApiError && error.status === 409 && attempt < 20)) {
+        throw error
+      }
+    }
+  }
+}
+
 /** Nova stanica (bez Id-a) ili izmjena postojeće; osvježava kartu i popise. */
 export function useSaveStop(id?: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (body: StopRequest) =>
+    mutationFn: async ({ body, autoCode }: { body: StopRequest; autoCode?: boolean }) =>
       id
         ? unwrap(await api.PUT('/api/stops/{id}', { params: { path: { id } }, body }))
-        : unwrap(await api.POST('/api/stops', { body })),
+        : createStop(body, autoCode),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: stopKeys.all }),
     meta: { handlesErrors: true },
   })

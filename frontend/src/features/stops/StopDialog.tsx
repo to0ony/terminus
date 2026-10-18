@@ -15,7 +15,7 @@ import { useDebouncedValue } from '@mantine/hooks'
 import { useState } from 'react'
 import { ApiError, errorMessage } from '@/api/errors'
 import { type Stop, type StopRequest, useSaveStop, useStops } from './queries'
-import { nextStopCode, suggestStopCode } from './stopCode'
+import { suggestStopCode } from './stopCode'
 
 /** Početne vrijednosti nove stanice (npr. peron kolodvora preuzima naziv). */
 export interface NewStop {
@@ -71,7 +71,6 @@ function StopForm({
   )
   const [wheelchair, setWheelchair] = useState(String(stop?.wheelchairBoarding ?? 0))
   const [isActive, setIsActive] = useState(stop?.isActive ?? true)
-  const [saving, setSaving] = useState(false)
 
   // Kolodvori za odabir nadređene stanice, traže se po nazivu.
   const [stationSearch, setStationSearch] = useState('')
@@ -94,7 +93,7 @@ function StopForm({
   const error = save.error instanceof ApiError ? save.error : null
   const fieldError = (key: string) => error?.fieldErrors[key]?.[0]
 
-  const submit = async () => {
+  const submit = () => {
     const base: StopRequest = {
       code: shownCode,
       publicCode: publicCode.trim() || null,
@@ -113,27 +112,15 @@ function StopForm({
       wheelchairBoarding: Number(wheelchair),
       isActive,
     }
-    setSaving(true)
-    try {
-      // Predloženi kod može biti zauzet (isti naziv drugdje), pa se dodaje broj.
-      for (let attempt = 0; ; attempt++) {
-        try {
-          const saved = await save.mutateAsync({
-            ...base,
-            code: autoCode ? nextStopCode(shownCode, attempt) : shownCode,
-          })
+    save.mutate(
+      { body: base, autoCode },
+      {
+        onSuccess: (saved) => {
           onSaved?.(saved)
           onClose()
-          return
-        } catch (e) {
-          if (!(autoCode && e instanceof ApiError && e.status === 409 && attempt < 20)) {
-            return
-          }
-        }
-      }
-    } finally {
-      setSaving(false)
-    }
+        },
+      },
+    )
   }
 
   return (
@@ -245,11 +232,7 @@ function StopForm({
         <Button variant="default" onClick={onClose}>
           Odustani
         </Button>
-        <Button
-          onClick={() => void submit()}
-          loading={saving}
-          disabled={!name.trim() || !shownCode}
-        >
+        <Button onClick={submit} loading={save.isPending} disabled={!name.trim() || !shownCode}>
           {stop ? 'Spremi' : 'Dodaj stanicu'}
         </Button>
       </Group>

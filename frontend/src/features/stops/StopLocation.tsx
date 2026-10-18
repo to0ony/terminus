@@ -55,18 +55,21 @@ export function StopLocation({ stop }: { stop: Stop }) {
       latitude: Math.round(position.latitude * 1e6) / 1e6,
       longitude: Math.round(position.longitude * 1e6) / 1e6,
     }
-    save.mutate(body, {
-      onSuccess: () => {
-        cancel()
-        notifications.show({ color: 'green', message: 'Položaj stanice je spremljen.' })
+    save.mutate(
+      { body },
+      {
+        onSuccess: () => {
+          cancel()
+          notifications.show({ color: 'green', message: 'Položaj stanice je spremljen.' })
+        },
+        onError: (error) =>
+          notifications.show({
+            color: 'red',
+            title: 'Položaj nije spremljen',
+            message: errorMessage(error),
+          }),
       },
-      onError: (error) =>
-        notifications.show({
-          color: 'red',
-          title: 'Položaj nije spremljen',
-          message: errorMessage(error),
-        }),
-    })
+    )
   }
 
   if (!placed && !moving) {

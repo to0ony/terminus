@@ -15,7 +15,7 @@ import {
   Title,
 } from '@mantine/core'
 import { useDebouncedCallback } from '@mantine/hooks'
-import { IconMapPinPlus, IconSearch } from '@tabler/icons-react'
+import { IconMapPinPlus, IconSearch, IconWorldDownload } from '@tabler/icons-react'
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { PageLoader } from '@/components/PageLoader'
@@ -24,6 +24,7 @@ import { distance } from '@/features/variants/variantMath'
 import { formatNumber } from '@/lib/format'
 import { locationTypeLabel, locationTypeOptions } from './locationTypes'
 import { type Stop, type StopListParams, useStops, useStopsExtent } from './queries'
+import { OsmSuggestions } from './OsmSuggestions'
 import { type NewStop, StopDialog } from './StopDialog'
 import { StopsMap } from './StopsMap'
 
@@ -37,6 +38,7 @@ export function StopsPage() {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   // Postavljanje novih stanica klikom na kartu; ostaje uključeno za sljedeću.
   const [placing, setPlacing] = useState(false)
+  const [osm, setOsm] = useState(false)
   const [create, setCreate] = useState<NewStop | null>(null)
   const [lastCreated, setLastCreated] = useState<Stop | null>(null)
 
@@ -96,9 +98,22 @@ export function StopsPage() {
           <Button
             leftSection={<IconMapPinPlus size={16} />}
             variant={placing ? 'filled' : 'light'}
-            onClick={() => setPlacing(!placing)}
+            onClick={() => {
+              setPlacing(!placing)
+              setOsm(false)
+            }}
           >
             {placing ? 'Završi dodavanje' : 'Nova stanica'}
+          </Button>
+          <Button
+            leftSection={<IconWorldDownload size={16} />}
+            variant={osm ? 'filled' : 'light'}
+            onClick={() => {
+              setOsm(!osm)
+              setPlacing(false)
+            }}
+          >
+            Iz OpenStreetMapa
           </Button>
         </Group>
       </Group>
@@ -246,6 +261,11 @@ export function StopsPage() {
                 onSelect={placing ? undefined : (stop) => void navigate(`/stops/${stop.id}`)}
                 onMapClick={placing ? placeAt : undefined}
                 searchable
+                panel={
+                  osm
+                    ? (map) => <OsmSuggestions map={map} onClose={() => setOsm(false)} />
+                    : undefined
+                }
               />
             )}
           </Paper>
