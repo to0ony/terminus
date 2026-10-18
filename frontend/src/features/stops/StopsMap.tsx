@@ -3,6 +3,7 @@ import type { FeatureCollection, LineString, Point } from 'geojson'
 import { type GeoJSONSource, type Map, Popup } from 'maplibre-gl'
 import { useEffect, useRef, useState } from 'react'
 import { MapView } from '@/components/map/MapView'
+import { PlaceSearch } from '@/components/map/PlaceSearch'
 import { type GeoBounds, type MapStop, type StopAreaParams, useStopsInArea } from './queries'
 
 const source = 'terminus-stops'
@@ -23,8 +24,10 @@ interface StopsMapProps extends BoxProps {
   selectedId?: string | null
   onSelect?: (stop: MapStop) => void
   overlay?: MapOverlay | null
-  /** Klik na kartu izvan stanica (npr. nova stanica). */
+  /** Klik na kartu izvan stanica (npr. nova stanica); pokazivač je tada križić. */
   onMapClick?: (position: { latitude: number; longitude: number }) => void
+  /** Tražilica mjesta gore lijevo. */
+  searchable?: boolean
 }
 
 /**
@@ -37,6 +40,7 @@ export function StopsMap({
   onSelect,
   overlay = null,
   onMapClick,
+  searchable = false,
   ...boxProps
 }: StopsMapProps) {
   const [map, setMap] = useState<Map | null>(null)
@@ -140,7 +144,7 @@ export function StopsMap({
       }
     })
     instance.on('mouseleave', 'terminus-stops', () => {
-      instance.getCanvas().style.cursor = ''
+      instance.getCanvas().style.cursor = onMapClickRef.current ? 'crosshair' : ''
       popup.remove()
     })
     instance.on('click', 'terminus-stops', (event) => {
@@ -172,6 +176,13 @@ export function StopsMap({
     map?.getSource<GeoJSONSource>(overlaySource)?.setData(overlayFeatures(overlay))
   }, [map, overlay])
 
+  const placing = Boolean(onMapClick)
+  useEffect(() => {
+    if (map) {
+      map.getCanvas().style.cursor = placing ? 'crosshair' : ''
+    }
+  }, [map, placing])
+
   return (
     <Box pos="relative" {...boxProps}>
       <MapView
@@ -183,8 +194,20 @@ export function StopsMap({
         }
         onReady={handleReady}
       />
+      {searchable && map && (
+        <Box pos="absolute" top={10} left={10}>
+          <PlaceSearch map={map} />
+        </Box>
+      )}
       {stops.data?.truncated && (
-        <Badge pos="absolute" top={10} left={10} color="yellow" variant="filled" tt="none">
+        <Badge
+          pos="absolute"
+          top={searchable ? 46 : 10}
+          left={10}
+          color="yellow"
+          variant="filled"
+          tt="none"
+        >
           Prikazan je dio stanica. Približi kartu za sve.
         </Badge>
       )}
