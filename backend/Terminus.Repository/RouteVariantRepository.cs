@@ -61,11 +61,32 @@ public class RouteVariantRepository(TerminusDbContext context) : IRouteVariantRe
             return null;
         }
 
+        var previousShapeId = entity.ShapeId;
+
         // Stanice se pišu ispočetka.
         await context.RouteVariantStops.Where(s => s.VariantId == variant.Id).ExecuteDeleteAsync(cancellationToken);
         RouteVariantMapper.Apply(variant, entity);
         context.RouteVariantStops.AddRange(entity.Stops);
         await context.SaveChangesAsync(cancellationToken);
+
+        if (variant.ShapeId != previousShapeId)
+        {
+            // Vožnje varijante voze po njezinoj trasi.
+            await context.Trips
+                .Where(t => t.VariantId == variant.Id)
+                .ExecuteUpdateAsync(set => set
+                    .SetProperty(t => t.ShapeId, variant.ShapeId)
+                    .SetProperty(t => t.UpdatedAt, DateTime.UtcNow), cancellationToken);
+
+            // Zamijenjena trasa koju više ništa ne koristi samo bi ostala u bazi.
+            if (previousShapeId is Guid old
+                && !await context.Trips.AnyAsync(t => t.ShapeId == old, cancellationToken)
+                && !await context.RouteVariants.AnyAsync(v => v.ShapeId == old, cancellationToken))
+            {
+                await context.Shapes.Where(s => s.Id == old).ExecuteDeleteAsync(cancellationToken);
+            }
+        }
+
         await transaction.CommitAsync(cancellationToken);
 
         return await GetAsync(variant.Id, cancellationToken);

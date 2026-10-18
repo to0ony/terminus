@@ -28,6 +28,29 @@ export function useVariant(id: string, enabled = true) {
   })
 }
 
+/** Trasa sa svim točkama (za varijantu koja je ima). */
+export function useShape(id: string | null) {
+  return useQuery({
+    queryKey: ['shapes', id],
+    queryFn: async () =>
+      unwrap(await api.GET('/api/shapes/{id}', { params: { path: { id: id! } } })),
+    enabled: id !== null,
+    staleTime: Infinity,
+  })
+}
+
+/** Nova trasa iz točaka [dužina, širina]; Id ide u varijantu. */
+export async function createShape(code: string, points: [number, number][]) {
+  return unwrap(
+    await api.POST('/api/shapes', {
+      body: {
+        code,
+        points: points.map(([longitude, latitude]) => ({ latitude, longitude })),
+      },
+    }),
+  )
+}
+
 /** Nakon izmjene varijante osvježava se sve o liniji (grafikon, popis varijanti). */
 function useVariantMutation<T, R>(routeId: string, request: (body: T) => Promise<R>) {
   const queryClient = useQueryClient()

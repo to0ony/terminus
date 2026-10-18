@@ -15,7 +15,10 @@ public interface IRouteVariantRepository
 
     Task<IRouteVariantModel> InsertAsync(IRouteVariantModel variant, CancellationToken cancellationToken = default);
 
-    /// <summary>Mijenja varijantu i zamjenjuje joj stanice.</summary>
+    /// <summary>
+    /// Mijenja varijantu i zamjenjuje joj stanice. Nova trasa prelazi i na vožnje
+    /// varijante, a stara se briše ako je više ništa ne koristi.
+    /// </summary>
     /// <returns>Izmijenjena varijanta ili null ako ne postoji.</returns>
     Task<IRouteVariantModel?> UpdateAsync(IRouteVariantModel variant, CancellationToken cancellationToken = default);
 

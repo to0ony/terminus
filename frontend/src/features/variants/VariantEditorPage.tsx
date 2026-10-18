@@ -39,13 +39,19 @@ import { type MapStop, useStopsExtent, useStopsInArea } from '@/features/stops/q
 import { StopDialog } from '@/features/stops/StopDialog'
 import { type MapOverlay, StopsMap } from '@/features/stops/StopsMap'
 import {
+  createShape,
   type Variant,
   type VariantRequest,
   useCreateVariant,
+  useShape,
   useUpdateVariant,
   useVariant,
 } from './queries'
+import { type LngLat, networkKind } from './osmNetwork'
 import { reverseStops } from './reverse'
+import { ShapeLayers } from './ShapeLayers'
+import { ShapePanel } from './ShapePanel'
+import { useVariantShape } from './useVariantShape'
 import { distance, duration, suggestTravelTime } from './variantMath'
 
 /** Stanica varijante u editoru; key razlikuje istu stanicu dvaput na kružnoj liniji. */
@@ -85,6 +91,11 @@ function fromVariant(variant: Template): EditorStop[] {
     dwellTime: s.dwellTime,
     unpaired: s.unpaired,
   }))
+}
+
+/** GTFS shape_id nove trase: linija, smjer i vrijeme, jedinstven u praksi. */
+function newShapeCode(routeCode: string, direction: number) {
+  return `${routeCode}-${direction}-${Date.now().toString(36)}`
 }
 
 /** Okvir oko stanica s rubom u stupnjevima; null ako nijedna nema koordinate. */
@@ -128,6 +139,9 @@ export function VariantEditorPage() {
   )
 
   const hasArea = around !== null
+  // Kopija i izmjena kreću od trase izvorne varijante; povratni smjer se računa iznova.
+  const shapeId = reverseId ? null : (source.data?.shapeId ?? null)
+  const shape = useShape(shapeId)
 
   const template = useMemo((): Template | null => {
     if (!source.data) {
@@ -158,7 +172,15 @@ export function VariantEditorPage() {
   if (nearby.isError) {
     return <QueryError error={nearby.error} onRetry={() => void nearby.refetch()} />
   }
-  if (route.isPending || (sourceId !== null && template === null) || extent.isPending) {
+  if (shape.isError) {
+    return <QueryError error={shape.error} onRetry={() => void shape.refetch()} />
+  }
+  if (
+    route.isPending ||
+    (sourceId !== null && template === null) ||
+    extent.isPending ||
+    (shapeId !== null && shape.isPending)
+  ) {
     return <PageLoader />
   }
 
@@ -167,11 +189,20 @@ export function VariantEditorPage() {
       key={variantId + (sourceId ?? '') + (reverseId ? '-reverse' : '')}
       routeId={routeId}
       routeType={route.data.routeType}
+      routeCode={route.data.code}
       routeBadge={<RouteBadge route={route.data} />}
       // Kopija i povratni smjer postaju nova varijanta; izmjena zadržava Id.
       variant={isNew ? null : (source.data ?? null)}
       template={template}
       reversed={reverseId !== null}
+      shape={
+        shape.data
+          ? {
+              id: shape.data.id,
+              points: shape.data.points.map((p): LngLat => [p.longitude, p.latitude]),
+            }
+          : null
+      }
       extent={extent.data ?? null}
     />
   )
@@ -180,11 +211,14 @@ export function VariantEditorPage() {
 interface VariantEditorProps {
   routeId: string
   routeType: number
+  routeCode: string
   routeBadge: React.ReactNode
   variant: Variant | null
   template: Template | null
   /** Povratni smjer druge varijante: naziv se ne preuzima. */
   reversed: boolean
+  /** Spremljena trasa varijante (ili izvorne, za kopiju). */
+  shape: { id: string; points: LngLat[] } | null
   extent: {
     minLatitude: number
     minLongitude: number
@@ -196,10 +230,12 @@ interface VariantEditorProps {
 function VariantEditor({
   routeId,
   routeType,
+  routeCode,
   routeBadge,
   variant,
   template,
   reversed,
+  shape: savedShape,
   extent,
 }: VariantEditorProps) {
   const navigate = useNavigate()
@@ -222,6 +258,16 @@ function VariantEditor({
   const [stops, setStops] = useState<EditorStop[]>(initial.stops)
   const [selected, setSelected] = useState<number | null>(null)
   const [newStopAt, setNewStopAt] = useState<{ latitude: number; longitude: number } | null>(null)
+  const [mode, setMode] = useState<'stops' | 'shape'>('stops')
+  const [segment, setSegment] = useState<number | null>(null)
+  const [savingShape, setSavingShape] = useState(false)
+  const [shapeError, setShapeError] = useState<string | null>(null)
+  const kind = networkKind(routeType)
+  const shape = useVariantShape({
+    stops,
+    kind,
+    initial: savedShape ? { points: savedShape.points, stops: initial.stops } : null,
+  })
 
   // Vožnje koriste redoslijed stanica, pa se mijenjaju samo vremena.
   const locked = (variant?.tripCount ?? 0) > 0
@@ -230,6 +276,7 @@ function VariantEditor({
     name !== initial.name ||
     direction !== initial.direction ||
     headsign !== initial.headsign ||
+    shape.changed ||
     JSON.stringify(stops.map(comparable)) !== JSON.stringify(initial.stops.map(comparable))
 
   /** Prijedlog vremena od prethodne stanice (ili 0 za prvu). */
@@ -306,14 +353,15 @@ function VariantEditor({
   const overlay: MapOverlay = useMemo(() => {
     const placed = stops.filter((s) => s.latitude !== null && s.longitude !== null)
     return {
-      line: placed.map((s) => [s.longitude!, s.latitude!]),
+      // Kad se uređuje trasa, ravna crta između stanica bi je prekrila.
+      line: mode === 'shape' ? [] : placed.map((s) => [s.longitude!, s.latitude!]),
       points: stops.flatMap((s, i) =>
         s.latitude !== null && s.longitude !== null
           ? [{ position: [s.longitude, s.latitude] as [number, number], label: String(i + 1) }]
           : [],
       ),
     }
-  }, [stops])
+  }, [stops, mode])
 
   // Karta se otvara na stanicama varijante, a nova varijanta na svim stanicama.
   const [mapExtent] = useState(() => bounds(initial.stops, 0.002) ?? extent)
@@ -334,12 +382,39 @@ function VariantEditor({
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
   }, [dirty])
 
-  const submit = () => {
+  /** Trasa za spremanje: nova kad se promijenila, inače postojeća (i kod kopije). */
+  const saveShape = async (): Promise<string | null> => {
+    if (!shape.active) {
+      return shape.changed ? null : (savedShape?.id ?? null)
+    }
+    const result = await shape.finish()
+    if (!result) {
+      throw new Error('Trasa nije izračunata. Pokušaj ponovno ili je ukloni.')
+    }
+    if (!result.changed && savedShape) {
+      return savedShape.id
+    }
+    const created = await createShape(newShapeCode(routeCode, direction), result.points)
+    return created.id
+  }
+
+  const submit = async () => {
+    setShapeError(null)
+    setSavingShape(true)
+    let shapeId: string | null
+    try {
+      shapeId = await saveShape()
+    } catch (e) {
+      setShapeError(errorMessage(e))
+      return
+    } finally {
+      setSavingShape(false)
+    }
     const body: VariantRequest = {
       name: name.trim() || autoName,
       directionId: direction,
       headsign: headsign.trim() || null,
-      shapeId: variant?.shapeId ?? null,
+      shapeId,
       stops: stops.map((s) => ({
         stopId: s.stopId,
         travelTime: s.travelTime,
@@ -356,11 +431,22 @@ function VariantEditor({
   }
 
   const error = save.error instanceof ApiError ? save.error : null
-  const messages = error
-    ? Object.values(error.fieldErrors).flat()
-    : save.isError
-      ? [errorMessage(save.error)]
-      : []
+  const messages = [
+    ...(shapeError ? [shapeError] : []),
+    ...(error
+      ? Object.values(error.fieldErrors).flat()
+      : save.isError
+        ? [errorMessage(save.error)]
+        : []),
+  ]
+
+  const openShape = () => {
+    setMode('shape')
+    // Prvi ulazak bez trase je izračunava; nakon promjene stanica računaju se nove dionice.
+    if (shape.available && !shape.computing && (!shape.active || shape.pending > 0)) {
+      void shape.compute()
+    }
+  }
 
   return (
     <Stack gap="md">
@@ -377,9 +463,9 @@ function VariantEditor({
         </Group>
         <Button
           leftSection={<IconDeviceFloppy size={16} />}
-          onClick={submit}
-          loading={save.isPending}
-          disabled={stops.length < 2 || (!dirty && variant !== null)}
+          onClick={() => void submit()}
+          loading={save.isPending || savingShape}
+          disabled={stops.length < 2 || (!dirty && variant !== null) || shape.computing}
         >
           Spremi
         </Button>
@@ -431,7 +517,27 @@ function VariantEditor({
               </Stack>
             </Paper>
 
-            <Paper withBorder p="md">
+            <SegmentedControl
+              fullWidth
+              data={[
+                { value: 'stops', label: `Stanice (${stops.length})` },
+                { value: 'shape', label: shape.active ? 'Trasa' : 'Trasa (nema)' },
+              ]}
+              value={mode}
+              onChange={(value) => (value === 'shape' ? openShape() : setMode('stops'))}
+            />
+
+            {mode === 'shape' && (
+              <ShapePanel
+                shape={shape}
+                kind={kind}
+                names={stops.map((s) => s.name)}
+                selected={segment}
+                onSelect={setSegment}
+              />
+            )}
+
+            <Paper withBorder p="md" display={mode === 'stops' ? undefined : 'none'}>
               <Stack gap="sm">
                 <Group justify="space-between">
                   <div>
@@ -597,13 +703,32 @@ function VariantEditor({
               extent={mapExtent}
               overlay={overlay}
               selectedId={stops.find((s) => s.key === selected)?.stopId ?? null}
-              onSelect={append}
-              onMapClick={locked ? undefined : setNewStopAt}
+              onSelect={mode === 'stops' ? append : undefined}
+              onMapClick={mode === 'stops' && !locked ? setNewStopAt : undefined}
+              panel={
+                mode === 'shape'
+                  ? (map) => (
+                      <ShapeLayers
+                        map={map}
+                        segments={shape.drawn}
+                        selected={segment}
+                        onSelect={setSegment}
+                        onDragLine={(i, grabbed, dropped) => {
+                          setSegment(i)
+                          void shape.dragLine(i, grabbed, dropped)
+                        }}
+                        onMoveVia={(i, via, to) => void shape.moveVia(i, via, to)}
+                        onRemoveVia={(i, via) => void shape.removeVia(i, via)}
+                      />
+                    )
+                  : undefined
+              }
             />
           </Paper>
           <Text size="xs" c="dimmed" mt={6}>
-            Klik na stanicu dodaje je na kraj varijante; klik na prazno mjesto karte dodaje novu
-            stanicu.
+            {mode === 'stops'
+              ? 'Klik na stanicu dodaje je na kraj varijante; klik na prazno mjesto karte dodaje novu stanicu.'
+              : 'Ljubičasto: po mreži, plavo: ručno, crveno: put nije nađen, crtkano: još nije izračunato.'}
           </Text>
         </Grid.Col>
       </Grid>
