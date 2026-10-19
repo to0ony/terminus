@@ -44,6 +44,23 @@ vlastitu instancu i bazu. Unutar instance može postojati više prijevoznika
 - **Postavke instance** – naziv, boje i logo za javne stranice i PDF, javna
   adresa, objava GTFS feeda, promjena lozinke.
 
+**Izrada voznog reda (editor)**
+
+- **Stanice** – nova stanica klikom na kartu, prijedlozi stajališta iz
+  OpenStreetMapa, peroni kolodvora, premještanje i brisanje.
+- **Prijevoznici** – dodavanje, izmjena i brisanje (linije preuzima drugi
+  prijevoznik); više prijevoznika po instanci, npr. konzorcij u gradskom prijevozu.
+- **Linije i varijante** – varijanta (redoslijed stanica smjera s vremenima
+  vožnje) klikom na stanice na karti, premještanje povlačenjem, povratni smjer
+  jednim klikom (stanice s druge strane ceste).
+- **Trase** – automatski po cestama ili prugama iz OpenStreetMapa (iz
+  vektorskih pločica karte, bez rutera), dorada povlačenjem i ručne dionice.
+- **Sezone voznog reda** – tipovi dana, državni praznici, iznimke klikom na dan;
+  kopiranje sezone za sljedeću godinu, s vožnjama.
+- **Grafikon voznog reda** – vožnje kao crte kroz stanice: povlačenje, točna
+  vremena, nova vožnja klikom ili crtanjem, takt, kopiranje s pomakom i u drugi
+  tip dana, poništavanje i spremanje u jednoj transakciji.
+
 **Za putnike**
 
 - **Zaslon na stanici** – javna stranica `/board/{stopCode}` sa sljedećim
@@ -61,8 +78,9 @@ vlastitu instancu i bazu. Unutar instance može postojati više prijevoznika
 - **Prijava administratora** kolačićem, uz zaključavanje računa nakon
   neuspjelih pokušaja.
 
-U planu su PDF za sve stanice odjednom, editor voznog reda i produkcijski
-deploy; vidi [roadmap](docs/roadmap.md).
+U planu su produkcijski deploy, PDF za sve stanice odjednom, trase za sve
+varijante linije odjednom i upravljanje administratorima; vidi
+[roadmap](docs/roadmap.md).
 
 ## Tehnologije
 
