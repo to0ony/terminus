@@ -373,6 +373,30 @@ export function variantOffsets(variant: ScheduleVariant): {
   return { arrival, departure }
 }
 
+/**
+ * Vremena vožnje po varijanti uz isti polazak s prve stanice (presnimavanje
+ * izmijenjene varijante u njezine vožnje). null ako vožnja nema iste stanice
+ * kao varijanta.
+ */
+export function retimeTrip(trip: EditorTrip, variant: ScheduleVariant): EditorTrip | null {
+  if (
+    trip.stopTimes.length !== variant.stops.length ||
+    trip.stopTimes.some((st, i) => st.stopId !== variant.stops[i].stopId)
+  ) {
+    return null
+  }
+  const offsets = variantOffsets(variant)
+  const start = firstDeparture(trip)
+  return {
+    ...trip,
+    stopTimes: trip.stopTimes.map((st, i) => ({
+      ...st,
+      arrivalTime: start + offsets.arrival[i],
+      departureTime: start + offsets.departure[i],
+    })),
+  }
+}
+
 /** Nova vožnja po varijanti s polaskom s prve stanice u <paramref name="departure"/>. */
 export function tripFromVariant(
   variant: ScheduleVariant,

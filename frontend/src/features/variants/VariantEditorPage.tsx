@@ -36,6 +36,7 @@ import { ApiError, errorMessage } from '@/api/errors'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
 import { useRoute } from '@/features/routes/queries'
+import { useRetimeTrips } from '@/features/schedule/queries'
 import { RouteBadge } from '@/features/routes/RouteBadge'
 import { type MapStop, useStopsExtent, useStopsInArea } from '@/features/stops/queries'
 import { StopDialog } from '@/features/stops/StopDialog'
@@ -253,6 +254,8 @@ function VariantEditor({
   const create = useCreateVariant(routeId)
   const update = useUpdateVariant(routeId, variant?.id ?? '')
   const save = variant ? update : create
+  const retime = useRetimeTrips(routeId)
+  const [askRetime, setAskRetime] = useState(false)
 
   const initial = useMemo(
     () => ({
@@ -430,7 +433,13 @@ function VariantEditor({
     return created.id
   }
 
-  const submit = async () => {
+  // Promijenjena vremena vožnje varijante s vožnjama mogu se presnimiti u sve vožnje.
+  const times = (list: Omit<EditorStop, 'key'>[]) =>
+    JSON.stringify(list.map((s) => [s.travelTime, s.dwellTime]))
+  const timesChanged = locked && times(stops) !== times(initial.stops)
+
+  const submit = async (retimeTrips: boolean) => {
+    setAskRetime(false)
     setShapeError(null)
     setSavingShape(true)
     let shapeId: string | null
@@ -454,9 +463,28 @@ function VariantEditor({
       })),
     }
     save.mutate(body, {
-      onSuccess: (saved) => {
+      onSuccess: async (saved) => {
         leaving.current = true
         notifications.show({ color: 'green', message: 'Varijanta je spremljena.' })
+        if (retimeTrips) {
+          try {
+            const result = await retime.mutateAsync(saved)
+            notifications.show({
+              color: result.skipped > 0 ? 'yellow' : 'green',
+              message:
+                `Presnimljena vremena u ${result.changed} vožnji.` +
+                (result.skipped > 0
+                  ? ` ${result.skipped} vožnji je preskočeno (druge stanice ili kraj iza 48:00).`
+                  : ''),
+            })
+          } catch (e) {
+            notifications.show({
+              color: 'red',
+              title: 'Vožnje nisu presnimljene',
+              message: `Varijanta je spremljena, ali vremena vožnji nisu: ${errorMessage(e)}`,
+            })
+          }
+        }
         void navigate(
           mirrorFrom
             ? `/routes/${routeId}/schedule?dir=${direction}&mirror=${saved.id}&from=${mirrorFrom}`
@@ -499,8 +527,8 @@ function VariantEditor({
         </Group>
         <Button
           leftSection={<IconDeviceFloppy size={16} />}
-          onClick={() => void submit()}
-          loading={save.isPending || savingShape}
+          onClick={() => (timesChanged ? setAskRetime(true) : void submit(false))}
+          loading={save.isPending || savingShape || retime.isPending}
           disabled={stops.length < 2 || (!dirty && variant !== null) || shape.computing}
         >
           Spremi
@@ -843,6 +871,31 @@ function VariantEditor({
         onClose={() => setNewStopAt(null)}
         onSaved={append}
       />
+
+      <Modal
+        opened={askRetime}
+        onClose={() => setAskRetime(false)}
+        title="Presnimiti vremena u vožnje?"
+        size="md"
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            Vremena vožnje su promijenjena, a varijantu koristi {variant?.tripCount ?? 0} vožnji.
+            Nova vremena mogu se presnimiti u sve te vožnje, u svim tipovima dana: polazak s prve
+            stanice ostaje isti, a sva ostala vremena postaju kao u varijanti, i ona ručno dotjerana
+            u grafikonu.
+          </Text>
+          <Group justify="flex-end" gap="xs">
+            <Button variant="default" onClick={() => setAskRetime(false)}>
+              Odustani
+            </Button>
+            <Button variant="default" onClick={() => void submit(false)}>
+              Samo varijanta
+            </Button>
+            <Button onClick={() => void submit(true)}>Presnimi sve vožnje</Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={blocker.state === 'blocked'}

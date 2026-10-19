@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { unwrap } from '@/api/errors'
 import type { components } from '@/api/schema'
+import { changes, fromResponse, maxSeconds, retimeTrip, type ScheduleVariant } from './model'
 
 export type Schedule = components['schemas']['ScheduleResponse']
 export type ScheduleStop = components['schemas']['ScheduleStopResponse']
@@ -37,6 +38,46 @@ export function useSchedule(
     enabled,
     // Grafikon se ne smije sam osvježiti dok se uređuje.
     staleTime: Infinity,
+  })
+}
+
+/**
+ * Presnimava vremena varijante u sve njezine vožnje (svi tipovi dana), uz isti
+ * polazak s prve stanice. Vožnja koja ne odgovara stanicama varijante ili bi
+ * završila iza 48:00 se preskače.
+ */
+export function useRetimeTrips(routeId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (variant: ScheduleVariant) => {
+      const schedule = unwrap(
+        await api.GET('/api/routes/{id}/schedule', {
+          params: {
+            path: { id: routeId },
+            query: { DirectionId: variant.directionId ?? undefined },
+          },
+        }),
+      )
+      const original = schedule.trips.filter((t) => t.variantId === variant.id).map(fromResponse)
+      const updated = original.flatMap((trip) => {
+        const retimed = retimeTrip(trip, variant)
+        return retimed && retimed.stopTimes.at(-1)!.departureTime <= maxSeconds ? [retimed] : []
+      })
+      const { upserts } = changes(original, updated)
+      if (upserts.length > 0) {
+        unwrap(
+          await api.PUT('/api/routes/{id}/schedule', {
+            params: { path: { id: routeId } },
+            body: { directionId: variant.directionId, upserts, deletes: [] },
+          }),
+        )
+      }
+      return { changed: upserts.length, skipped: original.length - updated.length }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['routes', routeId] })
+    },
+    meta: { handlesErrors: true },
   })
 }
 

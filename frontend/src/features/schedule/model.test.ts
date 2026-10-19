@@ -9,6 +9,7 @@ import {
   moveToDayType,
   parseTime,
   resizeView,
+  retimeTrip,
   rowIndexes,
   rowPositions,
   shiftStop,
@@ -266,5 +267,36 @@ describe('trips from a variant', () => {
     )
     expect(trip.stopTimes.at(-1)!.departureTime).toBe(4800)
     expect(trip.stopTimes[1].departureTime).toBe(3600 + Math.round((150 / 600) * 1200))
+  })
+})
+
+describe('retimeTrip', () => {
+  const variant = {
+    id: 'v',
+    name: 'Glavna',
+    directionId: 0 as const,
+    headsign: null,
+    shapeId: null,
+    sortOrder: 0,
+    tripCount: 1,
+    stops: [
+      { stopId: 'a', travelTime: 0, dwellTime: 0 },
+      { stopId: 'b', travelTime: 300, dwellTime: 60 },
+      { stopId: 'c', travelTime: 240, dwellTime: 0 },
+    ],
+  }
+
+  it('keeps the first departure and takes every other time from the variant', () => {
+    const retimed = retimeTrip(trip('t1', ['a', 'b', 'c'], 3600, 100), variant)!
+    expect(retimed.stopTimes.map((st) => [st.arrivalTime, st.departureTime])).toEqual([
+      [3600, 3600],
+      [3900, 3960],
+      [4200, 4200],
+    ])
+    expect(retimed.key).toBe('t1')
+  })
+
+  it('skips a trip with other stops than the variant', () => {
+    expect(retimeTrip(trip('t1', ['a', 'c'], 3600), variant)).toBeNull()
   })
 })

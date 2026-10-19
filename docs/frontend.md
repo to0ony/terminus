@@ -153,6 +153,10 @@ Editor varijante (`features/variants`):
   imaju i svoju duljinu.
 - Varijanta koju koriste vožnje zadržava stanice, a mijenjaju se samo vremena
   (za drugi redoslijed kopija).
+  Kad su vremena promijenjena, spremanje pita „Samo varijanta” ili „Presnimi
+  sve vožnje”: sve vožnje varijante, u svim tipovima dana, dobivaju vremena
+  varijante uz isti polazak s prve stanice (i ručno dotjerane; sitne izmjene
+  rade se u grafikonu). Vožnja koja bi završila iza 48:00 se preskače.
 - **Povratni smjer** (gumb uz varijantu na stranici linije) otvara novu
   varijantu suprotnog smjera: stanice su obrnutim redom, a svaka je zamijenjena
   najbližom aktivnom stanicom istog naziva do 400 m koja nije u polaznom smjeru
