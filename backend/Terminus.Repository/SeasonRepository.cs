@@ -162,6 +162,13 @@ public class SeasonRepository(TerminusDbContext context) : ISeasonRepository
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
+        // Polazak kopije je novi polazak, zajednički kopijama istog polaska.
+        var departures = trips
+            .Select(t => t.DepartureId)
+            .OfType<Guid>()
+            .Distinct()
+            .ToDictionary(d => d, _ => Guid.NewGuid());
+
         foreach (var source in trips)
         {
             var id = Guid.NewGuid();
@@ -178,6 +185,7 @@ public class SeasonRepository(TerminusDbContext context) : ISeasonRepository
                 BlockId = source.BlockId,
                 ShapeId = source.ShapeId,
                 VariantId = source.VariantId,
+                DepartureId = source.DepartureId is { } departure ? departures[departure] : null,
                 WheelchairAccessible = source.WheelchairAccessible,
                 BikesAllowed = source.BikesAllowed,
                 StopTimes = source.StopTimes.Select(st => new StopTime

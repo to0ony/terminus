@@ -26,6 +26,12 @@ public interface ITripModel
     /// <summary>Varijanta linije po kojoj vožnja vozi; nije dio GTFS-a.</summary>
     Guid? VariantId { get; set; }
 
+    /// <summary>
+    /// Polazak: vožnje istog polaska u različitim tipovima dana imaju isti DepartureId
+    /// i mijenjaju se zajedno u grafikonu; nije dio GTFS-a.
+    /// </summary>
+    Guid? DepartureId { get; set; }
+
 
     WheelchairAccessible WheelchairAccessible { get; set; }
     BikesAllowed BikesAllowed { get; set; }

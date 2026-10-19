@@ -57,7 +57,9 @@ public record ScheduleTripResponse(
     WheelchairAccessible WheelchairAccessible,
     BikesAllowed BikesAllowed,
     DateTime UpdatedAt,
-    IReadOnlyList<ScheduleStopTimeResponse> StopTimes);
+    IReadOnlyList<ScheduleStopTimeResponse> StopTimes,
+    Guid? DepartureId,
+    IReadOnlyList<Guid> DayTypes);
 
 /// <param name="ArrivalTime">Sekunde od početka dana voznog reda (može biti iznad 24 h).</param>
 /// <param name="DepartureTime">Sekunde od početka dana voznog reda (može biti iznad 24 h).</param>
@@ -108,6 +110,15 @@ public class ScheduleTripRequest
     /// <summary>Vremena redom vožnje.</summary>
     [Required]
     public List<ScheduleStopTimeRequest>? StopTimes { get; set; }
+
+    /// <summary>
+    /// Svi tipovi dana u kojima polazak vozi (uz ServiceCalendarId); vožnje u ostalima se
+    /// dodaju, usklađuju ili brišu. Bez njega polazak ostaje u istim tipovima dana.
+    /// </summary>
+    public List<Guid>? DayTypes { get; set; }
+
+    /// <summary>Vožnja izlazi iz polaska; vožnje ostalih tipova dana ostaju.</summary>
+    public bool Detach { get; set; }
 }
 
 public class ScheduleStopTimeRequest
@@ -172,7 +183,11 @@ public static class ScheduleMappings
                 st.ContinuousPickup,
                 st.ContinuousDropOff,
                 st.ShapeDistTraveled,
-                st.Timepoint)).ToList())).ToList(),
+                st.Timepoint)).ToList(),
+            t.Trip.DepartureId,
+            t.Trip.DepartureId is { } departure && schedule.DepartureDayTypes.TryGetValue(departure, out var dayTypes)
+                ? dayTypes
+                : [t.Trip.ServiceCalendarId])).ToList(),
         schedule.TripCounts);
 
     // Obavezna polja ([Required]) je model binding već provjerio.
@@ -204,6 +219,8 @@ public static class ScheduleMappings
                 ShapeDistTraveled = st.ShapeDistTraveled,
                 Timepoint = st.Timepoint
             }).ToList(),
-            u.UpdatedAt)).ToList(),
+            u.UpdatedAt,
+            u.DayTypes,
+            u.Detach)).ToList(),
         request.Deletes!.Select(d => new TripVersion(d.Id!.Value, d.UpdatedAt!.Value)).ToList());
 }

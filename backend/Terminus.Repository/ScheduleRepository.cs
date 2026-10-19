@@ -21,9 +21,37 @@ public class ScheduleRepository(TerminusDbContext context) : IScheduleRepository
         return trips.ToDictionary(t => t.Id, TripMapper.ToModel);
     }
 
+    public async Task<IReadOnlyList<TripStopTimes>> GetDepartureTripsAsync(IReadOnlyCollection<Guid> departureIds, CancellationToken cancellationToken = default)
+    {
+        if (departureIds.Count == 0)
+        {
+            return [];
+        }
+
+        var trips = await context.Trips
+            .AsNoTracking()
+            .Where(t => t.DepartureId != null && departureIds.Contains(t.DepartureId.Value))
+            .Include(t => t.StopTimes)
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+
+        return trips
+            .Select(t => new TripStopTimes(
+                TripMapper.ToModel(t),
+                t.StopTimes.OrderBy(st => st.StopSequence).Select(TripMapper.ToModel).ToList()))
+            .ToList();
+    }
+
     public async Task SaveAsync(IReadOnlyList<TripStopTimes> upserts, IReadOnlyCollection<Guid> deletes, CancellationToken cancellationToken = default)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+
+        // Polasci obrisanih i izmijenjenih vožnji: na kraju se ukidaju oni s jednom vožnjom.
+        var touched = await context.Trips
+            .Where(t => t.DepartureId != null && deletes.Contains(t.Id))
+            .Select(t => t.DepartureId!.Value)
+            .ToListAsync(cancellationToken);
+        touched.AddRange(upserts.Select(u => u.Trip.DepartureId).OfType<Guid>());
 
         // Vremena se brišu kaskadno s vožnjom.
         if (deletes.Count > 0)
@@ -44,6 +72,8 @@ public class ScheduleRepository(TerminusDbContext context) : IScheduleRepository
                 context.Trips.Add(trip);
             }
             TripMapper.Apply(upsert.Trip, trip);
+            // Polazak mijenja samo grafikon (Apply ga ne dira, da ga opći API ne prebriše).
+            trip.DepartureId = upsert.Trip.DepartureId;
         }
 
         try
@@ -59,6 +89,22 @@ public class ScheduleRepository(TerminusDbContext context) : IScheduleRepository
         await context.StopTimes.Where(st => ids.Contains(st.TripId)).ExecuteDeleteAsync(cancellationToken);
         context.StopTimes.AddRange(upserts.SelectMany(u => u.StopTimes.Select(TripMapper.ToEntity)));
         await context.SaveChangesAsync(cancellationToken);
+
+        if (touched.Count > 0)
+        {
+            var single = await context.Trips
+                .Where(t => t.DepartureId != null && touched.Contains(t.DepartureId.Value))
+                .GroupBy(t => t.DepartureId)
+                .Where(g => g.Count() == 1)
+                .Select(g => g.Key)
+                .ToListAsync(cancellationToken);
+            if (single.Count > 0)
+            {
+                await context.Trips
+                    .Where(t => single.Contains(t.DepartureId))
+                    .ExecuteUpdateAsync(set => set.SetProperty(t => t.DepartureId, (Guid?)null), cancellationToken);
+            }
+        }
 
         await transaction.CommitAsync(cancellationToken);
     }

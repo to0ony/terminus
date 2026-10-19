@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   changes,
+  detachTrip,
   drawnTrip,
   type EditorTrip,
   formatTime,
   headways,
+  moveToDayType,
   parseTime,
   rowIndexes,
   rowPositions,
@@ -15,6 +17,7 @@ import {
   tripFrom,
   tripFromVariant,
   validateTrip,
+  withDayTypes,
 } from './model'
 
 function trip(key: string, stops: string[], start: number, step = 120): EditorTrip {
@@ -29,6 +32,8 @@ function trip(key: string, stops: string[], start: number, step = 120): EditorTr
     blockId: 'b1',
     shapeId: null,
     variantId: 'v1',
+    departureId: null,
+    dayTypes: ['rd'],
     wheelchairAccessible: 0,
     bikesAllowed: 0,
     stopTimes: stops.map((stopId, i) => ({
@@ -124,6 +129,48 @@ describe('headways', () => {
   it('measures gaps between first departures', () => {
     const gaps = headways([trip('a', ['x'], 600), trip('b', ['x'], 1200), trip('c', ['x'], 1500)])
     expect(gaps.map((g) => g.gap)).toEqual([600, 300])
+  })
+})
+
+describe('departures', () => {
+  const order = ['rd', 'rasp', 'vik']
+
+  it('keeps the own day type and the order of day types', () => {
+    const daily = withDayTypes(trip('t1', ['A', 'B'], 0), ['vik', 'rasp'], order)
+    expect(daily.dayTypes).toEqual(['rd', 'rasp', 'vik'])
+
+    // Vlastiti tip dana se ne može isključiti.
+    expect(withDayTypes(daily, ['vik'], order).dayTypes).toEqual(['rd', 'vik'])
+  })
+
+  it('moves the departure with the trip to another day type', () => {
+    const daily = withDayTypes(trip('t1', ['A', 'B'], 0), order, order)
+
+    const moved = moveToDayType(withDayTypes(daily, ['rd', 'vik'], order), 'rasp')
+
+    expect(moved.serviceCalendarId).toBe('rasp')
+    expect(moved.dayTypes).toEqual(['rasp', 'vik'])
+  })
+
+  it('sends the day types, or detaches the trip', () => {
+    const daily = { ...withDayTypes(trip('t1', ['A', 'B'], 0), order, order), departureId: 'd1' }
+
+    const sent = changes([trip('t1', ['A', 'B'], 0)], [daily]).upserts[0]
+    expect(sent.dayTypes).toEqual(order)
+    expect(sent.detach).toBe(false)
+
+    const alone = changes([daily], [detachTrip(daily)]).upserts[0]
+    expect(alone.detach).toBe(true)
+    expect(alone.dayTypes).toBeNull()
+  })
+
+  it('makes copies that are not part of the template departure', () => {
+    const daily = { ...withDayTypes(trip('t1', ['A', 'B'], 0), order, order), departureId: 'd1' }
+
+    const copy = tripFrom(daily, 3600, 'rd')
+
+    expect(copy.departureId).toBeNull()
+    expect(copy.dayTypes).toEqual(['rd'])
   })
 })
 

@@ -10,6 +10,13 @@ internal sealed class FakeScheduleRepository : IScheduleRepository
     public IReadOnlyList<TripStopTimes> Saved { get; private set; } = [];
     public IReadOnlyCollection<Guid> Deleted { get; private set; } = [];
 
+    /// <summary>Vožnje s polaskom, za usklađivanje polazaka.</summary>
+    public List<TripStopTimes> DepartureTrips { get; } = [];
+
+    public Task<IReadOnlyList<TripStopTimes>> GetDepartureTripsAsync(IReadOnlyCollection<Guid> departureIds, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<TripStopTimes>>(
+            DepartureTrips.Where(t => t.Trip.DepartureId is { } d && departureIds.Contains(d)).ToList());
+
     public Task<IReadOnlyDictionary<Guid, ITripModel>> GetTripsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyDictionary<Guid, ITripModel>>(
             Trips.Where(kv => ids.Contains(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value));

@@ -1,6 +1,7 @@
 import {
   Alert,
   Button,
+  Checkbox,
   Group,
   Kbd,
   Menu,
@@ -12,15 +13,18 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
-import { IconCalendarPlus, IconCopy, IconTrash } from '@tabler/icons-react'
+import { IconCalendarPlus, IconCopy, IconLinkOff, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import {
+  detachTrip,
   type EditorTrip,
   firstDeparture,
   formatTime,
   minute,
+  moveToDayType,
   parseTime,
   setStopTime,
+  withDayTypes,
 } from './model'
 
 interface TripPanelProps {
@@ -32,6 +36,8 @@ interface TripPanelProps {
   /** Tip dana koji se uređuje; ostali su ponuđeni za kopiranje. */
   dayTypeId: string
   onChange: (key: string, update: (trip: EditorTrip) => EditorTrip) => void
+  /** Ista izmjena svih odabranih vožnji, kao jedan korak za poništavanje. */
+  onChangeSelected: (update: (trip: EditorTrip) => EditorTrip) => void
   onShift: (delta: number) => void
   onCopy: () => void
   /** Kopira odabrane vožnje (ili sve, za null) u drugi tip dana. */
@@ -57,6 +63,7 @@ export function TripPanel(props: TripPanelProps) {
       ) : (
         <Stack gap="sm">
           <Text fw={600}>{chosen.length} vožnji odabrano</Text>
+          <DayTypes {...props} trips={chosen} />
           <ShiftButtons onShift={props.onShift} />
           <Actions onCopy={props.onCopy} onDelete={props.onDelete} />
           <CopyToMenu
@@ -178,9 +185,26 @@ function TripDetails({
         onChange={(value) =>
           value &&
           value !== trip.serviceCalendarId &&
-          onChange(trip.key, (t) => ({ ...t, serviceCalendarId: value }))
+          onChange(trip.key, (t) => moveToDayType(t, String(value)))
         }
       />
+      <DayTypes
+        calendars={calendars}
+        dayTypeId={props.dayTypeId}
+        onChangeSelected={props.onChangeSelected}
+        trips={[trip]}
+      />
+      {trip.departureId && trip.dayTypes.length > 1 && (
+        <Button
+          size="xs"
+          variant="subtle"
+          color="gray"
+          leftSection={<IconLinkOff size={14} />}
+          onClick={() => onChange(trip.key, detachTrip)}
+        >
+          Odvoji od ostalih tipova dana
+        </Button>
+      )}
 
       <ShiftButtons onShift={onShift} />
 
@@ -286,6 +310,54 @@ function ShiftButtons({ onShift }: { onShift: (delta: number) => void }) {
         </Button>
       ))}
     </Group>
+  )
+}
+
+/**
+ * Tipovi dana u kojima polazak vozi (npr. "svaki dan": radni, raspust, vikend).
+ * Vožnje istog polaska u ostalim tipovima dana spremanje dodaje, usklađuje s
+ * ovom (vremena, varijanta) ili briše. Vlastiti tip dana ostaje uključen.
+ */
+function DayTypes({
+  trips,
+  calendars,
+  dayTypeId,
+  onChangeSelected,
+}: Pick<TripPanelProps, 'calendars' | 'dayTypeId' | 'onChangeSelected'> & { trips: EditorTrip[] }) {
+  if (calendars.length < 2) {
+    return null
+  }
+  const order = calendars.map((c) => c.value)
+  const count = (id: string) => trips.filter((t) => t.dayTypes.includes(id)).length
+
+  const toggle = (id: string) => {
+    const all = count(id) === trips.length
+    onChangeSelected((t) =>
+      withDayTypes(t, all ? t.dayTypes.filter((d) => d !== id) : [...t.dayTypes, id], order),
+    )
+  }
+
+  return (
+    <Stack gap={6}>
+      <Text size="xs" fw={500}>
+        Polazak vozi u
+      </Text>
+      {calendars.map((c) => (
+        <Checkbox
+          key={c.value}
+          size="xs"
+          label={c.label}
+          checked={count(c.value) === trips.length}
+          indeterminate={count(c.value) > 0 && count(c.value) < trips.length}
+          disabled={c.value === dayTypeId}
+          onChange={() => toggle(c.value)}
+        />
+      ))}
+      <Text size="xs" c="dimmed">
+        Ista vremena vrijede u svim označenim tipovima dana; pri spremanju se tamo dodaju ili
+        usklade, a iz isključenih brišu.
+      </Text>
+    </Stack>
   )
 }
 

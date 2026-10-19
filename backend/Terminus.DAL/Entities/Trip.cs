@@ -15,6 +15,12 @@ public class Trip : IAuditable
     /// <summary>Varijanta linije po kojoj vožnja vozi; nije dio GTFS-a.</summary>
     public Guid? VariantId { get; set; }
 
+    /// <summary>
+    /// Polazak: vožnje istog polaska u različitim tipovima dana (npr. "vozi svaki
+    /// dan") imaju isti DepartureId i mijenjaju se zajedno; nije dio GTFS-a.
+    /// </summary>
+    public Guid? DepartureId { get; set; }
+
     public short WheelchairAccessible { get; set; }
     public short BikesAllowed { get; set; }
     public DateTime CreatedAt { get; set; }

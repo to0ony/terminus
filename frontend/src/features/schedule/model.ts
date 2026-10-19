@@ -7,13 +7,19 @@ type DeleteRequest = components['schemas']['ScheduleDeleteRequest']
 
 export type EditorStopTime = StopTimeResponse
 
-/** Vožnja u grafikonu; nova vožnja nema Id ni UpdatedAt. */
+/**
+ * Vožnja u grafikonu; nova vožnja nema Id ni UpdatedAt. dayTypes su svi tipovi
+ * dana u kojima vozi njezin polazak (uz vlastiti): vožnje u ostalima server
+ * dodaje, usklađuje s ovom ili briše.
+ */
 export interface EditorTrip extends Omit<TripResponse, 'id' | 'code' | 'updatedAt'> {
   /** Stalni ključ u editoru: Id postojeće vožnje ili privremeni ključ nove. */
   key: string
   id: string | null
   code: string | null
   updatedAt: string | null
+  /** Vožnja izlazi iz polaska; vožnje u ostalim tipovima dana ostaju kakve jesu. */
+  detach?: boolean
 }
 
 export const minute = 60
@@ -237,7 +243,31 @@ export function tripFrom(template: EditorTrip, departure: number, calendarId: st
     serviceCalendarId: calendarId,
     // Vozilo nove vožnje nije poznato.
     blockId: null,
+    // Kopija je nova vožnja samo ovog tipa dana, ne dio polaska predloška.
+    departureId: null,
+    dayTypes: [calendarId],
+    detach: undefined,
   }
+}
+
+/**
+ * Polazak vozi u zadanim tipovima dana; vlastiti tip dana vožnje je uvijek među
+ * njima, a poredak prati <paramref name="order"/> (redoslijed tipova dana).
+ */
+export function withDayTypes(trip: EditorTrip, dayTypes: string[], order: string[]): EditorTrip {
+  const wanted = new Set([...dayTypes, trip.serviceCalendarId])
+  return { ...trip, dayTypes: order.filter((id) => wanted.has(id)), detach: undefined }
+}
+
+/** Vožnja prelazi u drugi tip dana; polazak umjesto starog tipa dana vozi u novom. */
+export function moveToDayType(trip: EditorTrip, calendarId: string): EditorTrip {
+  const dayTypes = trip.dayTypes.map((id) => (id === trip.serviceCalendarId ? calendarId : id))
+  return { ...trip, serviceCalendarId: calendarId, dayTypes: [...new Set(dayTypes)] }
+}
+
+/** Vožnja izlazi iz polaska, npr. jer subotom vozi u drugo vrijeme. */
+export function detachTrip(trip: EditorTrip): EditorTrip {
+  return { ...trip, departureId: null, dayTypes: [trip.serviceCalendarId], detach: true }
 }
 
 /** Polasci od <paramref name="from"/> do <paramref name="to"/> (uključivo) svakih <paramref name="every"/> sekundi. */
@@ -299,6 +329,8 @@ function toRequest(trip: EditorTrip): TripRequest {
     wheelchairAccessible: trip.wheelchairAccessible,
     bikesAllowed: trip.bikesAllowed,
     stopTimes: trip.stopTimes.map((st) => ({ ...st })),
+    dayTypes: trip.detach ? null : trip.dayTypes,
+    detach: trip.detach ?? false,
   }
 }
 
@@ -382,6 +414,8 @@ function newTrip(
     blockId: null,
     shapeId: variant.shapeId,
     variantId: variant.id,
+    departureId: null,
+    dayTypes: [calendarId],
     wheelchairAccessible: 0,
     bikesAllowed: 0,
     stopTimes: variant.stops.map((stop, i) => ({

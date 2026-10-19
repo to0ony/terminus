@@ -749,6 +749,11 @@ function ScheduleEditor({
               onChange={(key, update) =>
                 editor.apply((trips) => trips.map((t) => (t.key === key ? update(t) : t)))
               }
+              onChangeSelected={(update) =>
+                editor.apply((trips) =>
+                  trips.map((t) => (editor.selected.includes(t.key) ? update(t) : t)),
+                )
+              }
               onShift={shiftSelected}
               onCopy={copy.open}
               onCopyTo={copyToDayType}

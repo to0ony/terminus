@@ -53,6 +53,9 @@ public class TripConfiguration : IEntityTypeConfiguration<Trip>
         builder.HasIndex(e => e.ShapeId)
             .HasDatabaseName("ix_trips_shape_id");
 
+        builder.HasIndex(e => e.DepartureId)
+            .HasDatabaseName("ix_trips_departure_id");
+
         builder.HasIndex(e => e.Code)
             .IsUnique()
             .HasDatabaseName("uq_trips_code");

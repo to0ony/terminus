@@ -19,6 +19,7 @@ internal static class TripMapper
         BlockId = entity.BlockId,
         ShapeId = entity.ShapeId,
         VariantId = entity.VariantId,
+        DepartureId = entity.DepartureId,
         WheelchairAccessible = (WheelchairAccessible)entity.WheelchairAccessible,
         BikesAllowed = (BikesAllowed)entity.BikesAllowed,
         CreatedAt = entity.CreatedAt,

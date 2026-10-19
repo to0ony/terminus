@@ -2269,6 +2269,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/seasons/{id}/periods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SeasonPeriodsRequest"];
+                    "text/json": components["schemas"]["SeasonPeriodsRequest"];
+                    "application/*+json": components["schemas"]["SeasonPeriodsRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SeasonResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/seasons/{id}/days/{date}": {
         parameters: {
             query?: never;
@@ -4667,6 +4728,8 @@ export interface components {
             wheelchairAccessible?: components["schemas"]["WheelchairAccessible"];
             bikesAllowed?: components["schemas"]["BikesAllowed"];
             stopTimes: null | components["schemas"]["ScheduleStopTimeRequest"][];
+            dayTypes?: null | string[];
+            detach?: boolean;
         };
         ScheduleTripResponse: {
             /** Format: uuid */
@@ -4686,6 +4749,9 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             stopTimes: components["schemas"]["ScheduleStopTimeResponse"][];
+            /** Format: uuid */
+            departureId: null | string;
+            dayTypes: string[];
         };
         ScheduleVariantResponse: {
             /** Format: uuid */
@@ -4727,7 +4793,38 @@ export interface components {
             note: null | string;
         };
         /** @enum {unknown} */
-        SeasonDaySource: "Manual" | "Holiday";
+        SeasonDaySource: "Manual" | "Holiday" | "Period";
+        SeasonPeriodRequest: {
+            /** Format: uuid */
+            id?: null | string;
+            name: null | string;
+            /** Format: date */
+            startDate: null | string;
+            /** Format: date */
+            endDate: null | string;
+            /** Format: uuid */
+            replacedCalendarId: null | string;
+            mode?: components["schemas"]["SeasonDayMode"];
+            /** Format: uuid */
+            calendarId?: null | string;
+        };
+        SeasonPeriodResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            /** Format: uuid */
+            replacedCalendarId: string;
+            mode: components["schemas"]["SeasonDayMode"];
+            /** Format: uuid */
+            calendarId: null | string;
+        };
+        SeasonPeriodsRequest: {
+            periods: null | components["schemas"]["SeasonPeriodRequest"][];
+        };
         SeasonResponse: {
             /** Format: uuid */
             id: string;
@@ -4742,6 +4839,7 @@ export interface components {
             holidayCalendarId: null | string;
             dayTypes: components["schemas"]["DayTypeResponse"][];
             days: components["schemas"]["SeasonDayResponse"][];
+            periods: components["schemas"]["SeasonPeriodResponse"][];
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */

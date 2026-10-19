@@ -163,6 +163,90 @@ public class ScheduleServiceTests
             TestContext.Current.CancellationToken));
     }
 
+    [Fact]
+    public async Task SaveAsync_NewTripOnSeveralDayTypes_MakesOneDepartureWithATripPerDayType()
+    {
+        var change = new ScheduleTripChange(NewTrip(_workdays), StopTimes(7 * 3600, 7 * 3600 + 300), null, [_workdays.Id, _sunday.Id]);
+
+        await _service.SaveAsync(_route.Id, new ScheduleChanges(TripDirection.Outbound, [change], []), TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, _schedule.Saved.Count);
+        var departure = _schedule.Saved[0].Trip.DepartureId;
+        Assert.NotNull(departure);
+        Assert.All(_schedule.Saved, t => Assert.Equal(departure, t.Trip.DepartureId));
+        Assert.Equal([_workdays.Id, _sunday.Id], _schedule.Saved.Select(t => t.Trip.ServiceCalendarId));
+        var sunday = _schedule.Saved[1];
+        Assert.StartsWith("6-", sunday.Trip.Code);
+        Assert.Equal([7 * 3600, 7 * 3600 + 300], sunday.StopTimes.Select(st => st.DepartureTime));
+        Assert.All(sunday.StopTimes, st => Assert.Equal(sunday.Trip.Id, st.TripId));
+    }
+
+    [Fact]
+    public async Task SaveAsync_ChangedTripMovesTheTripsOfItsDepartureToo()
+    {
+        var (weekday, sunday) = ExistingDeparture();
+
+        await _service.SaveAsync(
+            _route.Id,
+            new ScheduleChanges(TripDirection.Outbound, [new ScheduleTripChange(Copy(weekday), StopTimes(8 * 3600, 8 * 3600 + 300), Loaded)], []),
+            TestContext.Current.CancellationToken);
+
+        var synced = Assert.Single(_schedule.Saved, t => t.Trip.Id == sunday.Id);
+        Assert.Equal("T2", synced.Trip.Code);
+        Assert.Equal(_sunday.Id, synced.Trip.ServiceCalendarId);
+        Assert.Equal([8 * 3600, 8 * 3600 + 300], synced.StopTimes.Select(st => st.DepartureTime));
+        Assert.Empty(_schedule.Deleted);
+    }
+
+    [Fact]
+    public async Task SaveAsync_DayTypeLeftOut_DeletesItsTripAndEndsTheDeparture()
+    {
+        var (weekday, sunday) = ExistingDeparture();
+
+        await _service.SaveAsync(
+            _route.Id,
+            new ScheduleChanges(TripDirection.Outbound,
+                [new ScheduleTripChange(Copy(weekday), StopTimes(7 * 3600, 7 * 3600 + 300), Loaded, [_workdays.Id])], []),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal([sunday.Id], _schedule.Deleted);
+        Assert.Null(Assert.Single(_schedule.Saved).Trip.DepartureId);
+    }
+
+    [Fact]
+    public async Task SaveAsync_DetachedTripLeavesTheOthersAlone()
+    {
+        var (weekday, _) = ExistingDeparture();
+
+        await _service.SaveAsync(
+            _route.Id,
+            new ScheduleChanges(TripDirection.Outbound,
+                [new ScheduleTripChange(Copy(weekday), StopTimes(8 * 3600, 8 * 3600 + 300), Loaded, Detach: true)], []),
+            TestContext.Current.CancellationToken);
+
+        var saved = Assert.Single(_schedule.Saved);
+        Assert.Null(saved.Trip.DepartureId);
+        Assert.Empty(_schedule.Deleted);
+    }
+
+    /// <summary>Polazak koji vozi radnim danom i nedjeljom.</summary>
+    private (TripModel Weekday, TripModel Sunday) ExistingDeparture()
+    {
+        var departure = Guid.NewGuid();
+        var weekday = ExistingTrip();
+        weekday.DepartureId = departure;
+        var sunday = NewTrip(_sunday);
+        sunday.Id = Guid.NewGuid();
+        sunday.Code = "T2";
+        sunday.RouteId = _route.Id;
+        sunday.DepartureId = departure;
+        sunday.UpdatedAt = Loaded;
+        _schedule.Trips[sunday.Id] = sunday;
+        _schedule.DepartureTrips.Add(new TripStopTimes(weekday, StopTimes(7 * 3600, 7 * 3600 + 300)));
+        _schedule.DepartureTrips.Add(new TripStopTimes(sunday, StopTimes(7 * 3600, 7 * 3600 + 300)));
+        return (weekday, sunday);
+    }
+
     private void AddTrip(ServiceCalendarModel calendar, StopModel[] stops, int start)
     {
         var trip = NewTrip(calendar);
