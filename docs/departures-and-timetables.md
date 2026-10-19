@@ -270,6 +270,15 @@ engleskom**:
   - inače datum ide u stupac s kojim dijeli najviše polazaka, a polasci koji ne
     voze na sve njegove datume dobivaju slovo uz minutu (`55a` – "ne vozi
     24. 12. i 31. 12." ili "vozi samo 26. 12.").
+  - Datumi napomene spajaju se u **raspone** preko dana koji napomeni ne
+    proturječe: u napomeni stupca „Radni dan” vikend ne prekida raspon, pa je
+    ljetni raspust „15. 6. – 4. 9.”, a ne 12 tjednih komadića. Raspon prekida
+    samo dan na koji polazak (ili linija, kod „ne vozi”) vozi.
+  - Kad su u napomeni **svi dani nekog naziva** iz sezone (razdoblje, praznik
+    ili ručna iznimka s napomenom), piše se naziv s rasponom: „a – ne vozi:
+    Ljetni raspust (15. 6. – 4. 9.) i Zimski raspust (21. 12. – 31. 12.)”,
+    „Ne vozi: Dan grada (9. 12.)”. Ostali datumi ostaju datumi, pa uvezeni
+    GTFS bez sezona dobiva samo spojene raspone.
 - **QR kod** vodi na zaslon stanice: javna adresa iz postavki +
   `/board/{stopCode}`. Bez javne adrese PDF nema QR kod (dijalog na to upozorava).
 - **Podnožje**: naziv instance, "Vremena su prema voznom redu." i broj stranice.
