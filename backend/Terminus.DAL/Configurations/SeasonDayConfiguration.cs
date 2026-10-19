@@ -11,7 +11,7 @@ public class SeasonDayConfiguration : IEntityTypeConfiguration<SeasonDay>
         builder.ToTable("season_days", t =>
         {
             t.HasCheckConstraint("ck_season_days_mode", "mode IN (0, 1, 2)");
-            t.HasCheckConstraint("ck_season_days_source", "source IN (0, 1)");
+            t.HasCheckConstraint("ck_season_days_source", "source IN (0, 1, 2)");
         });
 
         builder.HasKey(e => new { e.SeasonId, e.Date });

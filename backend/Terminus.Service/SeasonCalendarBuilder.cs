@@ -50,6 +50,50 @@ internal static class SeasonCalendarBuilder
     }
 
     /// <summary>
+    /// Dani razdoblja: svaki dan razdoblja u kojem zamijenjeni tip dana inače vozi
+    /// postaje dan sezone s pravilom razdoblja. Ručna iznimka i praznik za isti
+    /// datum imaju prednost (npr. Božić u zimskom raspustu vozi po pravilu za
+    /// praznike). Stari dani razdoblja se brišu.
+    /// </summary>
+    public static IReadOnlyList<SeasonDay> ApplyPeriods(
+        ITimetableSeasonModel season,
+        IReadOnlyList<IServiceCalendarModel> dayTypes,
+        IReadOnlyList<SeasonDay> days,
+        IReadOnlyList<SeasonPeriod> periods)
+    {
+        var kept = days.Where(d => d.Source != SeasonDaySource.Period).ToList();
+        var taken = kept.Select(d => d.Date).ToHashSet();
+        var dayTypesById = dayTypes.ToDictionary(d => d.Id);
+        var added = new List<SeasonDay>();
+
+        foreach (var period in periods)
+        {
+            if (!dayTypesById.TryGetValue(period.ReplacedCalendarId, out var replaced))
+            {
+                continue;
+            }
+
+            var from = period.StartDate > season.StartDate ? period.StartDate : season.StartDate;
+            var to = period.EndDate < season.EndDate ? period.EndDate : season.EndDate;
+            for (var date = from; date <= to; date = date.AddDays(1))
+            {
+                if (!taken.Contains(date) && ServiceCalendarRules.RunsOnWeekday(replaced, date.DayOfWeek))
+                {
+                    added.Add(new SeasonDay(
+                        date,
+                        period.Mode,
+                        period.Mode == SeasonDayMode.RunsAs ? period.CalendarId : null,
+                        SeasonDaySource.Period,
+                        period.Name));
+                    taken.Add(date);
+                }
+            }
+        }
+
+        return kept.Concat(added).OrderBy(d => d.Date).ToList();
+    }
+
+    /// <summary>
     /// Ponovno primjenjuje pravilo za praznike: stari dani iz praznika se brišu,
     /// a svaki praznik u razdoblju dobiva pravilo sezone. Ručna iznimka za isti
     /// datum ima prednost. Praznik se pamti i kad ništa ne mijenja (npr. pada u

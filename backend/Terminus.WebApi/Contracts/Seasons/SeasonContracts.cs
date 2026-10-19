@@ -6,7 +6,8 @@ namespace Terminus.WebApi.Contracts.Seasons;
 /// <param name="HolidayCountry">ISO kod države za praznike; null bez automatskih praznika.</param>
 /// <param name="HolidayCalendarId">Tip dana koji vozi na praznike kad je HolidayMode RunsAs.</param>
 /// <param name="DayTypes">Tipovi dana (GTFS kalendari sezone), od ponedjeljka.</param>
-/// <param name="Days">Dani koji odstupaju od dana u tjednu: praznici i ručne iznimke.</param>
+/// <param name="Days">Dani koji odstupaju od dana u tjednu: praznici, ručne iznimke i dani razdoblja.</param>
+/// <param name="Periods">Razdoblja (npr. školski raspusti), po početku.</param>
 public record SeasonResponse(
     Guid Id,
     string Name,
@@ -17,8 +18,20 @@ public record SeasonResponse(
     Guid? HolidayCalendarId,
     IReadOnlyList<DayTypeResponse> DayTypes,
     IReadOnlyList<SeasonDayResponse> Days,
+    IReadOnlyList<SeasonPeriodResponse> Periods,
     DateTime CreatedAt,
     DateTime UpdatedAt);
+
+/// <param name="ReplacedCalendarId">Tip dana koji se u razdoblju zamjenjuje.</param>
+/// <param name="Mode">RunsAs (vozi kao CalendarId) ili NoService.</param>
+public record SeasonPeriodResponse(
+    Guid Id,
+    string Name,
+    DateOnly StartDate,
+    DateOnly EndDate,
+    Guid ReplacedCalendarId,
+    SeasonDayMode Mode,
+    Guid? CalendarId);
 
 /// <param name="Code">GTFS service_id.</param>
 /// <param name="TripCount">Broj vožnji koje voze po ovom tipu dana.</param>
@@ -101,6 +114,36 @@ public class CopySeasonRequest
 
     /// <summary>Kopiraju se i sve vožnje sezone u odgovarajuće tipove dana.</summary>
     public bool WithTrips { get; set; } = true;
+}
+
+public class SeasonPeriodsRequest
+{
+    [Required]
+    public List<SeasonPeriodRequest>? Periods { get; set; }
+}
+
+/// <summary>Razdoblje sezone; bez Id-a je novo.</summary>
+public class SeasonPeriodRequest
+{
+    public Guid? Id { get; set; }
+
+    [Required]
+    public string? Name { get; set; }
+
+    [Required]
+    public DateOnly? StartDate { get; set; }
+
+    [Required]
+    public DateOnly? EndDate { get; set; }
+
+    /// <summary>Tip dana koji se u razdoblju zamjenjuje (npr. radni dan za vrijeme nastave).</summary>
+    [Required]
+    public Guid? ReplacedCalendarId { get; set; }
+
+    /// <summary>RunsAs (vozi kao CalendarId) ili NoService.</summary>
+    public SeasonDayMode Mode { get; set; } = SeasonDayMode.RunsAs;
+
+    public Guid? CalendarId { get; set; }
 }
 
 public class DayTypesRequest

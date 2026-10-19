@@ -26,6 +26,10 @@ public static class SeasonMappings
             detail.State.Days
                 .Select(d => new SeasonDayResponse(d.Date, d.Mode, d.CalendarId, d.Source, d.Note))
                 .ToList(),
+            detail.State.Periods
+                .Select(p => new SeasonPeriodResponse(
+                    p.Id, p.Name, p.StartDate, p.EndDate, p.ReplacedCalendarId, p.Mode, p.CalendarId))
+                .ToList(),
             season.CreatedAt,
             season.UpdatedAt);
     }
@@ -56,6 +60,17 @@ public static class SeasonMappings
         HolidayMode = request.HolidayMode,
         HolidayCalendarId = request.HolidayCalendarId
     };
+
+    // Name, datumi i ReplacedCalendarId su [Required].
+    public static IReadOnlyList<SeasonPeriod> ToModels(this IEnumerable<SeasonPeriodRequest> periods) =>
+        periods.Select(p => new SeasonPeriod(
+            p.Id ?? Guid.Empty,
+            p.Name!,
+            p.StartDate!.Value,
+            p.EndDate!.Value,
+            p.ReplacedCalendarId!.Value,
+            p.Mode,
+            p.CalendarId)).ToList();
 
     public static IReadOnlyList<IServiceCalendarModel> ToModels(this IEnumerable<DayTypeRequest> dayTypes) =>
         dayTypes.Select(d => (IServiceCalendarModel)new ServiceCalendarModel

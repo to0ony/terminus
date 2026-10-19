@@ -10,5 +10,8 @@ public enum SeasonDaySource : short
     Manual = 0,
 
     /// <summary>Praznik iz popisa praznika države; mijenja se s pravilom za praznike.</summary>
-    Holiday = 1
+    Holiday = 1,
+
+    /// <summary>Dan razdoblja sezone (npr. školski raspust); mijenja se s razdobljem.</summary>
+    Period = 2
 }

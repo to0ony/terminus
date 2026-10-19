@@ -111,6 +111,21 @@ public class SeasonsController(ISeasonService seasonService, IOutputCacheStore o
         return Ok(season.ToResponse());
     }
 
+    /// <summary>
+    /// Zamjenjuje razdoblja sezone (npr. školske raspuste): u razdoblju jedan tip dana vozi
+    /// kao drugi ili ne vozi. Novo razdoblje nema Id. Ručne iznimke i praznici imaju prednost.
+    /// </summary>
+    [HttpPut("{id:guid}/periods")]
+    [ProducesResponseType<SeasonResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<SeasonResponse>> SavePeriods(Guid id, SeasonPeriodsRequest request, CancellationToken cancellationToken)
+    {
+        var season = await seasonService.SavePeriodsAsync(id, request.Periods!.ToModels(), cancellationToken);
+        await EvictAsync(cancellationToken);
+        return Ok(season.ToResponse());
+    }
+
     /// <summary>Ručna iznimka za dan (yyyy-MM-dd): vozi kao tip dana, ne vozi ili normalno.</summary>
     [HttpPut("{id:guid}/days/{date}")]
     [ProducesResponseType<SeasonResponse>(StatusCodes.Status200OK)]

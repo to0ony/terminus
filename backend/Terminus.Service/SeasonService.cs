@@ -20,6 +20,8 @@ public class SeasonService(
 
     public const int MaxNoteLength = 200;
 
+    public const int MaxPeriods = 50;
+
     /// <summary>Po DayOfWeek (nedjelja je 0).</summary>
     private static readonly string[] DayNames =
         ["Nedjelja", "Ponedjeljak", "Utorak", "Srijeda", "Četvrtak", "Petak", "Subota"];
@@ -92,7 +94,7 @@ public class SeasonService(
         await EnsureNoOverlapAsync(season, cancellationToken);
 
         var holidays = await FetchHolidaysAsync(season, cancellationToken);
-        var state = new SeasonState(season, dayTypes, SeasonCalendarBuilder.ApplyHolidays(season, [], holidays));
+        var state = new SeasonState(season, dayTypes, SeasonCalendarBuilder.ApplyHolidays(season, [], holidays), []);
 
         return await SaveAsync(state, cancellationToken);
     }
@@ -137,8 +139,24 @@ public class SeasonService(
 
         await EnsureNoOverlapAsync(season, cancellationToken);
 
+        // Razdoblja (npr. raspusti) pomiču se koliko i sezona; datume treba samo provjeriti.
+        var shift = season.StartDate.DayNumber - source.Season.StartDate.DayNumber;
+        var periods = source.Periods
+            .Select(p => Clip(
+                p with
+                {
+                    Id = Guid.NewGuid(),
+                    StartDate = p.StartDate.AddDays(shift),
+                    EndDate = p.EndDate.AddDays(shift),
+                    ReplacedCalendarId = calendars[p.ReplacedCalendarId],
+                    CalendarId = p.CalendarId is { } target ? calendars[target] : null
+                },
+                season))
+            .OfType<SeasonPeriod>()
+            .ToList();
+
         var holidays = await FetchHolidaysAsync(season, cancellationToken);
-        var state = new SeasonState(season, dayTypes, SeasonCalendarBuilder.ApplyHolidays(season, [], holidays));
+        var state = new SeasonState(season, dayTypes, SeasonCalendarBuilder.ApplyHolidays(season, [], holidays), periods);
 
         return await SaveAsync(state, cancellationToken, withTrips ? calendars : null);
     }
@@ -169,8 +187,10 @@ public class SeasonService(
 
         var holidays = await FetchHolidaysAsync(season, cancellationToken);
         var days = SeasonCalendarBuilder.ApplyHolidays(season, current.Days, holidays);
+        // Razdoblja se skraćuju na novo razdoblje sezone, a ona izvan njega nestaju.
+        var periods = current.Periods.Select(p => Clip(p, season)).OfType<SeasonPeriod>().ToList();
 
-        return await SaveAsync(new SeasonState(season, current.DayTypes, days), cancellationToken);
+        return await SaveAsync(new SeasonState(season, current.DayTypes, days, periods), cancellationToken);
     }
 
     public async Task<SeasonDetail> SaveDayTypesAsync(Guid id, IReadOnlyList<IServiceCalendarModel> dayTypes, CancellationToken cancellationToken = default)
@@ -205,6 +225,11 @@ public class SeasonService(
         {
             errors.Add("DayTypes", "Tip dana koji vozi na praznike ne može se obrisati; prvo promijeni pravilo za praznike.");
         }
+        foreach (var period in current.Periods.Where(p =>
+            !kept.Contains(p.ReplacedCalendarId) || p.CalendarId is { } target && !kept.Contains(target)))
+        {
+            errors.Add("DayTypes", $"Tip dana koristi razdoblje „{period.Name}”; prvo promijeni ili obriši razdoblje.");
+        }
         errors.ThrowIfAny();
 
         if (removed.Count > 0)
@@ -222,7 +247,86 @@ public class SeasonService(
             .Where(d => d.Mode != SeasonDayMode.RunsAs || d.CalendarId is { } calendar && kept.Contains(calendar))
             .ToList();
 
-        return await SaveAsync(new SeasonState(season, dayTypes, days), cancellationToken);
+        return await SaveAsync(new SeasonState(season, dayTypes, days, current.Periods), cancellationToken);
+    }
+
+    public async Task<SeasonDetail> SavePeriodsAsync(Guid id, IReadOnlyList<SeasonPeriod> periods, CancellationToken cancellationToken = default)
+    {
+        var current = await LoadAsync(id, cancellationToken);
+        var season = current.Season;
+        var dayTypes = current.DayTypes.Select(d => d.Id).ToHashSet();
+
+        var normalized = periods
+            .Select(p => p with
+            {
+                Id = p.Id == Guid.Empty ? Guid.NewGuid() : p.Id,
+                Name = p.Name?.Trim() ?? string.Empty,
+                CalendarId = p.Mode == SeasonDayMode.RunsAs ? p.CalendarId : null
+            })
+            .OrderBy(p => p.StartDate)
+            .ThenBy(p => p.Name, StringComparer.Ordinal)
+            .ToList();
+
+        var errors = new ValidationErrors();
+        if (normalized.Count > MaxPeriods)
+        {
+            errors.Add("Periods", $"Sezona može imati najviše {MaxPeriods} razdoblja.");
+        }
+        foreach (var period in normalized)
+        {
+            var label = period.Name.Length > 0 ? $"Razdoblje „{period.Name}”" : "Razdoblje";
+            if (period.Name.Length == 0)
+            {
+                errors.Add("Periods", "Svako razdoblje mora imati naziv.");
+            }
+            else if (period.Name.Length > MaxNoteLength)
+            {
+                errors.Add("Periods", $"{label}: naziv smije imati najviše {MaxNoteLength} znakova.");
+            }
+            if (period.EndDate < period.StartDate)
+            {
+                errors.Add("Periods", $"{label}: kraj ne smije biti prije početka.");
+            }
+            else if (period.StartDate < season.StartDate || period.EndDate > season.EndDate)
+            {
+                errors.Add("Periods", $"{label} mora biti unutar sezone ({Format(season.StartDate)} – {Format(season.EndDate)}).");
+            }
+            if (!dayTypes.Contains(period.ReplacedCalendarId))
+            {
+                errors.Add("Periods", $"{label}: odaberi tip dana ove sezone koji se zamjenjuje.");
+            }
+            if (period.Mode == SeasonDayMode.RunsAs)
+            {
+                if (period.CalendarId is not { } target || !dayTypes.Contains(target))
+                {
+                    errors.Add("Periods", $"{label}: odaberi tip dana ove sezone koji vozi umjesto njega.");
+                }
+                else if (target == period.ReplacedCalendarId)
+                {
+                    errors.Add("Periods", $"{label}: tip dana ne može voziti kao sam sebe.");
+                }
+            }
+            else if (period.Mode != SeasonDayMode.NoService)
+            {
+                errors.Add("Periods", $"{label}: razdoblje vozi kao drugi tip dana ili ne vozi.");
+            }
+        }
+
+        // Ista zamjena u dva razdoblja koja se preklapaju bila bi dvosmislena.
+        foreach (var group in normalized.GroupBy(p => p.ReplacedCalendarId))
+        {
+            var ordered = group.OrderBy(p => p.StartDate).ToList();
+            for (var i = 1; i < ordered.Count; i++)
+            {
+                if (ordered[i].StartDate <= ordered[i - 1].EndDate)
+                {
+                    errors.Add("Periods", $"Razdoblja „{ordered[i - 1].Name}” i „{ordered[i].Name}” se preklapaju.");
+                }
+            }
+        }
+        errors.ThrowIfAny();
+
+        return await SaveAsync(current with { Periods = normalized }, cancellationToken);
     }
 
     public async Task<SeasonDetail> SetDayAsync(
@@ -322,6 +426,11 @@ public class SeasonService(
         CancellationToken cancellationToken,
         IReadOnlyDictionary<Guid, Guid>? copyTrips = null)
     {
+        // Dani razdoblja se uvijek računaju iznova: ovise o praznicima, ručnim iznimkama i tipovima dana.
+        state = state with
+        {
+            Days = SeasonCalendarBuilder.ApplyPeriods(state.Season, state.DayTypes, state.Days, state.Periods)
+        };
         var calendarDates = SeasonCalendarBuilder.CalendarDates(state.Season, state.DayTypes, state.Days);
         await seasonRepository.SaveAsync(state, calendarDates, copyTrips, cancellationToken);
 
@@ -452,6 +561,14 @@ public class SeasonService(
     /// <summary>GTFS service_id: početak sezone i nasumični nastavak, jedinstven u praksi.</summary>
     private static string NewCode(DateOnly start) =>
         $"{start.ToString("yyyyMMdd", CultureInfo.InvariantCulture)}-{Guid.NewGuid().ToString("N")[..6]}";
+
+    /// <summary>Razdoblje skraćeno na sezonu; null ako je cijelo izvan nje.</summary>
+    private static SeasonPeriod? Clip(SeasonPeriod period, ITimetableSeasonModel season)
+    {
+        var start = period.StartDate > season.StartDate ? period.StartDate : season.StartDate;
+        var end = period.EndDate < season.EndDate ? period.EndDate : season.EndDate;
+        return start <= end ? period with { StartDate = start, EndDate = end } : null;
+    }
 
     private static string Format(DateOnly date) => date.ToString("d. M. yyyy.", CultureInfo.InvariantCulture);
 

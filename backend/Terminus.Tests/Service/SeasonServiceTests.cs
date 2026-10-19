@@ -233,6 +233,101 @@ public class SeasonServiceTests
     }
 
     [Fact]
+    public async Task SavePeriodsAsync_WorkingDaysOfPeriodRunAsReplacement()
+    {
+        var (season, school, holiday) = await CreateWithBreakAsync();
+
+        var saved = await _service.SavePeriodsAsync(season.State.Season.Id,
+            [Period("Zimski raspust", new DateOnly(2026, 12, 21), new DateOnly(2027, 1, 8), school, holiday)],
+            TestContext.Current.CancellationToken);
+
+        // Utorak u raspustu vozi kao raspust.
+        var tuesday = Assert.Single(saved.State.Days, d => d.Date == new DateOnly(2026, 12, 22));
+        Assert.Equal(SeasonDaySource.Period, tuesday.Source);
+        Assert.Equal(holiday, tuesday.CalendarId);
+        Assert.Equal("Zimski raspust", tuesday.Note);
+        Assert.Contains(_repository.CalendarDates, d => d.ServiceCalendarId == holiday && d.Date == tuesday.Date && d.ExceptionType == CalendarExceptionType.Added);
+        Assert.Contains(_repository.CalendarDates, d => d.ServiceCalendarId == school && d.Date == tuesday.Date && d.ExceptionType == CalendarExceptionType.Removed);
+        // Subota ostaje subota, a Božić vozi po pravilu za praznike.
+        Assert.DoesNotContain(saved.State.Days, d => d.Date == new DateOnly(2026, 12, 26));
+        Assert.Equal(SeasonDaySource.Holiday, Assert.Single(saved.State.Days, d => d.Date == Christmas).Source);
+    }
+
+    [Fact]
+    public async Task ResetDayAsync_PeriodAppliesAgain()
+    {
+        var (season, school, holiday) = await CreateWithBreakAsync();
+        var id = season.State.Season.Id;
+        var day = new DateOnly(2026, 12, 22);
+        await _service.SavePeriodsAsync(id, [Period("Raspust", new DateOnly(2026, 12, 21), new DateOnly(2027, 1, 8), school, holiday)],
+            TestContext.Current.CancellationToken);
+
+        var manual = await _service.SetDayAsync(id, day, SeasonDayMode.NoService, null, "Štrajk", TestContext.Current.CancellationToken);
+        Assert.Equal(SeasonDaySource.Manual, Assert.Single(manual.State.Days, d => d.Date == day).Source);
+
+        var reset = await _service.ResetDayAsync(id, day, TestContext.Current.CancellationToken);
+        Assert.Equal(SeasonDaySource.Period, Assert.Single(reset.State.Days, d => d.Date == day).Source);
+    }
+
+    [Fact]
+    public async Task SavePeriodsAsync_OverlappingPeriodsOfSameDayType_AreRejected()
+    {
+        var (season, school, holiday) = await CreateWithBreakAsync();
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() => _service.SavePeriodsAsync(season.State.Season.Id,
+            [
+                Period("Zimski", new DateOnly(2026, 12, 21), new DateOnly(2027, 1, 8), school, holiday),
+                Period("Novogodišnji", new DateOnly(2027, 1, 4), new DateOnly(2027, 1, 15), school, holiday)
+            ],
+            TestContext.Current.CancellationToken));
+
+        Assert.Contains("Periods", ex.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task SavePeriodsAsync_OutsideSeason_IsRejected()
+    {
+        var (season, school, holiday) = await CreateWithBreakAsync();
+
+        await Assert.ThrowsAsync<ValidationException>(() => _service.SavePeriodsAsync(season.State.Season.Id,
+            [Period("Ljeto", new DateOnly(2027, 6, 15), new DateOnly(2027, 8, 31), school, holiday)],
+            TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task SaveDayTypesAsync_DayTypeUsedByPeriod_IsRejected()
+    {
+        var (season, school, holiday) = await CreateWithBreakAsync();
+        var id = season.State.Season.Id;
+        await _service.SavePeriodsAsync(id, [Period("Raspust", new DateOnly(2026, 12, 21), new DateOnly(2027, 1, 8), school, holiday)],
+            TestContext.Current.CancellationToken);
+
+        var kept = season.State.DayTypes.Where(d => d.Id != holiday).ToList();
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            _service.SaveDayTypesAsync(id, kept, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task CopyAsync_MovesPeriodsWithTheSeason()
+    {
+        var (season, school, holiday) = await CreateWithBreakAsync();
+        await _service.SavePeriodsAsync(season.State.Season.Id,
+            [Period("Zimski raspust", new DateOnly(2026, 12, 21), new DateOnly(2027, 1, 8), school, holiday)],
+            TestContext.Current.CancellationToken);
+
+        var copy = await _service.CopyAsync(season.State.Season.Id,
+            Period("Zimski 2027/28", new DateOnly(2027, 9, 1), new DateOnly(2028, 6, 14)),
+            withTrips: false, TestContext.Current.CancellationToken);
+
+        var period = Assert.Single(copy.State.Periods);
+        Assert.Equal(new DateOnly(2027, 12, 21), period.StartDate);
+        Assert.Equal(new DateOnly(2028, 1, 8), period.EndDate);
+        Assert.Equal(copy.State.DayTypes.Single(d => d.Name == "Radni dan").Id, period.ReplacedCalendarId);
+        Assert.Equal(copy.State.DayTypes.Single(d => d.Name == "Raspust").Id, period.CalendarId);
+    }
+
+    [Fact]
     public async Task GetHolidayCountriesAsync_SuggestsCountryFromAgencyTimezone()
     {
         var countries = await _service.GetHolidayCountriesAsync(TestContext.Current.CancellationToken);
@@ -266,6 +361,22 @@ public class SeasonServiceTests
 
         return _service.CreateAsync(season, dayTypes, holidayIndex, TestContext.Current.CancellationToken);
     }
+
+    /// <summary>Sezona s radnim danom za vrijeme nastave i tipom dana za raspust (bez dana u tjednu).</summary>
+    private async Task<(SeasonDetail Season, Guid School, Guid Holiday)> CreateWithBreakAsync()
+    {
+        var season = await CreateAsync(dayTypes:
+        [
+            DayType("Radni dan", DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday),
+            DayType("Raspust"),
+            DayType("Vikend", DayOfWeek.Saturday, DayOfWeek.Sunday)
+        ]);
+        var dayTypes = season.State.DayTypes;
+        return (season, dayTypes.Single(d => d.Name == "Radni dan").Id, dayTypes.Single(d => d.Name == "Raspust").Id);
+    }
+
+    private static SeasonPeriod Period(string name, DateOnly start, DateOnly end, Guid replaced, Guid runsAs) =>
+        new(Guid.Empty, name, start, end, replaced, SeasonDayMode.RunsAs, runsAs);
 
     private static ITimetableSeasonModel Period(string name, DateOnly start, DateOnly end) => new TimetableSeasonModel
     {

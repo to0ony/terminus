@@ -28,6 +28,7 @@ import { CopySeasonDialog } from './CopySeasonDialog'
 import { EditSeasonDialog } from './EditSeasonDialog'
 import { type Season, useDeleteSeason, useSeason } from './queries'
 import { SeasonMonths } from './SeasonMonths'
+import { SeasonPeriods } from './SeasonPeriods'
 import { dayModeLabel, dayTypeColor, weekdayLabel, weekdayOf, weekdays } from './seasonDays'
 
 const regionNames = new Intl.DisplayNames(['hr'], { type: 'region' })
@@ -138,6 +139,8 @@ export function SeasonPage() {
         </Group>
       </Paper>
 
+      <SeasonPeriods season={data} />
+
       <Grid gap="md">
         <Grid.Col span={{ base: 12, lg: 9 }}>
           <Stack gap="xs">
@@ -161,8 +164,12 @@ export function SeasonPage() {
   )
 }
 
-/** Svi dani koji odstupaju, da se na jednom mjestu vidi što je drukčije. */
+/**
+ * Dani koji odstupaju, da se na jednom mjestu vidi što je drukčije. Dani
+ * razdoblja su u popisu razdoblja, pa ovdje nisu.
+ */
 function Exceptions({ season, onSelect }: { season: Season; onSelect: (date: string) => void }) {
+  const days = season.days.filter((d) => d.source !== 'Period')
   return (
     <Paper withBorder p="md" pos={{ lg: 'sticky' }} top={80}>
       <Group justify="space-between" mb="xs">
@@ -170,17 +177,17 @@ function Exceptions({ season, onSelect }: { season: Season; onSelect: (date: str
           Iznimke
         </Text>
         <Badge variant="light" color="gray">
-          {season.days.length}
+          {days.length}
         </Badge>
       </Group>
-      {season.days.length === 0 ? (
+      {days.length === 0 ? (
         <Text size="sm" c="dimmed">
           Nema iznimki. Klikni na dan u kalendaru da je dodaš.
         </Text>
       ) : (
         <ScrollArea.Autosize mah={560}>
           <Stack gap={2}>
-            {season.days.map((day) => (
+            {days.map((day) => (
               <UnstyledButton
                 key={day.date}
                 onClick={() => onSelect(day.date)}

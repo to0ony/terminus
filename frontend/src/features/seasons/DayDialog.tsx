@@ -63,11 +63,13 @@ function DayForm({ season, date, onClose }: { season: Season; date: string; onCl
       <Text size="sm" c="dimmed">
         {day?.source === 'Holiday'
           ? `Praznik: ${day.note}. Vozi po pravilu za praznike, a ovdje ga možeš promijeniti samo za ovaj dan.`
-          : day
-            ? 'Ručna iznimka.'
-            : regular
-              ? `Inače vozi kao ${regular.name}.`
-              : 'Ovaj dan u tjednu inače ne vozi nijedan tip dana.'}
+          : day?.source === 'Period'
+            ? `Razdoblje „${day.note}”. Vozi po pravilu razdoblja, a ovdje ga možeš promijeniti samo za ovaj dan.`
+            : day
+              ? 'Ručna iznimka.'
+              : regular
+                ? `Inače vozi kao ${regular.name}.`
+                : 'Ovaj dan u tjednu inače ne vozi nijedan tip dana.'}
       </Text>
 
       <Radio.Group label="Vozi" value={choice} onChange={(value) => setChoice(String(value))}>

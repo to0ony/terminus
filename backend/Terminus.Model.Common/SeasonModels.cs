@@ -27,13 +27,28 @@ public interface ITimetableSeasonModel
 /// <param name="Note">Napomena, npr. naziv praznika.</param>
 public sealed record SeasonDay(DateOnly Date, SeasonDayMode Mode, Guid? CalendarId, SeasonDaySource Source, string? Note);
 
+/// <summary>
+/// Razdoblje sezone (npr. zimski raspust) u kojem tip dana <paramref name="ReplacedCalendarId"/>
+/// vozi kao <paramref name="CalendarId"/> ili ne vozi. Ostali tipovi dana voze normalno.
+/// </summary>
+public sealed record SeasonPeriod(
+    Guid Id,
+    string Name,
+    DateOnly StartDate,
+    DateOnly EndDate,
+    Guid ReplacedCalendarId,
+    SeasonDayMode Mode,
+    Guid? CalendarId);
+
 /// <summary>Praznik iz popisa praznika države.</summary>
 public sealed record PublicHoliday(DateOnly Date, string Name);
 
 /// <summary>Sezona sa svojim tipovima dana i danima koji odstupaju.</summary>
 /// <param name="DayTypes">Kalendari sezone, poredani po prvom danu u tjednu.</param>
 /// <param name="Days">Dani koji odstupaju, poredani po datumu.</param>
+/// <param name="Periods">Razdoblja, poredana po početku.</param>
 public sealed record SeasonState(
     ITimetableSeasonModel Season,
     IReadOnlyList<IServiceCalendarModel> DayTypes,
-    IReadOnlyList<SeasonDay> Days);
+    IReadOnlyList<SeasonDay> Days,
+    IReadOnlyList<SeasonPeriod> Periods);

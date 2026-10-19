@@ -26,4 +26,5 @@ public class TimetableSeason : IAuditable
 
     public ICollection<ServiceCalendar> Calendars { get; set; } = new List<ServiceCalendar>();
     public ICollection<SeasonDay> Days { get; set; } = new List<SeasonDay>();
+    public ICollection<SeasonPeriod> Periods { get; set; } = new List<SeasonPeriod>();
 }

@@ -63,7 +63,7 @@ export function weekdayLabel(dayType: Pick<DayType, WeekdayKey>): string {
   return parts.length > 0 ? parts.join(', ') : 'samo posebni datumi'
 }
 
-export type DayKind = 'outside' | 'regular' | 'holiday' | 'manual'
+export type DayKind = 'outside' | 'regular' | 'holiday' | 'period' | 'manual'
 
 export interface DayState {
   kind: DayKind
@@ -95,7 +95,8 @@ export function dayState(season: Season, days: Map<string, SeasonDay>, date: str
         ? null
         : regular
 
-  return { kind: day.source === 'Holiday' ? 'holiday' : 'manual', dayType, day }
+  const kind = day.source === 'Holiday' ? 'holiday' : day.source === 'Period' ? 'period' : 'manual'
+  return { kind, dayType, day }
 }
 
 export function dayMap(season: Season): Map<string, SeasonDay> {

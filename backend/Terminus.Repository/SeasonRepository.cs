@@ -9,6 +9,7 @@ using Terminus.Model.Common.Enums;
 using Terminus.Repository.Common;
 using Terminus.Repository.Mapping;
 using SeasonDay = Terminus.Model.Common.SeasonDay;
+using SeasonPeriod = Terminus.Model.Common.SeasonPeriod;
 
 namespace Terminus.Repository;
 
@@ -20,6 +21,7 @@ public class SeasonRepository(TerminusDbContext context) : ISeasonRepository
             .AsNoTracking()
             .Include(s => s.Calendars)
             .Include(s => s.Days)
+            .Include(s => s.Periods)
             .OrderBy(s => s.StartDate)
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
@@ -33,6 +35,7 @@ public class SeasonRepository(TerminusDbContext context) : ISeasonRepository
             .AsNoTracking()
             .Include(s => s.Calendars)
             .Include(s => s.Days)
+            .Include(s => s.Periods)
             .AsSplitQuery()
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
 
@@ -106,8 +109,9 @@ public class SeasonRepository(TerminusDbContext context) : ISeasonRepository
 
         season.HolidayCalendarId = model.HolidayCalendarId;
 
-        // Dani i iznimke se uvijek pišu ispočetka; iznimke su izračunate iz dana.
+        // Dani, razdoblja i iznimke se uvijek pišu ispočetka; iznimke su izračunate iz dana.
         await context.SeasonDays.Where(d => d.SeasonId == season.Id).ExecuteDeleteAsync(cancellationToken);
+        await context.SeasonPeriods.Where(p => p.SeasonId == season.Id).ExecuteDeleteAsync(cancellationToken);
         await context.CalendarDates.Where(d => keep.Contains(d.ServiceCalendarId)).ExecuteDeleteAsync(cancellationToken);
 
         context.SeasonDays.AddRange(state.Days.Select(d => new DAL.Entities.SeasonDay
@@ -118,6 +122,17 @@ public class SeasonRepository(TerminusDbContext context) : ISeasonRepository
             CalendarId = d.CalendarId,
             Source = (short)d.Source,
             Note = d.Note
+        }));
+        context.SeasonPeriods.AddRange(state.Periods.Select(p => new DAL.Entities.SeasonPeriod
+        {
+            Id = p.Id,
+            SeasonId = season.Id,
+            Name = p.Name,
+            StartDate = p.StartDate,
+            EndDate = p.EndDate,
+            ReplacedCalendarId = p.ReplacedCalendarId,
+            Mode = (short)p.Mode,
+            CalendarId = p.CalendarId
         }));
         context.CalendarDates.AddRange(calendarDates.Select(d => new CalendarDate
         {
@@ -230,6 +245,12 @@ public class SeasonRepository(TerminusDbContext context) : ISeasonRepository
         season.Days
             .OrderBy(d => d.Date)
             .Select(d => new SeasonDay(d.Date, (SeasonDayMode)d.Mode, d.CalendarId, (SeasonDaySource)d.Source, d.Note))
+            .ToList(),
+        season.Periods
+            .OrderBy(p => p.StartDate)
+            .ThenBy(p => p.Name, StringComparer.Ordinal)
+            .Select(p => new SeasonPeriod(
+                p.Id, p.Name, p.StartDate, p.EndDate, p.ReplacedCalendarId, (SeasonDayMode)p.Mode, p.CalendarId))
             .ToList());
 
     private static TimetableSeasonModel ToModel(TimetableSeason season) => new()

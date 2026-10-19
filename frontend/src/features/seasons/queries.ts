@@ -81,6 +81,18 @@ export function useCopySeason(id: string) {
   )
 }
 
+export type SeasonPeriod = components['schemas']['SeasonPeriodResponse']
+export type SeasonPeriodRequest = components['schemas']['SeasonPeriodRequest']
+
+/** Zamjenjuje sva razdoblja sezone (npr. školske raspuste). */
+export function useSavePeriods(id: string) {
+  return useSeasonMutation(async (periods: SeasonPeriodRequest[]) =>
+    unwrap(
+      await api.PUT('/api/seasons/{id}/periods', { params: { path: { id } }, body: { periods } }),
+    ),
+  )
+}
+
 export function useSaveDayTypes(id: string) {
   return useSeasonMutation(async (dayTypes: DayTypeRequest[]) =>
     unwrap(

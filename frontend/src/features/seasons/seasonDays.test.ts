@@ -39,7 +39,9 @@ const season: Season = {
     { date: '2026-12-25', mode: 'RunsAs', calendarId: 'n', source: 'Holiday', note: 'Božić' },
     { date: '2026-12-24', mode: 'RunsAs', calendarId: 's', source: 'Manual', note: 'Badnjak' },
     { date: '2027-01-02', mode: 'NoService', calendarId: null, source: 'Manual', note: null },
+    { date: '2026-12-22', mode: 'RunsAs', calendarId: 's', source: 'Period', note: 'Raspust' },
   ],
+  periods: [],
   createdAt: '',
   updatedAt: '',
 }
@@ -55,8 +57,12 @@ describe('dayState', () => {
     expect(dayState(season, days, '2026-12-26').dayType).toBe(saturday)
   })
 
-  it('applies holidays and manual exceptions', () => {
+  it('applies holidays, periods and manual exceptions', () => {
     expect(dayState(season, days, '2026-12-25')).toMatchObject({ kind: 'holiday', dayType: sunday })
+    expect(dayState(season, days, '2026-12-22')).toMatchObject({
+      kind: 'period',
+      dayType: saturday,
+    })
     expect(dayState(season, days, '2026-12-24')).toMatchObject({
       kind: 'manual',
       dayType: saturday,

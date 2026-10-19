@@ -31,6 +31,13 @@ public interface ISeasonService
     /// </summary>
     Task<SeasonDetail> SaveDayTypesAsync(Guid id, IReadOnlyList<IServiceCalendarModel> dayTypes, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Zamjenjuje razdoblja sezone (npr. školske raspuste): u razdoblju jedan tip dana
+    /// vozi kao drugi ili ne vozi. Novo razdoblje nema Id. Ručne iznimke i praznici
+    /// imaju prednost pred razdobljem.
+    /// </summary>
+    Task<SeasonDetail> SavePeriodsAsync(Guid id, IReadOnlyList<SeasonPeriod> periods, CancellationToken cancellationToken = default);
+
     /// <summary>Ručna iznimka za dan: vozi kao tip dana, ne vozi ili normalno (npr. za praznik).</summary>
     Task<SeasonDetail> SetDayAsync(
         Guid id,
