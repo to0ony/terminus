@@ -19,17 +19,17 @@ export interface Board {
 }
 
 export const boardKeys = {
-  departures: (stopCode: string, limit: number) =>
-    ['board', 'departures', stopCode, limit] as const,
+  departures: (stopCode: string, limit: number, past: number) =>
+    ['board', 'departures', stopCode, limit, past] as const,
   settings: ['board', 'settings'] as const,
 }
 
-export function useBoard(stopCode: string, limit: number) {
+export function useBoard(stopCode: string, limit: number, past: number) {
   return useQuery({
-    queryKey: boardKeys.departures(stopCode, limit),
+    queryKey: boardKeys.departures(stopCode, limit, past),
     queryFn: async (): Promise<Board> => {
       const result = await api.GET('/api/public/departures/{stopCode}', {
-        params: { path: { stopCode }, query: { Limit: limit } },
+        params: { path: { stopCode }, query: { Limit: limit, Past: past } },
       })
       const departures = unwrap(result)
       // Odgovor iz cachea poslužitelja je star Age sekundi.

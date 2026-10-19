@@ -52,6 +52,106 @@ export function whenText(departureTime: string, nowMs: number): string {
   return departureTime.slice(11, 16)
 }
 
+/** ?past= iz adrese: koliko otišlih polazaka prikazati; zadano 2, najviše 5 (granica backenda). */
+export function parsePast(value: string | null): number {
+  if (value === null) {
+    return 2
+  }
+  const past = Number(value)
+  return Number.isInteger(past) && past >= 0 ? Math.min(past, 5) : 2
+}
+
+/** Datum (YYYY-MM-DD) u zoni s pomakom offset. */
+export function localDate(nowMs: number, offset: number): string {
+  return new Date(nowMs + offset * 60_000).toISOString().slice(0, 10)
+}
+
+export type BoardItem =
+  | {
+      kind: 'departure'
+      departure: BoardDeparture
+      /** Polazak je otišao; prikazuje se zatamnjeno. */
+      past: boolean
+      /** Zadnji polazak te linije i smjera u danu voznog reda. */
+      last: boolean
+    }
+  | {
+      kind: 'end'
+      /** Dan voznog reda sljedećih polazaka. */
+      next: string
+      /** Danas više nema polazaka (kraj dana je prije prvog retka). */
+      none: boolean
+    }
+
+const sameLine = (a: BoardDeparture, b: BoardDeparture) =>
+  a.routeName === b.routeName && a.headsign === b.headsign
+
+/**
+ * Redci zaslona: do <paramref name="past"/> otišlih polazaka, sljedeći
+ * polasci i oznaka kraja dana voznog reda između dva dana. Polazak je zadnji
+ * kad iza njega nema iste linije i smjera tog dana, a popis sigurno pokriva
+ * ostatak dana: ima polazak idućeg dana ili je kraći od traženog
+ * (<paramref name="complete"/>, samo za današnji dan).
+ */
+export function boardItems(
+  departures: BoardDeparture[],
+  recent: BoardDeparture[],
+  nowMs: number,
+  past: number,
+  today: string,
+  complete: boolean,
+): BoardItem[] {
+  const gone = (d: BoardDeparture) => Date.parse(d.departureTime) < nowMs - graceMs
+  // Polasci koji su otišli nakon zadnjeg dohvata pridružuju se otišlima.
+  const left = past > 0 ? [...recent, ...departures.filter(gone)].slice(-past) : []
+  const next = upcoming(departures, nowMs)
+  const rows = [
+    ...left.map((departure) => ({ departure, past: true })),
+    ...next.map((departure) => ({ departure, past: false })),
+  ]
+
+  const items: BoardItem[] = []
+  // Prvi redak je već idući dan voznog reda: danas više nema polazaka.
+  if (rows.length > 0 && rows[0].departure.serviceDate > today) {
+    items.push({ kind: 'end', next: rows[0].departure.serviceDate, none: true })
+  }
+  rows.forEach(({ departure, past: isPast }, i) => {
+    const previous = rows[i - 1]?.departure
+    if (previous && departure.serviceDate > previous.serviceDate) {
+      items.push({ kind: 'end', next: departure.serviceDate, none: false })
+    }
+    let last = false
+    if (!isPast) {
+      const later = next.slice(next.indexOf(departure) + 1)
+      // Kraći popis pokriva ostatak današnjeg dana, ali ne i sutrašnjeg (24 h od sada).
+      const covered =
+        later.some((d) => d.serviceDate > departure.serviceDate) ||
+        (complete && departure.serviceDate <= today)
+      last =
+        covered &&
+        !later.some((d) => d.serviceDate === departure.serviceDate && sameLine(d, departure))
+    }
+    items.push({ kind: 'departure', departure, past: isPast, last })
+  })
+  return items
+}
+
+/** "sutra", "danas" ili dan u tjednu s datumom ("pon 20. 10."). */
+export function dayLabel(date: string, today: string): string {
+  const days = Math.round((Date.parse(date) - Date.parse(today)) / 86_400_000)
+  if (days === 0) {
+    return 'danas'
+  }
+  if (days === 1) {
+    return 'sutra'
+  }
+  const [year, month, day] = date.split('-').map(Number)
+  const weekday = ['ned', 'pon', 'uto', 'sri', 'čet', 'pet', 'sub'][
+    new Date(Date.UTC(year, month - 1, day)).getUTCDay()
+  ]
+  return `${weekday} ${day}. ${month}.`
+}
+
 /** ?limit= iz adrese; zadano 12, najviše 30 (granica backenda). */
 export function parseLimit(value: string | null): number {
   const limit = Number(value)

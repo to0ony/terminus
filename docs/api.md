@@ -57,7 +57,7 @@ Detalji pojedinih područja:
 
 | Resurs | Endpoint |
 |---|---|
-| Sljedeći polasci sa stanice | `GET /api/public/departures/{stopCode}?limit=10` |
+| Sljedeći polasci sa stanice | `GET /api/public/departures/{stopCode}?limit=10&past=0` |
 | Naziv, boje i logo instance | `GET /api/public/settings`, `GET /api/public/settings/logo` |
 | GTFS feed (ako je objavljen u postavkama) | `GET /api/public/gtfs` |
 | Stanje aplikacije i baze | `GET /health` |

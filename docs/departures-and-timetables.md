@@ -116,9 +116,10 @@ dopušta različite zone.
 Svaka stanica ima stalnu javnu adresu po GTFS `stop_id` (`stops.code`):
 
 ```
-https://<domena>/board/OS-AK?limit=8
-                       └─┬─┘ └──┬──┘
-                      stanica   broj polazaka (zadano 12, najviše 30)
+https://<domena>/board/OS-AK?limit=8&past=2
+                       └─┬─┘ └──┬──┘ └──┬─┘
+                      stanica   │       otišli polasci (zadano 2, 0 ih skriva, najviše 5)
+                                broj polazaka (zadano 12, najviše 30)
 ```
 
 Svaka tvrtka ima vlastitu instancu (i domenu), a `stops.code` je jedinstven,
@@ -133,6 +134,10 @@ GET /api/public/departures/{stopCode}?limit=10
 
 - Javni endpoint, **bez prijave**.
 - `limit`: koliko polazaka vratiti (zadano 10, najviše 30; inače 400).
+- `past`: koliko upravo otišlih polazaka (zadnjih pola sata) vratiti u
+  `recent`, najstariji prvi (zadano 0, najviše 5). Zaslon ih traži 2.
+- `serviceDate` je dan voznog reda polaska: vožnja iza ponoći (GTFS 24:xx)
+  pripada danu ranije. Po njemu zaslon označava kraj dana.
 - Nepoznat kod stanice vraća 404, a instanca bez prijevoznika 422.
 - `routeName` je kratka oznaka linije, a ako je nema, puni naziv.
 - `minutesUntil` su cijele minute do polaska, zaokružene nadolje. Odgovor može
@@ -155,9 +160,11 @@ Primjer odgovora:
       "headsign": "Đakovo",
       "platform": "3",
       "departureTime": "2026-12-23T07:05:00+01:00",
-      "minutesUntil": 6
+      "minutesUntil": 6,
+      "serviceDate": "2026-12-23"
     }
-  ]
+  ],
+  "recent": []
 }
 ```
 
@@ -172,10 +179,14 @@ Mantine komponenti (vlastiti CSS), pa je brz i na slabijim uređajima.
 │ [logo] Zagrebački električni tramvaj                         │
 │        Stanica Trg bana J. Jelačića                   20:56  │
 ├──────────────────────────────────────────────────────────────┤
+│ ┆[ 6]  Črnomerec                          20:50 (otišao) ┆  │
 │  [17]  Borongaj                                      stiže   │
 │  [13]  Žitnjak                                    za 1 min   │
 │  [ 6]  Črnomerec                                  za 3 min   │
 │  [14]  Mihaljevac                                    21:14   │
+│        Zadnji polazak                                        │
+│ ━━ Kraj voznog dana ━━━━━━━━━━━━━ Sljedeći polasci: sutra ━━ │
+│  [17]  Borongaj                                      04:30   │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -185,7 +196,16 @@ Mantine komponenti (vlastiti CSS), pa je brz i na slabijim uređajima.
 - Polasci se dohvaćaju svakih 30 s, a sat i minute osvježavaju se svake sekunde.
 - Minute se računaju po satu **poslužitelja** (`now` i zaglavlje `Age` iz
   odgovora), jer zasloni na stanicama često imaju krivo namješten sat. Polasci
-  koji su u međuvremenu otišli nestaju i prije sljedećeg dohvata.
+  koji su u međuvremenu otišli prelaze među otišle i prije sljedećeg dohvata.
+- Na vrhu su do 2 upravo otišla polaska (zadnjih pola sata, `?past=`),
+  zatamnjeni, crtkani i s precrtanim vremenom i „otišao”, da je jasno da više
+  nisu bitni.
+- **Kraj dana voznog reda** je crta „Kraj voznog dana · Sljedeći polasci:
+  sutra” (ili „danas” iza ponoći, odnosno dan i datum) između dva dana; kad
+  danas više nema polazaka, na vrhu piše „Danas više nema polazaka”. Vožnje
+  iza ponoći (24:xx) ostaju u svom danu. Zadnji polazak linije u smjeru tog
+  dana ima oznaku „Zadnji polazak”, ali samo kad popis sigurno pokriva ostatak
+  dana (vidi se idući dan ili je popis kraći od traženog), da se ne pogađa.
 - Ako dohvat ne uspije, ostaju zadnji poznati polasci, a nakon 1,5 minute
   ispod njih piše od kada nisu osvježeni.
 - Veličina slova prati širinu i visinu ekrana: 12 polazaka stane na položeni
@@ -200,7 +220,7 @@ endpointi zaštićeni (`Terminus.WebApi/Infrastructure/PublicApi.cs`):
 
 | Endpoint | Cache na poslužitelju | Granica po IP adresi |
 |---|---|---|
-| `/api/public/departures/{stopCode}` | 20 s (po stanici i `limit`) | 120 zahtjeva u minuti |
+| `/api/public/departures/{stopCode}` | 20 s (po stanici, `limit` i `past`) | 120 zahtjeva u minuti |
 | `/api/public/settings` | 5 min | dijeli granicu s polascima |
 | `/api/public/settings/logo` | u pregledniku (verzija u adresi) | dijeli granicu s polascima |
 | `/api/public/gtfs` | 10 min | 5 zahtjeva u minuti |

@@ -10,10 +10,14 @@ public interface IDepartureService
     /// po vremenu. Za kolodvor se vraćaju polasci sa svih njegovih perona.
     /// </summary>
     /// <param name="limit">Najviše polazaka (1 do <c>DepartureService.MaxLimit</c>).</param>
-    Task<StopDepartures> GetNextAsync(Guid stopId, DateTimeOffset now, int limit, CancellationToken cancellationToken = default);
+    /// <param name="past">
+    /// Koliko upravo otišlih polazaka (zadnjih pola sata) vratiti uz sljedeće
+    /// (0 do <c>DepartureService.MaxPast</c>), npr. za zaslon koji ih prikazuje zatamnjeno.
+    /// </param>
+    Task<StopDepartures> GetNextAsync(Guid stopId, DateTimeOffset now, int limit, int past, CancellationToken cancellationToken = default);
 
-    /// <summary>Isto kao <see cref="GetNextAsync(Guid, DateTimeOffset, int, CancellationToken)"/>, za stanicu zadanu GTFS kodom.</summary>
-    Task<StopDepartures> GetNextAsync(string stopCode, DateTimeOffset now, int limit, CancellationToken cancellationToken = default);
+    /// <summary>Isto kao <see cref="GetNextAsync(Guid, DateTimeOffset, int, int, CancellationToken)"/>, za stanicu zadanu GTFS kodom.</summary>
+    Task<StopDepartures> GetNextAsync(string stopCode, DateTimeOffset now, int limit, int past, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Svi polasci sa stanice jednog dana voznog reda, poredani po vremenu. Vožnje
@@ -28,7 +32,13 @@ public sealed record StopDayDepartures(IStopModel Stop, DateOnly Date, IReadOnly
 
 /// <param name="AgencyName">Naziv prvog unesenog prijevoznika.</param>
 /// <param name="Now">Trenutak upita u zoni prijevoznika.</param>
-public sealed record StopDepartures(IStopModel Stop, string AgencyName, DateTimeOffset Now, IReadOnlyList<Departure> Departures);
+/// <param name="Recent">Upravo otišli polasci, najstariji prvi (prazno ako nisu traženi).</param>
+public sealed record StopDepartures(
+    IStopModel Stop,
+    string AgencyName,
+    DateTimeOffset Now,
+    IReadOnlyList<Departure> Departures,
+    IReadOnlyList<Departure> Recent);
 
 /// <summary>Jedan polazak sa stvarnim datumom i vremenom.</summary>
 /// <param name="ServiceDate">Dan voznog reda kojem vožnja pripada (za vožnje iza ponoći dan ranije).</param>

@@ -929,6 +929,7 @@ export interface paths {
             parameters: {
                 query?: {
                     Limit?: number;
+                    Past?: number;
                 };
                 header?: never;
                 path: {
@@ -4282,6 +4283,8 @@ export interface components {
             departureTime: string;
             /** Format: int32 */
             minutesUntil: number;
+            /** Format: date */
+            serviceDate: string;
         };
         DeparturesResponse: {
             stop: components["schemas"]["DepartureStopResponse"];
@@ -4289,6 +4292,7 @@ export interface components {
             /** Format: date-time */
             now: string;
             departures: components["schemas"]["DepartureResponse"][];
+            recent: components["schemas"]["DepartureResponse"][];
         };
         DepartureStopResponse: {
             code: string;

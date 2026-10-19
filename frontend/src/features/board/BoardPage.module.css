@@ -138,6 +138,51 @@
   color: var(--board-accent);
 }
 
+/* Otišli polasci: vide se, ali ne smetaju. */
+.past {
+  opacity: 0.45;
+  background: transparent;
+  border: 1px dashed var(--board-line);
+}
+
+.past .route {
+  filter: grayscale(1);
+}
+
+.gone {
+  display: block;
+  font-size: 0.6em;
+  font-weight: 400;
+  color: var(--board-dimmed);
+}
+
+.last {
+  display: block;
+  font-size: 0.65em;
+  font-weight: 700;
+  color: var(--board-warning);
+}
+
+/* Kraj dana voznog reda: crta preko cijelog popisa. */
+.end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25em 0.75em;
+  margin: 0.6em 0 0.9em;
+  padding: 0.35em 0.6em;
+  border-top: 3px solid var(--board-warning);
+  color: var(--board-warning);
+  font-weight: 700;
+}
+
+.endNext {
+  font-size: 0.75em;
+  font-weight: 600;
+  color: var(--board-dimmed);
+}
+
 .message {
   display: flex;
   flex: 1;

@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router'
 import { ApiError } from '@/api/errors'
 import {
+  type BoardItem,
+  boardItems,
   clockText,
+  dayLabel,
+  localDate,
   minutesShownUntil,
   minutesUntil,
   offsetMinutes,
   parseLimit,
-  upcoming,
+  parsePast,
   whenText,
 } from './board'
 import classes from './BoardPage.module.css'
@@ -22,14 +26,16 @@ const staleAfterMs = 3 * refreshMs
 /**
  * Javni zaslon stanice (bez prijave): sljedeći polasci s linijom, odredištem i
  * vremenom. Namjerno bez Mantine komponenti, da se brzo učitava i na slabijim
- * zaslonima na stanicama. Osvježava se sam; ?limit= mijenja broj polazaka.
+ * zaslonima na stanicama. Osvježava se sam; ?limit= mijenja broj polazaka, a
+ * ?past= broj upravo otišlih koji se prikazuju zatamnjeno (zadano 2, 0 ih skriva).
  */
 export function BoardPage() {
   const { stopCode = '' } = useParams()
   const [searchParams] = useSearchParams()
   const limit = parseLimit(searchParams.get('limit'))
+  const past = parsePast(searchParams.get('past'))
 
-  const board = useBoard(stopCode, limit)
+  const board = useBoard(stopCode, limit, past)
   const settings = usePublicSettings()
   const now = useNow()
 
@@ -45,7 +51,19 @@ export function BoardPage() {
   // Vrijeme poslužitelja, ne preglednika.
   const serverNow = now + (board.data?.clockSkewMs ?? 0)
   const offset = board.data ? offsetMinutes(board.data.departures.now) : null
-  const departures = board.data ? upcoming(board.data.departures.departures, serverNow) : []
+  const today = localDate(serverNow, offset ?? 0)
+  const items: BoardItem[] = board.data
+    ? boardItems(
+        board.data.departures.departures,
+        board.data.departures.recent,
+        serverNow,
+        past,
+        today,
+        // Kraći popis od traženog znači da u 24 h nema više polazaka.
+        board.data.departures.departures.length < limit,
+      )
+    : []
+  const hasNext = items.some((item) => item.kind === 'departure' && !item.past)
   // Stari popis ostaje na zaslonu dok poslužitelj ne odgovori.
   const staleSince =
     board.data && board.isError && now - board.dataUpdatedAt > staleAfterMs
@@ -79,17 +97,28 @@ export function BoardPage() {
             ? `Stanica „${stopCode}” ne postoji.`
             : 'Polasci trenutno nisu dostupni. Pokušavam ponovno…'}
         </div>
-      ) : departures.length === 0 ? (
+      ) : !hasNext ? (
         <div className={classes.message}>Nema polazaka u sljedeća 24 sata.</div>
       ) : (
         <ol className={classes.list}>
-          {departures.map((departure) => (
-            <DepartureRow
-              key={`${departure.departureTime}-${departure.routeName}-${departure.headsign}-${departure.platform}`}
-              departure={departure}
-              now={serverNow}
-            />
-          ))}
+          {items.map((item) =>
+            item.kind === 'end' ? (
+              <li key={`end-${item.next}`} className={classes.end}>
+                <span>{item.none ? 'Danas više nema polazaka' : 'Kraj voznog dana'}</span>
+                <span className={classes.endNext}>
+                  Sljedeći polasci: {dayLabel(item.next, today)}
+                </span>
+              </li>
+            ) : (
+              <DepartureRow
+                key={`${item.departure.departureTime}-${item.departure.routeName}-${item.departure.headsign}-${item.departure.platform}`}
+                departure={item.departure}
+                past={item.past}
+                last={item.last}
+                now={serverNow}
+              />
+            ),
+          )}
         </ol>
       )}
 
@@ -102,11 +131,20 @@ export function BoardPage() {
   )
 }
 
-function DepartureRow({ departure, now }: { departure: BoardDeparture; now: number }) {
-  const soon = minutesUntil(departure.departureTime, now) <= minutesShownUntil
+interface DepartureRowProps {
+  departure: BoardDeparture
+  /** Otišao: zatamnjen, s precrtanim vremenom. */
+  past: boolean
+  /** Zadnji polazak linije u smjeru tog dana. */
+  last: boolean
+  now: number
+}
+
+function DepartureRow({ departure, past, last, now }: DepartureRowProps) {
+  const soon = !past && minutesUntil(departure.departureTime, now) <= minutesShownUntil
 
   return (
-    <li className={classes.row}>
+    <li className={past ? `${classes.row} ${classes.past}` : classes.row}>
       <span
         className={classes.route}
         style={{
@@ -119,10 +157,18 @@ function DepartureRow({ departure, now }: { departure: BoardDeparture; now: numb
       <span className={classes.destination}>
         {departure.headsign}
         {departure.platform && <span className={classes.platform}>Peron {departure.platform}</span>}
+        {last && <span className={classes.last}>Zadnji polazak</span>}
       </span>
-      <span className={soon ? `${classes.when} ${classes.soon}` : classes.when}>
-        {whenText(departure.departureTime, now)}
-      </span>
+      {past ? (
+        <span className={classes.when}>
+          <s>{departure.departureTime.slice(11, 16)}</s>
+          <span className={classes.gone}>otišao</span>
+        </span>
+      ) : (
+        <span className={soon ? `${classes.when} ${classes.soon}` : classes.when}>
+          {whenText(departure.departureTime, now)}
+        </span>
+      )}
     </li>
   )
 }

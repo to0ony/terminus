@@ -18,6 +18,7 @@ public class PublicDeparturesController(IDepartureService departureService, Time
 {
     /// <summary>
     /// Sljedeći polasci sa stanice u idućih 24 h. Za kolodvor uključuje sve perone.
+    /// S Past vraća i toliko upravo otišlih polazaka (zadnjih pola sata) u Recent.
     /// Odgovor se čuva do 20 s, pa Now i MinutesUntil mogu kasniti; zaslon računa
     /// minute prema DepartureTime.
     /// </summary>
@@ -34,7 +35,7 @@ public class PublicDeparturesController(IDepartureService departureService, Time
         [FromQuery] DeparturesQuery query,
         CancellationToken cancellationToken)
     {
-        var result = await departureService.GetNextAsync(stopCode, timeProvider.GetUtcNow(), query.Limit, cancellationToken);
+        var result = await departureService.GetNextAsync(stopCode, timeProvider.GetUtcNow(), query.Limit, query.Past, cancellationToken);
         return Ok(result.ToResponse());
     }
 }

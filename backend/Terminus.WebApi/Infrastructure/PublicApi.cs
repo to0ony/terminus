@@ -52,7 +52,7 @@ public static class PublicApi
             // Zasloni sami računaju minute do polaska, pa malo stariji popis ne smeta.
             cache.AddPolicy(DeparturesCachePolicy, policy => policy
                 .Expire(TimeSpan.FromSeconds(options.DeparturesCacheSeconds))
-                .SetVaryByQuery("limit")
+                .SetVaryByQuery("limit", "past")
                 .Tag(TimetableTag));
 
             // Naziv bez postavki dolazi od prijevoznika, pa ovisi i o voznom redu.

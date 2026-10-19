@@ -42,6 +42,34 @@ public class DepartureServiceTests
     }
 
     [Fact]
+    public async Task GetNextAsync_WithPast_ReturnsLastDepartedWithinHalfAnHour()
+    {
+        AddDeparture(_stop, _workdays, "06:20:00");
+        AddDeparture(_stop, _workdays, "06:40:00");
+        AddDeparture(_stop, _workdays, "06:50:00");
+        AddDeparture(_stop, _workdays, "06:58:00");
+        AddDeparture(_stop, _workdays, "07:05:00");
+
+        // 06:58 polazi upravo sad, pa je sljedeći; 06:20 je stariji od pola sata.
+        var result = await GetNextAsync(_stop, At(2026, 12, 23, 6, 58), past: 2);
+
+        Assert.Equal(
+            [At(2026, 12, 23, 6, 40), At(2026, 12, 23, 6, 50)],
+            result.Recent.Select(d => d.DepartureTime));
+        Assert.Equal(At(2026, 12, 23, 6, 58), result.Departures[0].DepartureTime);
+    }
+
+    [Fact]
+    public async Task GetNextAsync_WithoutPast_HasNoRecent()
+    {
+        AddDeparture(_stop, _workdays, "06:50:00");
+
+        var result = await GetNextAsync(_stop, At(2026, 12, 23, 6, 58));
+
+        Assert.Empty(result.Recent);
+    }
+
+    [Fact]
     public async Task GetNextAsync_DepartureExactlyNow_IsIncluded()
     {
         AddDeparture(_stop, _workdays, "07:05:00");
@@ -153,7 +181,7 @@ public class DepartureServiceTests
         AddDeparture(_stop, _workdays, "07:05:00");
         var service = new DepartureService(_repository, new FakeStopRepository([_stop]));
 
-        var result = await service.GetNextAsync(_stop.Code, At(2026, 12, 23, 6, 58), 10, TestContext.Current.CancellationToken);
+        var result = await service.GetNextAsync(_stop.Code, At(2026, 12, 23, 6, 58), 10, 0, TestContext.Current.CancellationToken);
 
         Assert.Equal(_stop.Id, result.Stop.Id);
         Assert.Equal("Test prijevoznik d.o.o.", result.AgencyName);
@@ -166,7 +194,7 @@ public class DepartureServiceTests
         var service = new DepartureService(_repository, new FakeStopRepository([_stop]));
 
         await Assert.ThrowsAsync<NotFoundException>(
-            () => service.GetNextAsync("NEPOSTOJECA", At(2026, 12, 23, 7, 0), 10, TestContext.Current.CancellationToken));
+            () => service.GetNextAsync("NEPOSTOJECA", At(2026, 12, 23, 7, 0), 10, 0, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -175,7 +203,7 @@ public class DepartureServiceTests
         var service = new DepartureService(_repository, new FakeStopRepository([]));
 
         await Assert.ThrowsAsync<NotFoundException>(
-            () => service.GetNextAsync(Guid.NewGuid(), At(2026, 12, 23, 7, 0), 10, TestContext.Current.CancellationToken));
+            () => service.GetNextAsync(Guid.NewGuid(), At(2026, 12, 23, 7, 0), 10, 0, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -244,10 +272,11 @@ public class DepartureServiceTests
         StopModel stop,
         DateTimeOffset now,
         int limit = 10,
-        IEnumerable<IStopModel>? stops = null)
+        IEnumerable<IStopModel>? stops = null,
+        int past = 0)
     {
         var service = new DepartureService(_repository, new FakeStopRepository(stops ?? [stop]));
-        return service.GetNextAsync(stop.Id, now, limit, TestContext.Current.CancellationToken);
+        return service.GetNextAsync(stop.Id, now, limit, past, TestContext.Current.CancellationToken);
     }
 
     private void AddDeparture(IStopModel stop, IServiceCalendarModel calendar, string time)
