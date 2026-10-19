@@ -23,6 +23,7 @@ import {
   IconArrowBackUp,
   IconArrowForwardUp,
   IconArrowLeft,
+  IconArrowsExchange,
   IconDeviceFloppy,
   IconPencil,
   IconZoomIn,
@@ -60,6 +61,7 @@ import {
   type View,
 } from './model'
 import { type Schedule, useSaveSchedule, useSchedule } from './queries'
+import { MirrorDialog } from './MirrorDialog'
 import { CopyDialog, TaktDialog } from './RepeatDialog'
 import { type Drawing, ScheduleChart } from './ScheduleChart'
 import { TripPanel } from './TripPanel'
@@ -78,6 +80,8 @@ interface DayTypeOption {
  * Grafikon voznog reda linije (?dir=0|1&cal=<kalendar>&cmp=<kalendar>):
  * vožnje jednog smjera i tipa dana kao crte kroz stanice i vrijeme, s
  * uređivanjem povlačenjem, kopiranjem i generatorom takta.
+ * `mirror=<varijanta>&from=<varijanta>` otvara preslikavanje vožnji iz
+ * suprotnog smjera (nakon "Povratni smjer" s vožnjama).
  */
 export function SchedulePage() {
   const { routeId = '' } = useParams()
@@ -293,6 +297,21 @@ function ScheduleEditor({
   const ghostTrips = useMemo(() => ghosts.map(fromResponse), [ghosts])
   const [copyOpened, copy] = useDisclosure(false)
   const [taktOpened, takt] = useDisclosure(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [mirrorOpened, setMirrorOpened] = useState(() => searchParams.has('mirror'))
+  const closeMirror = () => {
+    setMirrorOpened(false)
+    if (searchParams.has('mirror') || searchParams.has('from')) {
+      setSearchParams(
+        (params) => {
+          params.delete('mirror')
+          params.delete('from')
+          return params
+        },
+        { replace: true },
+      )
+    }
+  }
 
   const variants = schedule.variants
   const [shownVariants, setShownVariants] = useState<string[]>(() => variants.map((v) => v.id))
@@ -652,6 +671,23 @@ function ScheduleEditor({
               >
                 {anchors !== null ? 'Završi crtanje' : 'Nacrtaj vožnju'}
               </Button>
+              <Tooltip
+                label={
+                  dirty
+                    ? 'Prvo spremi ili poništi izmjene'
+                    : 'Povratak za svaki polazak suprotnog smjera, s okretom na terminusu'
+                }
+              >
+                <Button
+                  size="xs"
+                  variant="default"
+                  leftSection={<IconArrowsExchange size={14} />}
+                  disabled={dirty}
+                  onClick={() => setMirrorOpened(true)}
+                >
+                  Preslikaj iz suprotnog smjera
+                </Button>
+              </Tooltip>
             </Group>
           </Stack>
         )}
@@ -770,6 +806,17 @@ function ScheduleEditor({
         count={editor.selected.length}
         onClose={copy.close}
         onCopy={copySelected}
+      />
+      <MirrorDialog
+        opened={mirrorOpened && !dirty}
+        onClose={closeMirror}
+        onSaved={closeMirror}
+        routeId={routeId}
+        direction={direction}
+        variants={variants}
+        initialTarget={searchParams.get('mirror')}
+        initialSource={searchParams.get('from')}
+        dayTypes={dayTypes}
       />
       <TaktDialog
         opened={taktOpened}

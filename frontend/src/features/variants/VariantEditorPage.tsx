@@ -122,7 +122,8 @@ function bounds(stops: Pick<EditorStop, 'latitude' | 'longitude'>[], margin: num
 
 /**
  * Varijanta linije: stanice se dodaju klikom na kartu, vremena vožnje predlažu iz udaljenosti.
- * `new?from=` je kopija varijante, a `new?reverse=` njezin povratni smjer.
+ * `new?from=` je kopija varijante, a `new?reverse=` njezin povratni smjer
+ * (s `&trips=1` nakon spremanja vodi na preslikavanje vožnji).
  */
 export function VariantEditorPage() {
   const { routeId = '', variantId = 'new' } = useParams()
@@ -201,6 +202,7 @@ export function VariantEditorPage() {
       variant={isNew ? null : (source.data ?? null)}
       template={template}
       reversed={reverseId !== null}
+      mirrorFrom={reverseId && searchParams.get('trips') === '1' ? reverseId : null}
       shape={
         shape.data
           ? {
@@ -223,6 +225,8 @@ interface VariantEditorProps {
   template: Template | null
   /** Povratni smjer druge varijante: naziv se ne preuzima. */
   reversed: boolean
+  /** Povratni smjer s vožnjama: nakon spremanja preslikavaju se vožnje ove varijante. */
+  mirrorFrom: string | null
   /** Spremljena trasa varijante (ili izvorne, za kopiju). */
   shape: { id: string; points: LngLat[] } | null
   extent: {
@@ -241,6 +245,7 @@ function VariantEditor({
   variant,
   template,
   reversed,
+  mirrorFrom,
   shape: savedShape,
   extent,
 }: VariantEditorProps) {
@@ -449,10 +454,14 @@ function VariantEditor({
       })),
     }
     save.mutate(body, {
-      onSuccess: () => {
+      onSuccess: (saved) => {
         leaving.current = true
         notifications.show({ color: 'green', message: 'Varijanta je spremljena.' })
-        void navigate(`/routes/${routeId}`)
+        void navigate(
+          mirrorFrom
+            ? `/routes/${routeId}/schedule?dir=${direction}&mirror=${saved.id}&from=${mirrorFrom}`
+            : `/routes/${routeId}`,
+        )
       },
     })
   }
@@ -599,6 +608,14 @@ function VariantEditor({
                       Za {unpaired} {unpaired === 1 ? 'stanicu' : 'stanica'} nije nađena stanica
                       istog naziva s druge strane ceste, pa je ostala ista kao u polaznom smjeru
                       (označene su). Provjeri ih, posebno okretišta i jednosmjerne ulice.
+                    </Text>
+                  </Alert>
+                )}
+                {mirrorFrom && (
+                  <Alert variant="light" color="blue" p="xs">
+                    <Text size="sm">
+                      Nakon spremanja otvara se grafikon s preslikavanjem vožnji: svaki polazak
+                      polaznog smjera dobiva povratak, uz okret na terminusu koji se može dotjerati.
                     </Text>
                   </Alert>
                 )}

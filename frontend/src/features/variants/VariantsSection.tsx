@@ -45,6 +45,35 @@ export function VariantsSection({ routeId, hasTrips }: VariantsSectionProps) {
   const remove = useDeleteVariant(routeId)
   const derive = useDeriveVariants(routeId)
 
+  const reverseUrl = (variant: Variant, trips: boolean) =>
+    `/routes/${routeId}/variants/new?reverse=${variant.id}${trips ? '&trips=1' : ''}`
+
+  /** Varijanta s vožnjama: povratni smjer može dobiti i vožnje (s okretom na terminusu). */
+  const chooseReverse = (variant: Variant) => {
+    const go = (trips: boolean) => {
+      modals.closeAll()
+      void navigate(reverseUrl(variant, trips))
+    }
+    modals.open({
+      title: 'Povratni smjer',
+      children: (
+        <Stack gap="md">
+          <Text size="sm">
+            Varijanta „{variant.name}” ima {formatNumber(variant.tripCount)} vožnji. Povratni smjer
+            može dobiti samo stanice, ili stanice i povratak za svaki polazak: nakon spremanja
+            varijante otvara se pregled s okretom na terminusu, gdje se vremena mogu dotjerati.
+          </Text>
+          <Group justify="flex-end" gap="xs">
+            <Button variant="default" onClick={() => go(false)}>
+              Samo stanice
+            </Button>
+            <Button onClick={() => go(true)}>Stanice i vožnje</Button>
+          </Group>
+        </Stack>
+      ),
+    })
+  }
+
   const confirmDelete = (variant: Variant) =>
     modals.openConfirmModal({
       title: 'Obriši varijantu',
@@ -175,8 +204,11 @@ export function VariantsSection({ routeId, hasTrips }: VariantsSectionProps) {
                         <Tooltip label="Napravi povratni smjer">
                           <ActionIcon
                             variant="subtle"
-                            component={Link}
-                            to={`/routes/${routeId}/variants/new?reverse=${variant.id}`}
+                            onClick={() =>
+                              variant.tripCount > 0
+                                ? chooseReverse(variant)
+                                : void navigate(reverseUrl(variant, false))
+                            }
                             aria-label="Napravi povratni smjer"
                           >
                             <IconArrowsExchange size={16} />

@@ -159,6 +159,9 @@ Editor varijante (`features/variants`):
   (stajalište s druge strane ceste ili drugi peron). Stanice bez para (npr.
   okretište) ostaju iste i označene su za provjeru. Vremena vožnje dionica
   ostaju ista, samo u suprotnom smjeru (`reverse.ts`).
+  Ako polazna varijanta ima vožnji, gumb pita „Samo stanice” ili „Stanice i
+  vožnje”; uz vožnje nakon spremanja varijante otvara se grafikon s
+  preslikavanjem (niže).
 
 **Trasa** (prekidač „Stanice / Trasa” u editoru varijante) prati ceste
 (autobus, trolejbus) ili pruge (tramvaj, vlak, metro) iz OpenStreetMapa, bez
@@ -218,6 +221,7 @@ Uređivanje:
 | Del, Ctrl+Z, Ctrl+Y | brisanje, poništavanje, ponavljanje |
 | Panel desno | točna vremena (dolazak i polazak), natpis smjera, tip dana, kopiranje s pomakom (npr. svakih 10 min, 5 puta), generator takta (od–do svakih N min, po odabranoj varijanti) |
 | „Polazak vozi u” | kvačice tipova dana za odabranu vožnju (ili više njih): polazak, npr. „svaki dan”, je jedna vožnja po tipu dana s istim vremenima. Pri spremanju server vožnje u označenim tipovima dana dodaje ili usklađuje (vremena, varijanta, trasa), a iz isključenih briše; izmjena vremena u bilo kojem tipu dana prenosi se na ostale. „Odvoji” izdvaja vožnju (npr. subotom kreće kasnije), a ostale ostaju |
+| „Preslikaj iz suprotnog smjera” | povratak za svaki polazak varijante suprotnog smjera, po odabranoj varijanti ovog smjera: okret na terminusu (dolazak + N min) ili pomak od polaska. Okret je zajednički, a pojedini polazak se može dotjerati, pa se zaključa 🔒 i promjena zajedničkog okreta ga ne dira (klik na lokot ga vraća). Polazak u više tipova dana daje jedan povratak u svima njima, s istim vozilom (BlockId). Povratak koji već postoji (±2 min) je isključen, a „Zamijeni postojeće” prvo briše vožnje odabrane varijante. Okret i zaključani polasci pamte se u pregledniku za taj par varijanti (`mirror.ts`, `MirrorDialog`) |
 | „Kopiraj u tip dana” | odabrane vožnje ili sve vožnje tipa dana dobivaju kopiju s istim vremenima u drugom tipu dana, i druge sezone (npr. subota = radni dan bez jutarnjeg vrha: kopiraj sve, pa u suboti obriši višak); kopije se spremaju s ostalim izmjenama i uređuju u tom tipu dana |
 
 GTFS pravila (vremena ne padaju, polazak nije prije dolaska, 0–48 h) provjerava
