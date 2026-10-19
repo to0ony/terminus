@@ -9,6 +9,7 @@ import {
   headways,
   hour,
   minute,
+  resizeView,
   rowIndexes,
   shiftStop,
   shiftTrip,
@@ -26,6 +27,8 @@ const rowSpacing = 18
 const minPlotHeight = 320
 const dotRadius = 3.5
 const hitRadius = 7
+/** Koliko piksela oko ruba prozora na traci dana hvata hvataljku. */
+const edgeGrab = 6
 
 interface ScheduleChartProps {
   stops: ScheduleStop[]
@@ -71,6 +74,7 @@ type Drag =
   | { kind: 'stop'; key: string; index: number; startX: number; delta: number; cascade: boolean }
   | { kind: 'box'; x0: number; y0: number; x1: number; y1: number; additive: boolean }
   | { kind: 'overview'; offset: number }
+  | { kind: 'edge'; edge: 'start' | 'end' }
   | { kind: 'click'; x: number; y: number }
 
 interface Hit {
@@ -83,7 +87,8 @@ interface Hit {
  * Grafikon voznog reda (Mareyev dijagram): stanice su redci, vrijeme ide
  * vodoravno, a svaka vožnja je crta kroz točkice polazaka. Crta se povlači
  * vodoravno (pomak vožnje), točkica pomiče vrijeme na stanici (sa Shiftom i
- * sve iza nje). Kotačić miša zumira, Shift+kotačić pomiče.
+ * sve iza nje). Kotačić miša zumira, Shift+kotačić pomiče. Na traci dana
+ * prozor se povlači, a rubovi mu se hvataju i razvlače.
  */
 export function ScheduleChart(props: ScheduleChartProps) {
   const { ref: sizeRef, width } = useElementSize()
@@ -185,9 +190,20 @@ export function ScheduleChart(props: ScheduleChartProps) {
       ctx.fillRect(bx, overviewHeight - 5 - bh, bw, bh)
     }
     ctx.globalAlpha = 1
+    // Izvan prozora je zatamnjeno, a rubovi imaju hvataljke.
+    const [wx0, wx1] = [ox(v0), Math.max(ox(v0) + 4, ox(v1))]
+    ctx.fillStyle = colors.outside
+    ctx.fillRect(g.plotLeft, 4, wx0 - g.plotLeft, overviewHeight - 8)
+    ctx.fillRect(wx1, 4, g.plotLeft + g.plotWidth - wx1, overviewHeight - 8)
     ctx.strokeStyle = colors.text
     ctx.lineWidth = 1.5
-    ctx.strokeRect(ox(v0), 3, Math.max(4, ox(v1) - ox(v0)), overviewHeight - 6)
+    ctx.strokeRect(wx0, 3, wx1 - wx0, overviewHeight - 6)
+    ctx.fillStyle = colors.text
+    for (const hx of [wx0, wx1]) {
+      ctx.beginPath()
+      ctx.roundRect(hx - 3, overviewHeight / 2 - 7, 6, 14, 2)
+      ctx.fill()
+    }
     ctx.fillStyle = colors.dimmed
     ctx.textAlign = 'right'
     ctx.fillText('Cijeli dan', g.plotLeft - 8, overviewHeight / 2)
@@ -533,6 +549,25 @@ export function ScheduleChart(props: ScheduleChartProps) {
     return () => canvas.removeEventListener('wheel', onWheel)
   })
 
+  /** Rub prozora na traci dana ispod pokazivača. */
+  const overviewEdge = (x: number, y: number): 'start' | 'end' | null => {
+    const p = latest.current
+    const g = geometry(width)
+    if (y >= overviewHeight || x < g.plotLeft - edgeGrab) {
+      return null
+    }
+    const [s0, s1] = p.span
+    const ox = (t: number) => g.plotLeft + ((t - s0) / (s1 - s0)) * g.plotWidth
+    const [start, end] = [ox(p.view[0]), ox(p.view[1])]
+    const toStart = Math.abs(x - start)
+    const toEnd = Math.abs(x - end)
+    if (Math.min(toStart, toEnd) > edgeGrab) {
+      return null
+    }
+    // Kad su rubovi blizu, desni se hvata desno od sredine prozora.
+    return toEnd < toStart || (toEnd === toStart && x > (start + end) / 2) ? 'end' : 'start'
+  }
+
   const position = (event: React.PointerEvent) => {
     const rect = canvasRef.current!.getBoundingClientRect()
     return { x: event.clientX - rect.left, y: event.clientY - rect.top }
@@ -547,6 +582,11 @@ export function ScheduleChart(props: ScheduleChartProps) {
     const g = geometry(width)
     event.currentTarget.setPointerCapture(event.pointerId)
 
+    const edge = overviewEdge(x, y)
+    if (edge) {
+      drag.current = { kind: 'edge', edge }
+      return
+    }
     if (y < overviewHeight && x >= g.plotLeft) {
       // Traka dana: povlačenje prozora ili skok na kliknuto mjesto.
       const [s0, s1] = p.span
@@ -617,6 +657,10 @@ export function ScheduleChart(props: ScheduleChartProps) {
       const at = s0 + ((x - g.plotLeft) / g.plotWidth) * (s1 - s0)
       const length = p.view[1] - p.view[0]
       p.onViewChange(clampView([at - d.offset, at - d.offset + length], p.span))
+    } else if (d?.kind === 'edge') {
+      const [s0, s1] = p.span
+      const at = s0 + ((x - g.plotLeft) / g.plotWidth) * (s1 - s0)
+      p.onViewChange(resizeView(p.view, d.edge, Math.round(at / minute) * minute, p.span))
     } else if (d?.kind === 'trips' || d?.kind === 'stop') {
       d.delta = Math.round(((x - d.startX) * secondsPerPixel) / minute) * minute
     } else if (d?.kind === 'click' && Math.hypot(x - d.x, y - d.y) > 4) {
@@ -628,17 +672,22 @@ export function ScheduleChart(props: ScheduleChartProps) {
 
     const canvas = event.currentTarget
     const hit = d ? null : hitTest(x, y)
-    canvas.style.cursor = p.drawing
-      ? 'crosshair'
-      : d?.kind === 'trips' || d?.kind === 'stop'
-        ? 'grabbing'
-        : hit?.index !== null && hit
-          ? 'ew-resize'
-          : hit
-            ? 'grab'
-            : p.preview && p.onCreate && hoversFirstRow(y, g.y(p.preview[0].row))
-              ? 'copy'
-              : 'default'
+    canvas.style.cursor =
+      d?.kind === 'edge' || (!d && overviewEdge(x, y))
+        ? 'ew-resize'
+        : d?.kind === 'overview' || (!d && y < overviewHeight && x >= g.plotLeft)
+          ? 'grab'
+          : p.drawing
+            ? 'crosshair'
+            : d?.kind === 'trips' || d?.kind === 'stop'
+              ? 'grabbing'
+              : hit?.index !== null && hit
+                ? 'ew-resize'
+                : hit
+                  ? 'grab'
+                  : p.preview && p.onCreate && hoversFirstRow(y, g.y(p.preview[0].row))
+                    ? 'copy'
+                    : 'default'
     draw()
   }
 
@@ -748,6 +797,7 @@ function palette(color: string) {
     grid: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
     gridStrong: dark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.16)',
     subtle: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.035)',
+    outside: dark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.55)',
     midnight: v('--mantine-color-orange-filled'),
     trip: v(`--mantine-color-${color}-filled`),
     selected: v(`--mantine-color-${color}-${dark ? '3' : '9'}`),

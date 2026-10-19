@@ -8,6 +8,7 @@ import {
   headways,
   moveToDayType,
   parseTime,
+  resizeView,
   rowIndexes,
   rowPositions,
   shiftStop,
@@ -19,6 +20,25 @@ import {
   validateTrip,
   withDayTypes,
 } from './model'
+
+describe('resizeView', () => {
+  const span: [number, number] = [5 * 3600, 23 * 3600]
+
+  it('moves one edge and keeps the other', () => {
+    expect(resizeView([7 * 3600, 9 * 3600], 'start', 6 * 3600, span)).toEqual([6 * 3600, 9 * 3600])
+    expect(resizeView([7 * 3600, 9 * 3600], 'end', 12 * 3600, span)).toEqual([7 * 3600, 12 * 3600])
+  })
+
+  it('keeps at least 20 minutes and stays inside the day', () => {
+    expect(resizeView([7 * 3600, 9 * 3600], 'start', 10 * 3600, span)).toEqual([
+      9 * 3600 - 1200,
+      9 * 3600,
+    ])
+    expect(resizeView([7 * 3600, 9 * 3600], 'end', 0, span)).toEqual([7 * 3600, 7 * 3600 + 1200])
+    expect(resizeView([7 * 3600, 9 * 3600], 'start', 0, span)).toEqual([5 * 3600, 9 * 3600])
+    expect(resizeView([7 * 3600, 9 * 3600], 'end', 30 * 3600, span)).toEqual([7 * 3600, 23 * 3600])
+  })
+})
 
 function trip(key: string, stops: string[], start: number, step = 120): EditorTrip {
   return {

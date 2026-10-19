@@ -198,7 +198,9 @@ rutera:
   pravilna vožnja ravna crta, a sporiji dio se vidi kao lom.
 - **Vodoravno je vrijeme** dana voznog reda, s ponoći označenom crtkano
   (vožnje iza nje su GTFS vremena 24:xx). Traka gore pokazuje gustoću polazaka
-  cijelog dana i prozor koji se vidi; kotačić zumira, a Shift+kotačić pomiče.
+  cijelog dana i prozor koji se vidi. Prozor se povlači po traci, a rubovi
+  mu se hvataju i razvlače na raspon koji treba (najmanje 20 minuta);
+  kotačić zumira, a Shift+kotačić pomiče.
 - **Vožnja je crta kroz točkice polazaka**, u boji tipa dana. Odabrani tip
   dana se uređuje, a drugi se može prikazati blijedo za usporedbu.
 - **Traka intervala** dolje pokazuje razmak između uzastopnih polazaka.

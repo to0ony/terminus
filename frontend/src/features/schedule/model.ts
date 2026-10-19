@@ -38,6 +38,25 @@ export function clampView([v0, v1]: View, [s0, s1]: View): View {
   return [start, start + length]
 }
 
+/** Najkraći prozor grafikona. */
+export const minView = 20 * minute
+
+/**
+ * Prozor s pomaknutim rubom (povlačenje hvataljke na traci dana): drugi rub
+ * ostaje na mjestu, a prozor je barem 20 minuta i unutar dana.
+ */
+export function resizeView(
+  [v0, v1]: View,
+  edge: 'start' | 'end',
+  at: number,
+  [s0, s1]: View,
+): View {
+  if (edge === 'start') {
+    return [Math.max(s0, Math.min(at, v1 - minView)), v1]
+  }
+  return [v0, Math.min(s1, Math.max(at, v0 + minView))]
+}
+
 export function fromResponse(trip: TripResponse): EditorTrip {
   return { ...trip, key: trip.id }
 }
