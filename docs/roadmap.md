@@ -177,7 +177,7 @@ prije prvog pilota.
 | UI | Mantine; zaslon na stanici bez Mantinea (vlastiti CSS) | Gotove tablice, forme, upload, obavijesti i datumi za dashboard; zaslon ostaje lagan. |
 | Karta | MapLibre GL s podlogom OpenFreeMap | Besplatno, bez API ključa i brzo s tisućama stanica. |
 | Mjesta i stajališta | Photon (pretraga mjesta) i Overpass API (stajališta iz OSM-a), izravno iz preglednika | Besplatno i bez ključa; prijevoznik bez GTFS-a dobije stanice u nekoliko minuta. |
-| Trase | Ceste ili pruge iz OSM-a (Overpass) u koridoru oko stanica i najkraći put u pregledniku, uz jednosmjerne ulice; bez rutera (Valhalla, OSRM) | Mali i srednji prijevoznici trebaju trasu koja prati ulicu, ne bus trake ni pravila skretanja; bez dodatnog servisa u produkciji. |
+| Trase | Ceste ili pruge iz vektorskih pločica OpenFreeMapa (OSM podaci, iste kao podloga karte) u koridoru oko stanica i najkraći put u pregledniku, uz jednosmjerne ulice; bez rutera (Valhalla, OSRM) i bez Overpassa | Mali i srednji prijevoznici trebaju trasu koja prati ulicu, ne bus trake ni pravila skretanja; bez dodatnog servisa u produkciji. |
 | PDF | QuestPDF i QRCoder | Vidi [departures-and-timetables.md](departures-and-timetables.md#35-licenca-za-questpdf) zbog licence. |
 
 ## Otvorena pitanja

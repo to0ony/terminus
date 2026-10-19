@@ -145,8 +145,9 @@ Editor varijante (`features/variants`):
   zaokruženo na pola minute (`variantMath.ts`). „Predloži vremena” računa sve
   dionice iznova.
 - **Klik na prazno mjesto** karte otvara novu stanicu na tom mjestu.
-- Stanice se pomiču gore i dolje i uklanjaju; varijanta je na karti
-  numerirana crta. Naziv je zadano „prva → zadnja stanica”.
+- Stanice se premještaju povlačenjem za ručku (ili strelicama gore i dolje) i
+  uklanjaju; varijanta je na karti numerirana crta, a isti brojevi su u popisu
+  stanica i dionica trase. Naziv je zadano „prva → zadnja stanica”.
 - Varijanta koju koriste vožnje zadržava stanice, a mijenjaju se samo vremena
   (za drugi redoslijed kopija).
 - **Povratni smjer** (gumb uz varijantu na stranici linije) otvara novu
@@ -160,9 +161,14 @@ Editor varijante (`features/variants`):
 (autobus, trolejbus) ili pruge (tramvaj, vlak, metro) iz OpenStreetMapa, bez
 rutera:
 
-- Jedan Overpass upit vraća ceste ili pruge u koridoru oko stanica (300 m,
-  šire za duge međugradske dionice), a najkraći put od stanice do stanice
-  računa se u pregledniku (`osmNetwork.ts`). Poštuju se jednosmjerne ulice
+- Ceste ili pruge u koridoru oko stanica (300 m, šire za duge međugradske
+  dionice) dolaze iz vektorskih pločica OpenFreeMapa na zoomu 14, istih iz
+  kojih se crta podloga (`tileNetwork.ts`): par desetaka pločica s CDN-a za
+  manje od sekunde. Ulice koje dijele točku pločice su spojene, a kraj
+  sporedne ulice uz glavnu (pločice su pojednostavljene) umeće se u nju.
+  Najkraći put od stanice do stanice računa se u pregledniku (`osmNetwork.ts`).
+  Javni Overpass se za ovo ne koristi: za koridor cijele linije trebalo mu je
+  i pola minute, a često nije odgovarao. Poštuju se jednosmjerne ulice
   (i kružni tokovi), osim gdje je autobusu dopušteno (`oneway:bus=no`);
   privatne ceste i parkirališta ne ulaze u mrežu. Stanica se spaja na najbližu
   ulicu, a servisni put ima prednost samo ako je bitno bliži.
