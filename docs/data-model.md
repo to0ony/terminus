@@ -27,7 +27,8 @@ Tablice izvan GTFS-a:
 | `admin_users`, `admin_user_claims`, `admin_user_logins`, `admin_user_tokens` | Administratori (ASP.NET Core Identity, bez uloga). Korisničko ime je e-mail. |
 | `data_protection_keys` | Ključevi za šifriranje kolačića prijave (ASP.NET Core Data Protection). |
 | `timetable_seasons` | Sezone voznog reda: razdoblje, država praznika i pravilo za praznike. |
-| `season_days` | Dani sezone koji odstupaju od dana u tjednu (praznici i ručne iznimke). |
+| `season_days` | Dani sezone koji odstupaju od dana u tjednu (praznici, ručne iznimke i dani razdoblja). |
+| `season_periods` | Razdoblja sezone (npr. školski raspust) u kojima tip dana vozi kao drugi ili ne vozi. |
 | `route_variants`, `route_variant_stops` | Varijante linije: redoslijed stanica smjera s vremenima vožnje i stajanja. |
 
 Veze:
@@ -37,6 +38,7 @@ Veze:
 - `service_calendars` 1 → N `calendar_dates`
 - `timetable_seasons` 1 → N `service_calendars` (tipovi dana sezone), `timetable_seasons` 1 → N `season_days`
 - `routes` 1 → N `route_variants` 1 → N `route_variant_stops`; `route_variants` 1 → N `trips` (`trips.variant_id`)
+- vožnje istog polaska u različitim tipovima dana dijele `trips.departure_id` (bez posebne tablice)
 - `routes` 1 → N `trips`, `service_calendars` 1 → N `trips`, `shapes` 1 → N `trips`
 - `trips` 1 → N `stop_times`, `stops` 1 → N `stop_times`
 - `shapes` 1 → N `shape_points`
@@ -111,7 +113,17 @@ Svaki dan u tjednu pripada najviše jednom tipu dana, a sezone se ne preklapaju.
 Kopija sezone (npr. isti vozni red sljedeće godine) dobiva nove kalendare s
 istim tipovima dana i pravilom za praznike, a po želji i kopije svih vožnji
 (nove vožnje s istim vremenima, varijantom i trasom), u jednoj transakciji;
-ručne iznimke se ne kopiraju jer su vezane uz datume.
+ručne iznimke se ne kopiraju jer su vezane uz datume, a razdoblja se pomiču
+koliko i sezona.
+
+**Razdoblja.** Razdoblje (`season_periods`, npr. „Zimski raspust”, 23. 12. –
+15. 1.) kaže da u njemu jedan tip dana (npr. „Radni dan – nastava”) vozi kao
+drugi („Radni dan – raspust”) ili ne vozi; ostali tipovi dana voze normalno.
+Tip dana za raspust obično nema nijedan dan u tjednu, pa vozi samo kroz
+razdoblja. Iz razdoblja nastaju dani sezone s izvorom „razdoblje” (svaki dan
+razdoblja u kojem zamijenjeni tip dana inače vozi), a iz njih iznimke kao i za
+praznike. Ručna iznimka i praznik imaju prednost, pa Božić u raspustu vozi po
+pravilu za praznike. Razdoblja istog tipa dana se ne preklapaju.
 Kalendari uvezeni iz GTFS-a nisu u sezoni i ostaju kakvi jesu. GTFS uvoz briše
 i sezone.
 

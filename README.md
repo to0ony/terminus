@@ -55,11 +55,12 @@ vlastitu instancu i bazu. Unutar instance može postojati više prijevoznika
   jednim klikom (stanice s druge strane ceste).
 - **Trase** – automatski po cestama ili prugama iz OpenStreetMapa (iz
   vektorskih pločica karte, bez rutera), dorada povlačenjem i ručne dionice.
-- **Sezone voznog reda** – tipovi dana, državni praznici, iznimke klikom na dan;
-  kopiranje sezone za sljedeću godinu, s vožnjama.
+- **Sezone voznog reda** – tipovi dana, državni praznici, iznimke klikom na dan,
+  razdoblja poput školskih raspusta; kopiranje sezone za sljedeću godinu, s vožnjama.
 - **Grafikon voznog reda** – vožnje kao crte kroz stanice: povlačenje, točna
   vremena, nova vožnja klikom ili crtanjem, takt, kopiranje s pomakom i u drugi
-  tip dana, poništavanje i spremanje u jednoj transakciji.
+  tip dana, polazak u više tipova dana (npr. „svaki dan”) koji se mijenja
+  jednom, poništavanje i spremanje u jednoj transakciji.
 
 **Za putnike**
 

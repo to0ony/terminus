@@ -16,7 +16,7 @@ i MapLibre GL. Pokretanje i naredbe su u [lokalnom razvoju](development.md#front
 | `/routes/:id/schedule` | **grafikon voznog reda** linije s uređivanjem vožnji (opis niže) |
 | `/stops`, `/stops/:id` | stanice s kartom, **nova stanica klikom** i **prijedlozi iz OpenStreetMapa**; stanica s izmjenom, brisanjem, peronima kolodvora, linijama, polascima za dan, premještanjem na karti, **PDF voznim redom** i poveznicom na zaslon |
 | `/calendars` | sezone voznog reda (i nova sezona) te ostali kalendari, npr. uvezeni iz GTFS-a |
-| `/seasons/:id` | sezona: tipovi dana, pravilo za praznike i svi mjeseci; klik na dan mijenja kako vozi (kao drugi tip dana, ne vozi) uz napomenu; **kopiranje sezone** za sljedeću godinu (zadano isti datumi godinu kasnije, godine u nazivu +1), po želji s vožnjama |
+| `/seasons/:id` | sezona: tipovi dana, pravilo za praznike i svi mjeseci; klik na dan mijenja kako vozi (kao drugi tip dana, ne vozi) uz napomenu; **razdoblja** (npr. školski raspust: radni dan vozi kao radni dan za vrijeme raspusta); **kopiranje sezone** za sljedeću godinu (zadano isti datumi godinu kasnije, godine u nazivu +1), po želji s vožnjama |
 | `/calendars/:id` | kalendar s danima u tjednu i iznimkama na mjesečnom prikazu |
 | `/agencies` | prijevoznici s brojem linija; **novi prijevoznik**, izmjena i brisanje (opis niže) |
 | `/gtfs` | GTFS izvoz (s popisom problema ako izvoz nije moguć) i ponovni uvoz |
@@ -148,6 +148,9 @@ Editor varijante (`features/variants`):
 - Stanice se premještaju povlačenjem za ručku (ili strelicama gore i dolje) i
   uklanjaju; varijanta je na karti numerirana crta, a isti brojevi su u popisu
   stanica i dionica trase. Naziv je zadano „prva → zadnja stanica”.
+- Stupac **km** su kilometri od prve stanice, kao u registriranom voznom redu:
+  po trasi, a gdje trase (još) nema zračnom crtom, uz oznaku ≈. Dionice trase
+  imaju i svoju duljinu.
 - Varijanta koju koriste vožnje zadržava stanice, a mijenjaju se samo vremena
   (za drugi redoslijed kopija).
 - **Povratni smjer** (gumb uz varijantu na stranici linije) otvara novu
@@ -212,6 +215,7 @@ Uređivanje:
 | ← → (Shift: ±5) | pomak odabranih za minutu |
 | Del, Ctrl+Z, Ctrl+Y | brisanje, poništavanje, ponavljanje |
 | Panel desno | točna vremena (dolazak i polazak), natpis smjera, tip dana, kopiranje s pomakom (npr. svakih 10 min, 5 puta), generator takta (od–do svakih N min, po odabranoj varijanti) |
+| „Polazak vozi u” | kvačice tipova dana za odabranu vožnju (ili više njih): polazak, npr. „svaki dan”, je jedna vožnja po tipu dana s istim vremenima. Pri spremanju server vožnje u označenim tipovima dana dodaje ili usklađuje (vremena, varijanta, trasa), a iz isključenih briše; izmjena vremena u bilo kojem tipu dana prenosi se na ostale. „Odvoji” izdvaja vožnju (npr. subotom kreće kasnije), a ostale ostaju |
 | „Kopiraj u tip dana” | odabrane vožnje ili sve vožnje tipa dana dobivaju kopiju s istim vremenima u drugom tipu dana, i druge sezone (npr. subota = radni dan bez jutarnjeg vrha: kopiraj sve, pa u suboti obriši višak); kopije se spremaju s ostalim izmjenama i uređuju u tom tipu dana |
 
 GTFS pravila (vremena ne padaju, polazak nije prije dolaska, 0–48 h) provjerava

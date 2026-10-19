@@ -147,6 +147,24 @@ prijevoznici. Redoslijed:
 Faza 6 ne ovisi o fazama 2–5 i može se raditi usporedno; mora biti gotova
 prije prvog pilota.
 
+## Iz prakse
+
+Poboljšanja nakon unosa stvarnog voznog reda prigradske linije (10 polazaka,
+režimi „svakodnevno”, „radnim danom”, „radnim danom za vrijeme nastave”):
+prijevoznik razmišlja u polascima s režimom, školska godina je jednako važna
+kao praznici, izvor je uvijek tablica, a krajnji proizvod je papirnati vozni
+red linije.
+
+| # | Korak | Stanje |
+|---|---|---|
+| P.1 | Razdoblja u sezoni (školski raspusti): od–do, tip dana vozi kao drugi ili ne vozi | ✅ |
+| P.2 | Polazak u više tipova dana: jedna izmjena za sve, GTFS izvoz zasebno po tipu dana | ✅ |
+| P.3 | PDF vozni red linije: numerirani polasci × stanice, legenda režima | |
+| P.4 | Brzi unos polazaka: popis vremena (ili lijepljenje iz Excela) po varijanti | |
+| P.5 | Broj polaska (`trip_short_name`) u grafikonu i PDF-u | |
+| P.6 | Stajalište na zahtjev po stanici varijante (`pickup_type`, `drop_off_type`) | |
+| P.7 | Kilometri u editoru varijante, po trasi | ✅ |
+
 ## Kasnije
 
 - Audit log: tko je i kada promijenio koji zapis.

@@ -213,7 +213,8 @@ ALTER TABLE service_calendars
 -- season_days: dani sezone koji odstupaju od dana u tjednu
 --   mode:   0 = normalno, 1 = vozi kao calendar_id, 2 = ne vozi
 --   source: 0 = ručno (ostaje kad se promijeni pravilo za praznike),
---           1 = praznik (note je naziv praznika)
+--           1 = praznik (note je naziv praznika),
+--           2 = razdoblje (note je naziv razdoblja; računa se iz season_periods)
 -- ---------------------------------------------------------------------
 CREATE TABLE season_days (
     season_id   uuid     NOT NULL,
@@ -229,10 +230,40 @@ CREATE TABLE season_days (
     CONSTRAINT fk_season_days_service_calendars_calendar_id
         FOREIGN KEY (calendar_id) REFERENCES service_calendars (id) ON DELETE CASCADE,
     CONSTRAINT ck_season_days_mode CHECK (mode IN (0, 1, 2)),
-    CONSTRAINT ck_season_days_source CHECK (source IN (0, 1))
+    CONSTRAINT ck_season_days_source CHECK (source IN (0, 1, 2))
 );
 
 CREATE INDEX ix_season_days_calendar_id ON season_days (calendar_id);
+
+-- ---------------------------------------------------------------------
+-- season_periods: razdoblja sezone (npr. školski raspust) u kojima tip dana
+-- replaced_calendar_id vozi kao calendar_id (mode 1) ili ne vozi (mode 2).
+-- Iz njih nastaju season_days s izvorom 2; ručni dan i praznik imaju prednost.
+-- ---------------------------------------------------------------------
+CREATE TABLE season_periods (
+    id                   uuid     NOT NULL DEFAULT gen_random_uuid(),
+    season_id            uuid     NOT NULL,
+    name                 text     NOT NULL,
+    start_date           date     NOT NULL,
+    end_date             date     NOT NULL,
+    replaced_calendar_id uuid     NOT NULL,
+    mode                 smallint NOT NULL,
+    calendar_id          uuid,
+
+    CONSTRAINT pk_season_periods PRIMARY KEY (id),
+    CONSTRAINT fk_season_periods_timetable_seasons_season_id
+        FOREIGN KEY (season_id) REFERENCES timetable_seasons (id) ON DELETE CASCADE,
+    CONSTRAINT fk_season_periods_service_calendars_replaced_calendar_id
+        FOREIGN KEY (replaced_calendar_id) REFERENCES service_calendars (id) ON DELETE CASCADE,
+    CONSTRAINT fk_season_periods_service_calendars_calendar_id
+        FOREIGN KEY (calendar_id) REFERENCES service_calendars (id) ON DELETE CASCADE,
+    CONSTRAINT ck_season_periods_dates CHECK (end_date >= start_date),
+    CONSTRAINT ck_season_periods_mode CHECK (mode IN (1, 2))
+);
+
+CREATE INDEX ix_season_periods_season_id ON season_periods (season_id);
+CREATE INDEX ix_season_periods_replaced_calendar_id ON season_periods (replaced_calendar_id);
+CREATE INDEX ix_season_periods_calendar_id ON season_periods (calendar_id);
 
 -- ---------------------------------------------------------------------
 -- route_variants, route_variant_stops: varijante linije (redoslijed
@@ -289,6 +320,14 @@ ALTER TABLE trips
         FOREIGN KEY (variant_id) REFERENCES route_variants (id) ON DELETE SET NULL;
 
 CREATE INDEX ix_trips_variant_id ON trips (variant_id);
+
+-- departure_id: polazak; vožnje istog polaska u različitim tipovima dana
+-- (npr. "vozi svaki dan") imaju isti departure_id i mijenjaju se zajedno.
+-- Nije dio GTFS-a; izvoz ima zasebnu vožnju po tipu dana.
+ALTER TABLE trips
+    ADD COLUMN departure_id uuid;
+
+CREATE INDEX ix_trips_departure_id ON trips (departure_id);
 
 -- ---------------------------------------------------------------------
 -- shapes, shape_points: trasa vožnje na karti. GTFS: shapes.txt
