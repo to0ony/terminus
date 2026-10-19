@@ -14,7 +14,7 @@ public class RouteVariant : IAuditable
     public string? Headsign { get; set; }
     public Guid? ShapeId { get; set; }
 
-    /// <summary>Redoslijed prikaza; prva varijanta smjera je glavna.</summary>
+    /// <summary>Redoslijed unosa unutar smjera; varijante smjera su ravnopravne.</summary>
     public int SortOrder { get; set; }
 
     /// <summary>VariantSource: ručno ili iz GTFS uvoza.</summary>

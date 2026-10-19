@@ -128,11 +128,13 @@ Kalendari uvezeni iz GTFS-a nisu u sezoni i ostaju kakvi jesu. GTFS uvoz briše
 i sezone.
 
 **Varijante linije.** Varijanta (`route_variants`) je redoslijed stanica
-jednog smjera linije (npr. glavna Črnomerec → Sopot, skraćena, iz garaže), s
+jednog smjera linije (npr. Črnomerec → Sopot, skraćena, iz garaže), s
 vremenom vožnje od prethodne stanice i stajanjem za svaku stanicu
 (`route_variant_stops`), natpisom smjera i trasom. Nije dio GTFS-a: služi kao
 predložak za nove vožnje, a vožnja (`trips.variant_id`) i dalje ima svoja
-vremena, koja idu u izvoz. Prva varijanta smjera (`sort_order`) je glavna.
+vremena, koja idu u izvoz. `sort_order` je samo redoslijed unosa unutar
+smjera; varijante smjera su ravnopravne (mogu imati različite ciljeve), a smjer
+se u sučelju zove po cilju s najviše vožnji.
 Varijante se mogu prepoznati iz postojećih vožnji: isti smjer i redoslijed
 stanica čine varijantu, a vremena vožnje su medijan njezinih vožnji. Stanice
 varijante koju koriste vožnje ne mogu se promijeniti, a takva varijanta ne

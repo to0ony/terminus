@@ -134,9 +134,16 @@ može obrisati.
 
 Varijanta je redoslijed stanica jednog smjera s vremenom vožnje od prethodne
 stanice i stajanjem; po njoj nastaju vožnje u grafikonu. Na stranici linije su
-sve varijante (glavna, iz GTFS-a, broj vožnji) s izmjenom, kopiranjem i
+sve varijante (iz GTFS-a, broj vožnji) s izmjenom, kopiranjem i
 brisanjem (ne dok je koriste vožnje); linija bez varijanti ih može prepoznati
-iz postojećih vožnji.
+iz postojećih vožnji. Tablica je podijeljena na polazni i povratni smjer (i
+"bez smjera" ako takvih varijanti ima): naslov smjera nosi broj varijanti i
+vožnji i gumb za novu varijantu tog smjera (`new?dir=1` za povratni), a prazan
+smjer upućuje na povratni smjer suprotne varijante. Varijante smjera mogu imati
+različite ciljeve, pa "glavne" nema: smjer se u odabiru (grafikon) zove po
+cilju kojim ide najviše vožnji, a bez vožnji po cilju najduljeg redoslijeda
+(`routes/directions.ts`); preslikavanje vožnji zadano uzima varijantu s najviše
+vožnji.
 
 Editor varijante (`features/variants`):
 

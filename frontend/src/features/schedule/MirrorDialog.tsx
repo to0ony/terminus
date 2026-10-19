@@ -21,7 +21,7 @@ import { useState } from 'react'
 import { errorMessage } from '@/api/errors'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
-import { useRouteVariants } from '@/features/variants/queries'
+import { useRouteVariants, type Variant } from '@/features/variants/queries'
 import { type MirrorSettings, mirrorRows, mirrorTrips } from './mirror'
 import {
   changes,
@@ -113,8 +113,13 @@ function MirrorForm({
     variants.find((v) => v.id === initialTarget)?.id ?? variants[0]?.id ?? null,
   )
   const [sourceId, setSourceId] = useState<string | null>(initialSource)
-  // Bez zadane izvorne varijante uzima se prva sa vožnjama (glavna, ako ih ima).
-  const source = sources.find((v) => v.id === sourceId) ?? sources[0] ?? null
+  // Bez zadane izvorne varijante uzima se ona s najviše vožnji.
+  const source =
+    sources.find((v) => v.id === sourceId) ??
+    sources.reduce<Variant | null>(
+      (best, v) => (best === null || v.tripCount > best.tripCount ? v : best),
+      null,
+    )
   const target = variants.find((v) => v.id === targetId) ?? null
 
   // Svaki par varijanti ima svoje zapamćene postavke.

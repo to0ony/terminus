@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { unwrap } from '@/api/errors'
 import type { components } from '@/api/schema'
+import { type DirectionOption, directionLabels } from '@/features/routes/directions'
 
 export type Variant = components['schemas']['VariantResponse']
 export type VariantRequest = components['schemas']['VariantRequest']
@@ -11,7 +12,7 @@ export const variantKeys = {
   detail: (id: string) => ['variants', id] as const,
 }
 
-/** Varijante linije po smjeru, glavna prva. */
+/** Varijante linije po smjeru, redoslijedom unosa. */
 export function useRouteVariants(routeId: string) {
   return useQuery({
     queryKey: variantKeys.route(routeId),
@@ -90,21 +91,27 @@ export function useDeriveVariants(routeId: string) {
   )
 }
 
+/** Smjerovi linije za odabir, nazvani po najčešćem cilju varijanti smjera. */
+export function variantDirections(variants: Variant[]): DirectionOption[] {
+  return directionLabels(variants)
+}
+
+export interface DirectionGroup {
+  direction: number | null
+  variants: Variant[]
+}
+
 /**
- * Smjerovi linije za odabir, prema glavnoj varijanti smjera: natpis smjera, a
- * bez njega zadnja stanica.
+ * Varijante po smjeru: polazni i povratni uvijek (prazan smjer pokazuje kako
+ * ga napraviti), a varijante bez smjera (iz GTFS-a) na kraju ako ih ima.
  */
-export function variantDirections(variants: Variant[]): { value: string; label: string }[] {
-  const main = new Map<number, Variant>()
-  for (const variant of variants) {
-    if (variant.directionId !== null && !main.has(variant.directionId)) {
-      main.set(variant.directionId, variant)
-    }
-  }
-  return [...main.entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([direction, variant]) => ({
-      value: String(direction),
-      label: `→ ${variant.headsign ?? variant.stops.at(-1)?.name ?? `Smjer ${direction}`}`,
-    }))
+export function directionGroups(variants: Variant[]): DirectionGroup[] {
+  const of = (direction: number | null) =>
+    variants.filter((v) => v.directionId === direction).sort((a, b) => a.sortOrder - b.sortOrder)
+  const groups: DirectionGroup[] = [
+    { direction: 0, variants: of(0) },
+    { direction: 1, variants: of(1) },
+  ]
+  const none = of(null)
+  return none.length > 0 ? [...groups, { direction: null, variants: none }] : groups
 }

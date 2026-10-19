@@ -124,7 +124,8 @@ function bounds(stops: Pick<EditorStop, 'latitude' | 'longitude'>[], margin: num
 /**
  * Varijanta linije: stanice se dodaju klikom na kartu, vremena vožnje predlažu iz udaljenosti.
  * `new?from=` je kopija varijante, a `new?reverse=` njezin povratni smjer
- * (s `&trips=1` nakon spremanja vodi na preslikavanje vožnji).
+ * (s `&trips=1` nakon spremanja vodi na preslikavanje vožnji). Nova prazna
+ * varijanta s `new?dir=1` počinje u povratnom smjeru.
  */
 export function VariantEditorPage() {
   const { routeId = '', variantId = 'new' } = useParams()
@@ -132,6 +133,7 @@ export function VariantEditorPage() {
   const isNew = variantId === 'new'
   const reverseId = isNew ? searchParams.get('reverse') : null
   const sourceId = isNew ? (reverseId ?? searchParams.get('from')) : variantId
+  const newDirection = searchParams.get('dir') === '1' ? 1 : 0
   const route = useRoute(routeId)
   const source = useVariant(sourceId ?? '', sourceId !== null)
   const extent = useStopsExtent()
@@ -194,7 +196,7 @@ export function VariantEditorPage() {
 
   return (
     <VariantEditor
-      key={variantId + (sourceId ?? '') + (reverseId ? '-reverse' : '')}
+      key={variantId + (sourceId ?? '') + (reverseId ? '-reverse' : '') + newDirection}
       routeId={routeId}
       routeType={route.data.routeType}
       routeCode={route.data.code}
@@ -203,6 +205,7 @@ export function VariantEditorPage() {
       variant={isNew ? null : (source.data ?? null)}
       template={template}
       reversed={reverseId !== null}
+      newDirection={newDirection}
       mirrorFrom={reverseId && searchParams.get('trips') === '1' ? reverseId : null}
       shape={
         shape.data
@@ -226,6 +229,8 @@ interface VariantEditorProps {
   template: Template | null
   /** Povratni smjer druge varijante: naziv se ne preuzima. */
   reversed: boolean
+  /** Smjer nove varijante bez predloška. */
+  newDirection: number
   /** Povratni smjer s vožnjama: nakon spremanja preslikavaju se vožnje ove varijante. */
   mirrorFrom: string | null
   /** Spremljena trasa varijante (ili izvorne, za kopiju). */
@@ -246,6 +251,7 @@ function VariantEditor({
   variant,
   template,
   reversed,
+  newDirection,
   mirrorFrom,
   shape: savedShape,
   extent,
@@ -260,11 +266,11 @@ function VariantEditor({
   const initial = useMemo(
     () => ({
       name: !template || reversed ? '' : variant ? template.name : `${template.name} (kopija)`,
-      direction: template?.directionId ?? 0,
+      direction: template?.directionId ?? newDirection,
       headsign: template?.headsign ?? '',
       stops: template ? fromVariant(template) : [],
     }),
-    [template, variant, reversed],
+    [template, variant, reversed, newDirection],
   )
   const [name, setName] = useState(initial.name)
   const [direction, setDirection] = useState<number>(initial.direction)

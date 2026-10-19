@@ -26,8 +26,18 @@ import { errorMessage } from '@/api/errors'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
 import { formatNumber } from '@/lib/format'
-import { useDeleteVariant, useDeriveVariants, useRouteVariants, type Variant } from './queries'
+import {
+  directionGroups,
+  useDeleteVariant,
+  useDeriveVariants,
+  useRouteVariants,
+  type Variant,
+} from './queries'
 import { duration } from './variantMath'
+
+function directionTitle(direction: number | null) {
+  return direction === 0 ? 'Polazni smjer' : direction === 1 ? 'Povratni smjer' : 'Bez smjera'
+}
 
 interface VariantsSectionProps {
   routeId: string
@@ -139,7 +149,7 @@ export function VariantsSection({ routeId, hasTrips }: VariantsSectionProps) {
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>Varijanta</Table.Th>
-                  <Table.Th w={140}>Smjer</Table.Th>
+                  <Table.Th w={160}>Natpis</Table.Th>
                   <Table.Th w={90}>Stanica</Table.Th>
                   <Table.Th w={90}>Trajanje</Table.Th>
                   <Table.Th w={90}>Vožnji</Table.Th>
@@ -147,88 +157,129 @@ export function VariantsSection({ routeId, hasTrips }: VariantsSectionProps) {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {variants.data.map((variant) => (
-                  <Table.Tr key={variant.id}>
-                    <Table.Td>
-                      <Group gap={6} wrap="nowrap">
-                        <Text
-                          component={Link}
-                          to={`/routes/${routeId}/variants/${variant.id}`}
-                          size="sm"
-                          fw={500}
-                        >
-                          {variant.name}
-                        </Text>
-                        {variant.sortOrder === 0 && (
-                          <Badge size="xs" variant="light">
-                            glavna
-                          </Badge>
-                        )}
-                        {variant.source === 'Gtfs' && (
-                          <Badge size="xs" variant="outline" color="gray">
-                            GTFS
-                          </Badge>
+                {directionGroups(variants.data).map((group) => [
+                  <Table.Tr key={`dir-${group.direction}`} bg="var(--mantine-color-default-hover)">
+                    <Table.Td colSpan={6}>
+                      <Group justify="space-between" wrap="nowrap">
+                        <Group gap="xs" wrap="nowrap">
+                          <Text size="sm" fw={700}>
+                            {directionTitle(group.direction)}
+                          </Text>
+                          {group.variants.length > 0 && (
+                            <Text size="sm" c="dimmed">
+                              Varijanti: {formatNumber(group.variants.length)} · Vožnji:{' '}
+                              {formatNumber(
+                                group.variants.reduce((sum, v) => sum + v.tripCount, 0),
+                              )}
+                            </Text>
+                          )}
+                        </Group>
+                        {group.direction !== null && (
+                          <Button
+                            size="compact-xs"
+                            variant="subtle"
+                            leftSection={<IconPlus size={14} />}
+                            onClick={() =>
+                              void navigate(
+                                `/routes/${routeId}/variants/new${group.direction === 1 ? '?dir=1' : ''}`,
+                              )
+                            }
+                          >
+                            Nova
+                          </Button>
                         )}
                       </Group>
                     </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" c="dimmed">
-                        {variant.headsign ? `→ ${variant.headsign}` : '—'}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>{variant.stops.length}</Table.Td>
-                    <Table.Td>{Math.round(duration(variant) / 60)} min</Table.Td>
-                    <Table.Td>{formatNumber(variant.tripCount)}</Table.Td>
-                    <Table.Td>
-                      <Group gap={4} justify="flex-end" wrap="nowrap">
-                        <Tooltip label="Uredi">
-                          <ActionIcon
-                            variant="subtle"
+                  </Table.Tr>,
+                  group.variants.length === 0 && (
+                    <Table.Tr key={`empty-${group.direction}`}>
+                      <Table.Td colSpan={6}>
+                        <Text size="sm" c="dimmed">
+                          Još nema varijanti ovog smjera. Napravi je gumbom{' '}
+                          <IconArrowsExchange size={14} style={{ verticalAlign: 'middle' }} /> uz
+                          varijantu suprotnog smjera ili gumbom Nova.
+                        </Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  ),
+                  ...group.variants.map((variant) => (
+                    <Table.Tr key={variant.id}>
+                      <Table.Td>
+                        <Group gap={6} wrap="nowrap">
+                          <Text
                             component={Link}
                             to={`/routes/${routeId}/variants/${variant.id}`}
-                            aria-label="Uredi varijantu"
+                            size="sm"
+                            fw={500}
                           >
-                            <IconPencil size={16} />
-                          </ActionIcon>
-                        </Tooltip>
-                        <Tooltip label="Kopiraj u novu varijantu">
-                          <ActionIcon
-                            variant="subtle"
-                            component={Link}
-                            to={`/routes/${routeId}/variants/new?from=${variant.id}`}
-                            aria-label="Kopiraj varijantu"
-                          >
-                            <IconCopy size={16} />
-                          </ActionIcon>
-                        </Tooltip>
-                        <Tooltip label="Napravi povratni smjer">
-                          <ActionIcon
-                            variant="subtle"
-                            onClick={() =>
-                              variant.tripCount > 0
-                                ? chooseReverse(variant)
-                                : void navigate(reverseUrl(variant, false))
-                            }
-                            aria-label="Napravi povratni smjer"
-                          >
-                            <IconArrowsExchange size={16} />
-                          </ActionIcon>
-                        </Tooltip>
-                        <Tooltip label={variant.tripCount > 0 ? 'Koriste je vožnje' : 'Obriši'}>
-                          <ActionIcon
-                            variant="subtle"
-                            color="red"
-                            disabled={variant.tripCount > 0}
-                            onClick={() => confirmDelete(variant)}
-                            aria-label="Obriši varijantu"
-                          >
-                            <IconTrash size={16} />
-                          </ActionIcon>
-                        </Tooltip>
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
+                            {variant.name}
+                          </Text>
+                          {variant.source === 'Gtfs' && (
+                            <Badge size="xs" variant="outline" color="gray">
+                              GTFS
+                            </Badge>
+                          )}
+                        </Group>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm" c="dimmed">
+                          {variant.headsign ? `→ ${variant.headsign}` : '—'}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>{variant.stops.length}</Table.Td>
+                      <Table.Td>{Math.round(duration(variant) / 60)} min</Table.Td>
+                      <Table.Td>{formatNumber(variant.tripCount)}</Table.Td>
+                      <Table.Td>
+                        <Group gap={4} justify="flex-end" wrap="nowrap">
+                          <Tooltip label="Uredi">
+                            <ActionIcon
+                              variant="subtle"
+                              component={Link}
+                              to={`/routes/${routeId}/variants/${variant.id}`}
+                              aria-label="Uredi varijantu"
+                            >
+                              <IconPencil size={16} />
+                            </ActionIcon>
+                          </Tooltip>
+                          <Tooltip label="Kopiraj u novu varijantu">
+                            <ActionIcon
+                              variant="subtle"
+                              component={Link}
+                              to={`/routes/${routeId}/variants/new?from=${variant.id}`}
+                              aria-label="Kopiraj varijantu"
+                            >
+                              <IconCopy size={16} />
+                            </ActionIcon>
+                          </Tooltip>
+                          <Tooltip label="Napravi povratni smjer">
+                            <ActionIcon
+                              variant="subtle"
+                              onClick={() =>
+                                variant.tripCount > 0
+                                  ? chooseReverse(variant)
+                                  : void navigate(reverseUrl(variant, false))
+                              }
+                              aria-label="Napravi povratni smjer"
+                            >
+                              <IconArrowsExchange size={16} />
+                            </ActionIcon>
+                          </Tooltip>
+                          <Tooltip label={variant.tripCount > 0 ? 'Koriste je vožnje' : 'Obriši'}>
+                            <ActionIcon
+                              variant="subtle"
+                              color="red"
+                              disabled={variant.tripCount > 0}
+                              onClick={() => confirmDelete(variant)}
+                              aria-label="Obriši varijantu"
+                            >
+                              <IconTrash size={16} />
+                            </ActionIcon>
+                          </Tooltip>
+                        </Group>
+                      </Table.Td>
+                    </Table.Tr>
+                  )),
+                ])}
               </Table.Tbody>
             </Table>
           </Table.ScrollContainer>
