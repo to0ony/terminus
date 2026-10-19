@@ -1,8 +1,9 @@
 import { useMemo, useRef, useState } from 'react'
 import type { DrawnSegment } from './ShapeLayers'
-import { fetchNetwork, type LngLat, Network, type NetworkKind } from './osmNetwork'
+import { type LngLat, Network, type NetworkKind } from './osmNetwork'
+import { fetchTileLines, waysFromTiles } from './tileNetwork'
 import {
-  corridors,
+  corridorTiles,
   insertVia,
   joinSegments,
   manualSegment,
@@ -26,6 +27,9 @@ interface Pair {
 
 /** Koridor za dionicu za koju put nije nađen u običnom (m). */
 const widerCorridor = 1000
+
+/** Više pločica odjednom je preveliko područje (stotine km²) za preglednik. */
+const maxTiles = 400
 
 const pairKey = (a: ShapeStop, b: ShapeStop) => `${a.key}-${b.key}`
 const position = (s: ShapeStop): LngLat | null =>
@@ -100,15 +104,17 @@ export function useVariantShape(options: {
 
   /** Dohvaća mrežu za koridore koji još nisu dohvaćeni; false ako nema ništa novo. */
   const load = async (waypoints: LngLat[][], minRadius?: number) => {
-    const list = corridors(waypoints, minRadius)
-    const signature = JSON.stringify(list)
-    if (list.length === 0 || fetched.current.has(signature)) {
+    const tiles = corridorTiles(waypoints, minRadius).filter((t) => !fetched.current.has(t))
+    if (tiles.length === 0) {
       return false
     }
-    const ways = await fetchNetwork(kind, list)
-    fetched.current.add(signature)
+    if (tiles.length > maxTiles) {
+      throw new Error('Područje linije je preveliko za trasu odjednom. Dionice nacrtaj ručno.')
+    }
+    const lines = await fetchTileLines(tiles)
+    tiles.forEach((t) => fetched.current.add(t))
     network.current ??= new Network(kind)
-    network.current.add(ways)
+    network.current.add(waysFromTiles(lines, kind))
     return true
   }
 

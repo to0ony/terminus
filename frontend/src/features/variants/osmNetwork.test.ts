@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { type LngLat, Network, networkKind, networkQuery, type OverpassWay } from './osmNetwork'
+import { type LngLat, Network, networkKind, type OsmWay } from './osmNetwork'
 
 // Ulica istok–zapad (1–2–3, ~80 m između čvorova) i jednosmjerna ulica sjeverno od 2.
 const positions: Record<number, LngLat> = {
@@ -9,7 +9,7 @@ const positions: Record<number, LngLat> = {
   4: [16.001, 45.801],
 }
 
-function way(id: number, nodes: number[], tags: Record<string, string>): OverpassWay {
+function way(id: number, nodes: number[], tags: Record<string, string>): OsmWay {
   return {
     type: 'way',
     id,
@@ -19,7 +19,7 @@ function way(id: number, nodes: number[], tags: Record<string, string>): Overpas
   }
 }
 
-function network(...ways: OverpassWay[]) {
+function network(...ways: OsmWay[]) {
   const result = new Network('road')
   result.add(ways)
   return result
@@ -119,24 +119,5 @@ describe('networkKind', () => {
     expect(networkKind(900)).toBe('tram')
     expect(networkKind(2)).toBe('rail')
     expect(networkKind(109)).toBe('rail')
-  })
-})
-
-describe('networkQuery', () => {
-  it('asks for the network around each corridor', () => {
-    const query = networkQuery('tram', [
-      {
-        points: [
-          [16, 45.8],
-          [16.01, 45.81],
-        ],
-        radius: 300,
-      },
-    ])
-
-    expect(query).toContain(
-      'way["railway"~"^(tram|light_rail)$"](around:300,45.800000,16.000000,45.810000,16.010000);',
-    )
-    expect(query).toContain('out body geom')
   })
 })

@@ -1,7 +1,7 @@
 /**
- * Trasa po cestama i prugama iz OpenStreetMapa, bez rutera: Overpass vrati
- * ceste (ili pruge) u koridoru oko stanica, a najkraći put računa se ovdje.
- * Od pravila se poštuju samo jednosmjerne ulice.
+ * Trasa po cestama i prugama iz OpenStreetMapa, bez rutera: ceste (ili pruge)
+ * u koridoru oko stanica dolaze iz vektorskih pločica karte (`tileNetwork.ts`),
+ * a najkraći put računa se ovdje. Od pravila se poštuju samo jednosmjerne ulice.
  */
 
 /** Točka [dužina, širina], kao u MapLibreu i GeoJSON-u. */
@@ -37,78 +37,7 @@ export function networkKind(routeType: number): NetworkKind {
   }
 }
 
-// Ceste po kojima smije vozilo; pješačke staze, poljski putevi i sl. ne.
-const roadTypes = [
-  'motorway',
-  'motorway_link',
-  'trunk',
-  'trunk_link',
-  'primary',
-  'primary_link',
-  'secondary',
-  'secondary_link',
-  'tertiary',
-  'tertiary_link',
-  'unclassified',
-  'residential',
-  'living_street',
-  'service',
-  'road',
-  'busway',
-  'bus_guideway',
-]
-
-const selectors: Record<NetworkKind, string> = {
-  road: `way["highway"~"^(${roadTypes.join('|')})$"]`,
-  tram: 'way["railway"~"^(tram|light_rail)$"]',
-  rail: 'way["railway"~"^(rail|light_rail|narrow_gauge|subway|monorail)$"]',
-}
-
-/** Overpass upit za mrežu u koridorima oko crta (npr. stanica varijante). */
-export function networkQuery(
-  kind: NetworkKind,
-  corridors: { points: LngLat[]; radius: number }[],
-): string {
-  const parts = corridors.map(({ points, radius }) => {
-    const line = points.map(([lon, lat]) => `${lat.toFixed(6)},${lon.toFixed(6)}`).join(',')
-    return `${selectors[kind]}(around:${radius},${line});`
-  })
-  return `[out:json][timeout:90];(${parts.join('')});out body geom qt;`
-}
-
-/** Odgovori preopterećenog Overpassa. */
-const busy = new Set([429, 502, 503, 504])
-
-/** Mreža iz javnog Overpassa (kao i prijedlozi stanica). */
-export async function fetchNetwork(
-  kind: NetworkKind,
-  corridors: { points: LngLat[]; radius: number }[],
-  signal?: AbortSignal,
-): Promise<OverpassWay[]> {
-  const request = () =>
-    fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      body: new URLSearchParams({ data: networkQuery(kind, corridors) }),
-      signal,
-    })
-  // Javni Overpass zna biti pun; jedan ponovni pokušaj nakon kratke stanke često prođe.
-  let response = await request()
-  if (busy.has(response.status)) {
-    await new Promise((resolve) => setTimeout(resolve, 3000))
-    response = await request()
-  }
-  if (!response.ok) {
-    throw new Error(
-      busy.has(response.status)
-        ? 'OpenStreetMap (Overpass) je trenutno preopterećen. Pokušaj ponovno za minutu.'
-        : `OpenStreetMap (Overpass) je vratio grešku ${response.status}.`,
-    )
-  }
-  const body = (await response.json()) as { elements: OverpassWay[] }
-  return body.elements
-}
-
-export interface OverpassWay {
+export interface OsmWay {
   type: string
   id: number
   nodes?: number[]
@@ -143,7 +72,7 @@ export class Network {
   }
 
   /** Dodaje ceste iz Overpass odgovora; ista cesta dvaput se ne dodaje. */
-  add(ways: OverpassWay[]) {
+  add(ways: OsmWay[]) {
     for (const way of ways) {
       if (way.type !== 'way' || !way.nodes || !way.geometry || this.seen.has(way.id)) {
         continue

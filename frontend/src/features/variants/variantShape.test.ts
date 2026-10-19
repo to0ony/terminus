@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { type LngLat, Network, type OverpassWay } from './osmNetwork'
+import { type LngLat, Network, type OsmWay } from './osmNetwork'
 import {
-  corridors,
+  corridorTiles,
   insertVia,
   joinSegments,
   manualSegment,
@@ -53,7 +53,7 @@ describe('splitShape', () => {
 })
 
 describe('routeSegment', () => {
-  const ways: OverpassWay[] = [
+  const ways: OsmWay[] = [
     {
       type: 'way',
       id: 1,
@@ -118,21 +118,19 @@ describe('nearestSegment', () => {
   })
 })
 
-describe('corridors', () => {
-  it('joins short segments and widens the corridor of long ones', () => {
+describe('corridorTiles', () => {
+  it('covers the stops with a margin and widens it around long sections', () => {
     const a: LngLat = [16, 45.8]
     const b: LngLat = [16.004, 45.8]
-    const c: LngLat = [16.008, 45.8]
     const far: LngLat = [16.2, 45.8]
 
-    const result = corridors([
-      [a, b],
-      [b, c],
-      [c, far],
-    ])
+    const short = corridorTiles([[a, b]])
+    const long = corridorTiles([[a, far]])
 
-    expect(result).toHaveLength(2)
-    expect(result[0]).toEqual({ points: [a, b, c], radius: 300 })
-    expect(result[1].radius).toBe(3000)
+    // Zoom 14 pločica je ~1,7 km, pa kratka dionica stane u nekoliko pločica.
+    expect(short.length).toBeGreaterThan(0)
+    expect(short.length).toBeLessThanOrEqual(4)
+    // ~15 km s koridorom od 3 km: dulje i šire.
+    expect(long.length).toBeGreaterThan(short.length * 5)
   })
 })

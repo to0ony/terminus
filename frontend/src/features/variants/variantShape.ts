@@ -1,4 +1,5 @@
 import { corridorRadius, type LngLat, metersBetween, type Network } from './osmNetwork'
+import { tilesFor } from './tileNetwork'
 
 /**
  * Dionica trase od stanice do stanice. Po mreži ide kroz međutočke najkraćim
@@ -161,33 +162,27 @@ export function nearestSegment(segments: ShapeSegment[], point: LngLat): number 
 }
 
 /**
- * Overpass koridor za dionice: oko svake dionice to širi što je dionica dulja,
- * jer ceste između udaljenih stanica (npr. međugradska linija) skreću od ravne crte.
+ * Pločice karte oko dionica: oko svakog dijela crte (stanica do stanice, ili do
+ * međutočke) to šire što je dio dulji, jer ceste između udaljenih stanica (npr.
+ * međugradska linija) skreću od ravne crte.
  */
-export function corridors(waypoints: LngLat[][], minRadius = corridorRadius): Corridor[] {
-  const result: Corridor[] = []
+export function corridorTiles(waypoints: LngLat[][], minRadius = corridorRadius): string[] {
+  const tiles = new Set<string>()
   for (const points of waypoints) {
-    if (points.length < 2) {
-      continue
-    }
-    let length = 0
     for (let i = 1; i < points.length; i++) {
-      length += metersBetween(points[i - 1], points[i])
-    }
-    const radius = Math.round(Math.min(3000, Math.max(minRadius, length * 0.3)))
-    // Uzastopne dionice istog koridora (gradske, kratke) idu kao jedna crta.
-    const last = result.at(-1)
-    if (last && last.radius === radius && last.points.at(-1) === points[0]) {
-      last.points.push(...points.slice(1))
-    } else {
-      result.push({ points: [...points], radius })
+      const [a, b] = [points[i - 1], points[i]]
+      const radius = Math.min(3000, Math.max(minRadius, metersBetween(a, b) * 0.3))
+      const lat = radius / 110_540
+      const lon = radius / (111_320 * Math.cos((a[1] * Math.PI) / 180))
+      for (const tile of tilesFor(
+        Math.min(a[0], b[0]) - lon,
+        Math.min(a[1], b[1]) - lat,
+        Math.max(a[0], b[0]) + lon,
+        Math.max(a[1], b[1]) + lat,
+      )) {
+        tiles.add(tile)
+      }
     }
   }
-  return result
-}
-
-export interface Corridor {
-  points: LngLat[]
-  /** Metara oko crte. */
-  radius: number
+  return [...tiles]
 }
