@@ -17,6 +17,8 @@ import {
 import { IconEraser, IconRefresh, IconRoute, IconTrash } from '@tabler/icons-react'
 import type { NetworkKind } from './osmNetwork'
 import { StopNumber } from './StopNumber'
+import { formatKm } from './variantMath'
+import { lineLength } from './variantShape'
 import type { VariantShape } from './useVariantShape'
 
 const networkLabels: Record<NetworkKind, { mode: string; source: string }> = {
@@ -127,6 +129,11 @@ export function ShapePanel({ shape, kind, names, selected, onSelect }: ShapePane
                             nema puta
                           </Badge>
                         ) : null}
+                        {segment && (
+                          <Badge size="xs" variant="light" color="gray">
+                            {formatKm(lineLength(segment.points) / 1000)} km
+                          </Badge>
+                        )}
                         {segment && segment.via.length > 0 && (
                           <Badge size="xs" variant="light" color="violet">
                             {segment.via.length}{' '}

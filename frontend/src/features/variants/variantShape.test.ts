@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { type LngLat, Network, type OsmWay } from './osmNetwork'
 import {
   corridorTiles,
+  stopDistances,
   insertVia,
   joinSegments,
   manualSegment,
@@ -132,5 +133,23 @@ describe('corridorTiles', () => {
     expect(short.length).toBeLessThanOrEqual(4)
     // ~15 km s koridorom od 3 km: dulje i šire.
     expect(long.length).toBeGreaterThan(short.length * 5)
+  })
+})
+
+describe('stopDistances', () => {
+  it('adds up the shape and estimates sections without one', () => {
+    const a: LngLat = [16, 45.8]
+    const b: LngLat = [16.004, 45.8]
+    const c: LngLat = [16.008, 45.8]
+    // Prva dionica ide okolo: dvostruko dulje od ravne crte.
+    const detour = { points: [a, [16.002, 45.8018] as LngLat, b] }
+
+    const distances = stopDistances([a, b, c], [detour, null])
+
+    expect(distances[0]).toEqual({ km: 0, estimated: false })
+    expect(distances[1].estimated).toBe(false)
+    expect(distances[1].km).toBeGreaterThan(0.31 * 1.2)
+    expect(distances[2].estimated).toBe(true)
+    expect(distances[2].km - distances[1].km).toBeCloseTo(0.311, 2)
   })
 })

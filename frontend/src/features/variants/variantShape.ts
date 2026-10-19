@@ -186,3 +186,39 @@ export function corridorTiles(waypoints: LngLat[][], minRadius = corridorRadius)
   }
   return [...tiles]
 }
+
+/** Duljina crte u metrima. */
+export function lineLength(points: LngLat[]): number {
+  let meters = 0
+  for (let i = 1; i < points.length; i++) {
+    meters += metersBetween(points[i - 1], points[i])
+  }
+  return meters
+}
+
+/**
+ * Kilometri od prve stanice do svake stanice: po trasi gdje je dionica
+ * izračunata, inače zračnom crtom (procjena).
+ */
+export function stopDistances(
+  stops: (LngLat | null)[],
+  segments: ({ points: LngLat[] } | null)[],
+): { km: number; estimated: boolean }[] {
+  const result = [{ km: 0, estimated: false }]
+  let meters = 0
+  let estimated = false
+  for (let i = 1; i < stops.length; i++) {
+    const segment = segments[i - 1]
+    const [a, b] = [stops[i - 1], stops[i]]
+    if (segment) {
+      meters += lineLength(segment.points)
+    } else if (a && b) {
+      meters += metersBetween(a, b)
+      estimated = true
+    } else {
+      estimated = true
+    }
+    result.push({ km: meters / 1000, estimated })
+  }
+  return result
+}

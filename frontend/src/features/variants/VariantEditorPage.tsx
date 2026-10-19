@@ -56,6 +56,8 @@ import { ShapeLayers } from './ShapeLayers'
 import { ShapePanel } from './ShapePanel'
 import { StopNumber } from './StopNumber'
 import { useVariantShape } from './useVariantShape'
+import { formatKm } from './variantMath'
+import { stopDistances } from './variantShape'
 import { distance, duration, suggestTravelTime } from './variantMath'
 
 /** Stanica varijante u editoru; key razlikuje istu stanicu dvaput na kružnoj liniji. */
@@ -377,6 +379,18 @@ function VariantEditor({
   }, [stops, mode])
 
   // Karta se otvara na stanicama varijante, a nova varijanta na svim stanicama.
+  // Kilometri kao u registriranom voznom redu: po trasi, a bez nje zračnom crtom.
+  const distances = useMemo(
+    () =>
+      stopDistances(
+        stops.map((s) =>
+          s.latitude !== null && s.longitude !== null ? [s.longitude, s.latitude] : null,
+        ),
+        shape.active ? shape.segments : [],
+      ),
+    [stops, shape.active, shape.segments],
+  )
+
   const [mapExtent] = useState(() => bounds(initial.stops, 0.002) ?? extent)
   const unpaired = stops.filter((s) => s.unpaired).length
 
@@ -600,6 +614,11 @@ function VariantEditor({
                         <Table.Tr>
                           <Table.Th w={locked ? 32 : 52}>#</Table.Th>
                           <Table.Th>Stanica</Table.Th>
+                          <Table.Th w={52} ta="right">
+                            <Tooltip label="Od prve stanice, po trasi; ≈ zračnom crtom gdje trase nema">
+                              <span>km</span>
+                            </Tooltip>
+                          </Table.Th>
                           <Table.Th w={84}>Vožnja (min)</Table.Th>
                           <Table.Th w={84}>Stajanje (s)</Table.Th>
                           {!locked && <Table.Th w={84} />}
@@ -680,6 +699,16 @@ function VariantEditor({
                                     provjeri
                                   </Badge>
                                 )}
+                              </Text>
+                            </Table.Td>
+                            <Table.Td ta="right">
+                              <Text
+                                size="sm"
+                                c={distances[i]?.estimated ? 'dimmed' : undefined}
+                                style={{ fontVariantNumeric: 'tabular-nums' }}
+                              >
+                                {distances[i]?.estimated ? '≈' : ''}
+                                {formatKm(distances[i]?.km ?? 0)}
                               </Text>
                             </Table.Td>
                             <Table.Td>

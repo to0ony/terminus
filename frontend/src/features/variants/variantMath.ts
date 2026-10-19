@@ -13,6 +13,11 @@ export function duration(variant: { stops: Timed[] }): number {
   )
 }
 
+/** Kilometri s jednom decimalom, kao u voznom redu ("12,4"). */
+export function formatKm(km: number): string {
+  return km.toLocaleString('hr', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+}
+
 /** Zračna udaljenost u metrima (haversine). */
 export function distance(a: [number, number], b: [number, number]): number {
   const [lat1, lon1] = a.map((v) => (v * Math.PI) / 180)
