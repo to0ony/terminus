@@ -3,6 +3,7 @@ import {
   Alert,
   Anchor,
   Badge,
+  Box,
   Button,
   Grid,
   Group,
@@ -24,6 +25,7 @@ import {
   IconArrowLeft,
   IconArrowUp,
   IconDeviceFloppy,
+  IconGripVertical,
   IconLock,
   IconRuler2,
   IconX,
@@ -48,9 +50,11 @@ import {
   useVariant,
 } from './queries'
 import { type LngLat, networkKind } from './osmNetwork'
+import { moveBefore } from './reorder'
 import { reverseStops } from './reverse'
 import { ShapeLayers } from './ShapeLayers'
 import { ShapePanel } from './ShapePanel'
+import { StopNumber } from './StopNumber'
 import { useVariantShape } from './useVariantShape'
 import { distance, duration, suggestTravelTime } from './variantMath'
 
@@ -258,6 +262,15 @@ function VariantEditor({
   const [stops, setStops] = useState<EditorStop[]>(initial.stops)
   const [selected, setSelected] = useState<number | null>(null)
   const [newStopAt, setNewStopAt] = useState<{ latitude: number; longitude: number } | null>(null)
+  // Povlačenje retka: ručka "naoruža" redak, a crta pokazuje mjesto ispred kojeg pada.
+  const [armed, setArmed] = useState<number | null>(null)
+  const [dragFrom, setDragFrom] = useState<number | null>(null)
+  const [dropBefore, setDropBefore] = useState<number | null>(null)
+  const endDrag = () => {
+    setArmed(null)
+    setDragFrom(null)
+    setDropBefore(null)
+  }
   const [mode, setMode] = useState<'stops' | 'shape'>('stops')
   const [segment, setSegment] = useState<number | null>(null)
   const [savingShape, setSavingShape] = useState(false)
@@ -585,7 +598,7 @@ function VariantEditor({
                     <Table verticalSpacing={4} horizontalSpacing="xs">
                       <Table.Thead>
                         <Table.Tr>
-                          <Table.Th w={28}>#</Table.Th>
+                          <Table.Th w={locked ? 32 : 52}>#</Table.Th>
                           <Table.Th>Stanica</Table.Th>
                           <Table.Th w={84}>Vožnja (min)</Table.Th>
                           <Table.Th w={84}>Stajanje (s)</Table.Th>
@@ -602,11 +615,56 @@ function VariantEditor({
                                 : undefined
                             }
                             onClick={() => setSelected(stop.key)}
+                            // Redak se vuče samo za ručku, da polja za vremena rade normalno.
+                            draggable={!locked && armed === stop.key}
+                            onDragStart={(event) => {
+                              event.dataTransfer.effectAllowed = 'move'
+                              event.dataTransfer.setData('text/plain', String(i))
+                              setDragFrom(i)
+                            }}
+                            onDragOver={(event) => {
+                              if (dragFrom === null) {
+                                return
+                              }
+                              event.preventDefault()
+                              const box = event.currentTarget.getBoundingClientRect()
+                              setDropBefore(event.clientY < box.top + box.height / 2 ? i : i + 1)
+                            }}
+                            onDrop={(event) => {
+                              event.preventDefault()
+                              if (dragFrom !== null && dropBefore !== null) {
+                                setStops(normalize(moveBefore(stops, dragFrom, dropBefore)))
+                              }
+                              endDrag()
+                            }}
+                            onDragEnd={endDrag}
+                            style={{
+                              opacity: dragFrom === i ? 0.4 : undefined,
+                              boxShadow:
+                                dropBefore === i
+                                  ? 'inset 0 2px 0 #e8590c'
+                                  : dropBefore === i + 1 && i === stops.length - 1
+                                    ? 'inset 0 -2px 0 #e8590c'
+                                    : undefined,
+                            }}
                           >
                             <Table.Td>
-                              <Text size="sm" c="dimmed">
-                                {i + 1}
-                              </Text>
+                              <Group gap={4} wrap="nowrap">
+                                {!locked && (
+                                  <Box
+                                    component="span"
+                                    c="dimmed"
+                                    display="inline-flex"
+                                    style={{ cursor: 'grab' }}
+                                    aria-label="Povuci za premještanje"
+                                    onMouseDown={() => setArmed(stop.key)}
+                                    onMouseUp={() => setArmed(null)}
+                                  >
+                                    <IconGripVertical size={14} />
+                                  </Box>
+                                )}
+                                <StopNumber value={i + 1} />
+                              </Group>
                             </Table.Td>
                             <Table.Td>
                               <Text size="sm" lineClamp={1}>

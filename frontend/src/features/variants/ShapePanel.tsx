@@ -16,6 +16,7 @@ import {
 } from '@mantine/core'
 import { IconEraser, IconRefresh, IconRoute, IconTrash } from '@tabler/icons-react'
 import type { NetworkKind } from './osmNetwork'
+import { StopNumber } from './StopNumber'
 import type { VariantShape } from './useVariantShape'
 
 const networkLabels: Record<NetworkKind, { mode: string; source: string }> = {
@@ -103,9 +104,19 @@ export function ShapePanel({ shape, kind, names, selected, onSelect }: ShapePane
                     style={{ cursor: 'pointer' }}
                   >
                     <Table.Td>
-                      <Text size="sm" lineClamp={1}>
-                        {names[i]} → {names[i + 1]}
-                      </Text>
+                      <Group gap={6} wrap="nowrap">
+                        <StopNumber value={i + 1} />
+                        <Text size="sm" lineClamp={1}>
+                          {names[i]}
+                        </Text>
+                        <Text size="sm" c="dimmed">
+                          →
+                        </Text>
+                        <StopNumber value={i + 2} />
+                        <Text size="sm" lineClamp={1}>
+                          {names[i + 1]}
+                        </Text>
+                      </Group>
                       <Group gap={4} mt={2}>
                         {segment === null ? (
                           <Badge size="xs" variant="light" color="gray">
