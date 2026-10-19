@@ -4,6 +4,7 @@ using Terminus.Model.Common;
 using Terminus.Model.Common.Enums;
 using Terminus.Service;
 using Terminus.Service.Common;
+using Terminus.Service.Pdf;
 
 namespace Terminus.Tests.Service;
 
@@ -184,6 +185,79 @@ public class StopTimetableBuilderTests
     }
 
     [Fact]
+    public void Build_FootnoteRangeSpansTheWeekendOfAWorkdayColumn()
+    {
+        var (_, holidays) = SchoolHolidays();
+
+        var footnote = Assert.Single(Assert.Single(BuildMonth()).Footnotes);
+
+        Assert.Equal(holidays, footnote.Dates);
+        Assert.Empty(footnote.Description.Named);
+        // Vikend 12.–13. 12. nije dan stupca radnih dana, pa ne prekida raspon.
+        Assert.Equal([new DateRange(new DateOnly(2026, 12, 9), new DateOnly(2026, 12, 15))], footnote.Description.Ranges);
+        Assert.Equal("a – ne vozi 9. 12. – 15. 12.", Note(footnote));
+    }
+
+    [Fact]
+    public void Build_FootnoteRangeStopsAtADayTheDepartureRuns()
+    {
+        var (school, _) = SchoolHolidays();
+        // Četvrtak 10.12. ipak vozi.
+        _dates.RemoveAll(d => d.ServiceCalendarId == school.Id && d.Date == new DateOnly(2026, 12, 10));
+
+        var footnote = Assert.Single(Assert.Single(BuildMonth()).Footnotes);
+
+        Assert.Equal(
+            [
+                new DateRange(new DateOnly(2026, 12, 9), new DateOnly(2026, 12, 9)),
+                new DateRange(new DateOnly(2026, 12, 11), new DateOnly(2026, 12, 15))
+            ],
+            footnote.Description.Ranges);
+    }
+
+    [Fact]
+    public void Build_FootnoteNamesAPeriodWhoseDaysItCovers()
+    {
+        var (_, holidays) = SchoolHolidays();
+        var names = holidays.Select(d => new NamedDay(d, "Zimski raspust")).ToList();
+
+        var footnote = Assert.Single(Assert.Single(BuildMonth(names)).Footnotes);
+
+        var named = Assert.Single(footnote.Description.Named);
+        Assert.Equal("Zimski raspust", named.Name);
+        Assert.Empty(footnote.Description.Ranges);
+        Assert.Equal("a – ne vozi: Zimski raspust (9. 12. – 15. 12.)", Note(footnote));
+    }
+
+    [Fact]
+    public void Build_FootnoteKeepsDatesWhenANameAlsoCoversOtherDays()
+    {
+        var (_, holidays) = SchoolHolidays();
+        // Naziv uključuje i ponedjeljak 7.12., na koji polazak vozi.
+        var names = holidays.Append(new DateOnly(2026, 12, 7)).Select(d => new NamedDay(d, "Raspust")).ToList();
+
+        var footnote = Assert.Single(Assert.Single(BuildMonth(names)).Footnotes);
+
+        Assert.Empty(footnote.Description.Named);
+        Assert.Equal("a – ne vozi 9. 12. – 15. 12.", Note(footnote));
+    }
+
+    [Fact]
+    public void Build_NoServiceNamesTheHoliday()
+    {
+        var workdays = Calendar(Workdays);
+        Departure(workdays, "06:15:00");
+        var holiday = new DateOnly(2026, 12, 9);
+        Exception(workdays, holiday, CalendarExceptionType.Removed);
+
+        var section = Assert.Single(Build([new NamedDay(holiday, "Dan grada")]));
+
+        Assert.Equal("Dan grada", Assert.Single(section.NoService.Named).Name);
+        Assert.Equal("Ne vozi: Dan grada (9. 12.)", TimetableTexts.For(TimetableLanguage.Hr).NoService(
+            TimetableTexts.For(TimetableLanguage.Hr).Dates(section.NoService, withYear: false), named: true));
+    }
+
+    [Fact]
     public void Build_NoDeparturesInPeriod_ReturnsNoSections()
     {
         var past = Calendar(Workdays);
@@ -193,8 +267,40 @@ public class StopTimetableBuilderTests
         Assert.Empty(Build());
     }
 
-    private IReadOnlyList<TimetableSection> Build() =>
-        StopTimetableBuilder.Build(_departures, _calendars, _dates, From, To);
+    private IReadOnlyList<TimetableSection> Build(IReadOnlyList<NamedDay>? names = null) =>
+        StopTimetableBuilder.Build(_departures, _calendars, _dates, From, To, names);
+
+    /// <summary>Četiri tjedna (30.11. – 27.12.), da tjedan raspusta ne izjednači dane u tjednu.</summary>
+    private IReadOnlyList<TimetableSection> BuildMonth(IReadOnlyList<NamedDay>? names = null) =>
+        StopTimetableBuilder.Build(_departures, _calendars, _dates, new DateOnly(2026, 11, 30), new DateOnly(2026, 12, 27), names);
+
+    /// <summary>Polazak radnim danom za vrijeme nastave; raspust od srijede 9.12. do utorka 15.12.</summary>
+    private (ServiceCalendarModel School, List<DateOnly> Holidays) SchoolHolidays()
+    {
+        var workdays = Calendar(Workdays);
+        var school = Calendar(Workdays);
+        Departure(workdays, "08:20:00");
+        Departure(school, "06:20:00");
+        var holidays = new List<DateOnly>();
+        for (var date = new DateOnly(2026, 12, 9); date <= new DateOnly(2026, 12, 15); date = date.AddDays(1))
+        {
+            if (Workdays.Contains(date.DayOfWeek))
+            {
+                Exception(school, date, CalendarExceptionType.Removed);
+                holidays.Add(date);
+            }
+        }
+        return (school, holidays);
+    }
+
+    private static string Note(TimetableFootnote footnote)
+    {
+        var texts = TimetableTexts.For(TimetableLanguage.Hr);
+        var dates = texts.Dates(footnote.Description, withYear: false);
+        return footnote.RunsOnly
+            ? texts.OnlyOn(footnote.Mark, dates, footnote.Description.Named.Count > 0)
+            : texts.NotOn(footnote.Mark, dates, footnote.Description.Named.Count > 0);
+    }
 
     private static IEnumerable<string> Times(TimetableColumn column) =>
         column.Times.Select(t => GtfsTime.Format(t.Seconds));

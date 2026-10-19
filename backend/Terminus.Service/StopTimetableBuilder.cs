@@ -26,13 +26,22 @@ internal static class StopTimetableBuilder
         DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday
     ];
 
+    /// <param name="names">
+    /// Dani s nazivom (razdoblja, praznici, napomene dana): napomena koja sadrži sve
+    /// dane jednog naziva piše naziv umjesto datuma.
+    /// </param>
     public static IReadOnlyList<TimetableSection> Build(
         IReadOnlyList<ScheduledDeparture> departures,
         IReadOnlyList<IServiceCalendarModel> calendars,
         IReadOnlyCollection<ICalendarDateModel> calendarDates,
         DateOnly from,
-        DateOnly to)
+        DateOnly to,
+        IReadOnlyList<NamedDay>? names = null)
     {
+        var named = (names ?? [])
+            .Where(n => n.Date >= from && n.Date <= to && !string.IsNullOrWhiteSpace(n.Name))
+            .ToLookup(n => n.Name.Trim(), n => n.Date);
+
         // Mnogo datuma dijeli isti skup kalendara, pa se polasci računaju po skupu.
         var exceptions = calendarDates.ToLookup(d => d.Date);
         var calendarSets = new Dictionary<string, IReadOnlySet<Guid>>(StringComparer.Ordinal);
@@ -48,7 +57,7 @@ internal static class StopTimetableBuilder
 
         return departures
             .GroupBy(d => (d.RouteId, d.Headsign, d.PlatformCode))
-            .Select(group => BuildSection(group.ToList(), calendarSets, dates))
+            .Select(group => BuildSection(group.ToList(), calendarSets, dates, named))
             .OfType<TimetableSection>()
             .OrderBy(s => (s.RouteShortName ?? s.RouteLongName ?? "").Length)
             .ThenBy(s => s.RouteShortName ?? s.RouteLongName, StringComparer.Ordinal)
@@ -60,7 +69,8 @@ internal static class StopTimetableBuilder
     private static TimetableSection? BuildSection(
         IReadOnlyList<ScheduledDeparture> departures,
         Dictionary<string, IReadOnlySet<Guid>> calendarSets,
-        IReadOnlyList<(DateOnly Date, string CalendarSet)> dates)
+        IReadOnlyList<(DateOnly Date, string CalendarSet)> dates,
+        ILookup<string, DateOnly> named)
     {
         // Isti skup polazaka dobiva isti broj, pa se dani uspoređuju brojem.
         var sets = new List<int[]>();
@@ -174,8 +184,17 @@ internal static class StopTimetableBuilder
             .Select(column => new TimetableColumn(
                 column.Weekdays,
                 column.Weekdays.Count == 0 ? column.Dates : [],
-                BuildTimes(column, daySets, marks)))
+                BuildTimes(column, daySets, marks, named)))
             .ToList();
+
+        // "Ne vozi": raspon prekida samo dan na koji linija vozi, a naziv vrijedi za
+        // dane na koje bi inače vozila.
+        var regular = weekdayColumns.SelectMany(c => c.Weekdays).ToHashSet();
+        var noServiceText = Describe(
+            noService,
+            breaks: d => daySets[d].Length > 0,
+            relevant: d => regular.Contains(d.DayOfWeek),
+            named);
 
         var first = departures[0];
         return new TimetableSection(
@@ -187,8 +206,83 @@ internal static class StopTimetableBuilder
             first.PlatformCode,
             built,
             marks.Values.ToList(),
-            runsAs.Select(kv => new TimetableRunsAs(columns.IndexOf(kv.Key), kv.Value)).OrderBy(r => r.ColumnIndex).ToList(),
-            noService);
+            runsAs
+                .Select(kv =>
+                {
+                    var list = kv.Value.ToHashSet();
+                    return new TimetableRunsAs(
+                        columns.IndexOf(kv.Key),
+                        kv.Value,
+                        Describe(kv.Value, breaks: d => !list.Contains(d) && daySets[d].Length > 0, relevant: _ => true, named));
+                })
+                .OrderBy(r => r.ColumnIndex)
+                .ToList(),
+            noService,
+            noServiceText);
+    }
+
+    /// <summary>
+    /// Datumi za ispis. Naziv (npr. "Ljetni raspust") ide umjesto datuma kad su svi
+    /// njegovi dani na koje se napomena odnosi (<paramref name="relevant"/>) u napomeni.
+    /// Ostali datumi postaju rasponi; raspon prekida samo dan za koji vrijedi
+    /// <paramref name="breaks"/> (dan koji napomeni proturječi), pa ga npr. vikend u
+    /// stupcu radnih dana ne prekida.
+    /// </summary>
+    internal static TimetableDates Describe(
+        IReadOnlyList<DateOnly> dates,
+        Func<DateOnly, bool> breaks,
+        Func<DateOnly, bool> relevant,
+        ILookup<string, DateOnly> named)
+    {
+        if (dates.Count == 0)
+        {
+            return TimetableDates.Empty;
+        }
+
+        var remaining = dates.ToHashSet();
+        var names = new List<(DateOnly First, NamedDates Named)>();
+        foreach (var group in named)
+        {
+            var own = group.Where(relevant).Distinct().Order().ToList();
+            if (own.Count > 0 && own.All(remaining.Contains))
+            {
+                names.Add((own[0], new NamedDates(group.Key, Ranges(own, breaks))));
+                remaining.ExceptWith(own);
+            }
+        }
+
+        return new TimetableDates(
+            names.OrderBy(n => n.First).Select(n => n.Named).ToList(),
+            Ranges(remaining.Order().ToList(), breaks));
+    }
+
+    /// <summary>Uzastopni datumi kao rasponi; dani između koji ne prekidaju se preskaču.</summary>
+    private static List<DateRange> Ranges(IReadOnlyList<DateOnly> dates, Func<DateOnly, bool> breaks)
+    {
+        var result = new List<DateRange>();
+        for (var i = 0; i < dates.Count;)
+        {
+            var end = i;
+            while (end + 1 < dates.Count && !AnyBetween(dates[end], dates[end + 1], breaks))
+            {
+                end++;
+            }
+            result.Add(new DateRange(dates[i], dates[end]));
+            i = end + 1;
+        }
+        return result;
+    }
+
+    private static bool AnyBetween(DateOnly from, DateOnly to, Func<DateOnly, bool> breaks)
+    {
+        for (var day = from.AddDays(1); day < to; day = day.AddDays(1))
+        {
+            if (breaks(day))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// <summary>
@@ -198,8 +292,12 @@ internal static class StopTimetableBuilder
     private static List<TimetableTime> BuildTimes(
         ColumnBuilder column,
         Dictionary<DateOnly, int[]> daySets,
-        Dictionary<(bool RunsOnly, string Dates), TimetableFootnote> marks)
+        Dictionary<(bool RunsOnly, string Dates), TimetableFootnote> marks,
+        ILookup<string, DateOnly> named)
     {
+        // Napomena se odnosi samo na dane stupca: raspon prekida dan stupca koji nije u njoj.
+        var columnDates = column.Dates.ToHashSet();
+
         var times = column.Dates.SelectMany(d => daySets[d]).Distinct().Order();
         var result = new List<TimetableTime>();
 
@@ -219,7 +317,12 @@ internal static class StopTimetableBuilder
 
             if (!marks.TryGetValue(key, out var footnote))
             {
-                footnote = new TimetableFootnote(Mark(marks.Count), runsOnly, noteDates);
+                var noteSet = noteDates.ToHashSet();
+                footnote = new TimetableFootnote(
+                    Mark(marks.Count),
+                    runsOnly,
+                    noteDates,
+                    Describe(noteDates, d => columnDates.Contains(d) && !noteSet.Contains(d), columnDates.Contains, named));
                 marks[key] = footnote;
             }
             result.Add(new TimetableTime(seconds, footnote.Mark));

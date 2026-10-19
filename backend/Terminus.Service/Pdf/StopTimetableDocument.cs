@@ -254,15 +254,15 @@ internal static class StopTimetableDocument
     {
         var notes = section.Footnotes
             .Select(f => f.RunsOnly
-                ? texts.OnlyOn(f.Mark, texts.Dates(f.Dates, withYear))
-                : texts.NotOn(f.Mark, texts.Dates(f.Dates, withYear)))
+                ? texts.OnlyOn(f.Mark, texts.Dates(f.Description, withYear), f.Description.Named.Count > 0)
+                : texts.NotOn(f.Mark, texts.Dates(f.Description, withYear), f.Description.Named.Count > 0))
             .ToList();
 
-        notes.AddRange(section.RunsAs.Select(r => texts.RunsAs(texts.Dates(r.Dates, withYear), labels[r.ColumnIndex])));
+        notes.AddRange(section.RunsAs.Select(r => texts.RunsAs(texts.Dates(r.Description, withYear), labels[r.ColumnIndex])));
 
-        if (section.NoServiceDates.Count > 0)
+        if (!section.NoService.IsEmpty)
         {
-            notes.Add(texts.NoService(texts.Dates(section.NoServiceDates, withYear)));
+            notes.Add(texts.NoService(texts.Dates(section.NoService, withYear), section.NoService.Named.Count > 0));
         }
 
         return notes;

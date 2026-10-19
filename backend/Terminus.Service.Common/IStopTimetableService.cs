@@ -60,6 +60,7 @@ public sealed record StopTimetable(
 /// <param name="Footnotes">Objašnjenja slova uz pojedine polaske.</param>
 /// <param name="RunsAs">Datumi na koje vozi kao neki drugi stupac (npr. praznik kao nedjelja).</param>
 /// <param name="NoServiceDates">Datumi na koje inače vozi, a tada ne.</param>
+/// <param name="NoService">Isti datumi za ispis: nazivi i rasponi.</param>
 public sealed record TimetableSection(
     string? RouteShortName,
     string? RouteLongName,
@@ -70,7 +71,8 @@ public sealed record TimetableSection(
     IReadOnlyList<TimetableColumn> Columns,
     IReadOnlyList<TimetableFootnote> Footnotes,
     IReadOnlyList<TimetableRunsAs> RunsAs,
-    IReadOnlyList<DateOnly> NoServiceDates);
+    IReadOnlyList<DateOnly> NoServiceDates,
+    TimetableDates NoService);
 
 /// <param name="Weekdays">Dani u tjednu stupca, od ponedjeljka; prazno za stupac posebnih datuma.</param>
 /// <param name="SpecialDates">Datumi stupca bez dana u tjednu; inače prazno.</param>
@@ -85,7 +87,30 @@ public sealed record TimetableColumn(
 public sealed record TimetableTime(int Seconds, string? Mark);
 
 /// <param name="RunsOnly">true: vozi samo na <paramref name="Dates"/>; false: ne vozi na njih.</param>
-public sealed record TimetableFootnote(string Mark, bool RunsOnly, IReadOnlyList<DateOnly> Dates);
+/// <param name="Description">Isti datumi za ispis: nazivi i rasponi.</param>
+public sealed record TimetableFootnote(string Mark, bool RunsOnly, IReadOnlyList<DateOnly> Dates, TimetableDates Description);
 
 /// <param name="ColumnIndex">Stupac istog odjeljka čiji vozni red tada vrijedi.</param>
-public sealed record TimetableRunsAs(int ColumnIndex, IReadOnlyList<DateOnly> Dates);
+/// <param name="Description">Isti datumi za ispis: nazivi i rasponi.</param>
+public sealed record TimetableRunsAs(int ColumnIndex, IReadOnlyList<DateOnly> Dates, TimetableDates Description);
+
+/// <summary>Uzastopni dani od <paramref name="From"/> do <paramref name="To"/>, uključivo.</summary>
+public sealed record DateRange(DateOnly From, DateOnly To);
+
+/// <summary>Dani s nazivom (razdoblje, praznik, napomena dana) i njihovi rasponi.</summary>
+public sealed record NamedDates(string Name, IReadOnlyList<DateRange> Ranges);
+
+/// <summary>
+/// Datumi napomene kako se ispisuju: najprije nazivi dana koji su cijeli u napomeni
+/// (npr. "Ljetni raspust"), zatim ostali datumi kao rasponi. Raspon preskače dane
+/// koji napomeni ne proturječe, npr. vikend u napomeni stupca radnih dana.
+/// </summary>
+public sealed record TimetableDates(IReadOnlyList<NamedDates> Named, IReadOnlyList<DateRange> Ranges)
+{
+    public static readonly TimetableDates Empty = new([], []);
+
+    public bool IsEmpty => Named.Count == 0 && Ranges.Count == 0;
+}
+
+/// <summary>Dan sezone s nazivom: dan razdoblja, praznik ili ručna iznimka s napomenom.</summary>
+public sealed record NamedDay(DateOnly Date, string Name);

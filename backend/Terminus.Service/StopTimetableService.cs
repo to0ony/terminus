@@ -14,7 +14,8 @@ public class StopTimetableService(
     IStopRepository stopRepository,
     IDepartureRepository departureRepository,
     ITimetableService timetableService,
-    ISettingsService settingsService) : IStopTimetableService
+    ISettingsService settingsService,
+    ISeasonRepository seasonRepository) : IStopTimetableService
 {
     /// <summary>Najdulje razdoblje jednog voznog reda.</summary>
     public const int MaxDays = 366;
@@ -62,7 +63,14 @@ public class StopTimetableService(
             : await departureRepository.GetScheduledAsync(
                 stopIds, calendars.Select(c => c.Id).ToList(), 0, GtfsTime.MaxSeconds, MaxDepartures, cancellationToken);
 
-        var sections = StopTimetableBuilder.Build(departures, calendars, calendarDates, start, end);
+        // Razdoblja, praznici i napomene dana: napomene ih pišu nazivom umjesto datumima.
+        var names = (await seasonRepository.ListAsync(cancellationToken))
+            .SelectMany(s => s.Days)
+            .Where(d => d.Note is not null && d.Date >= start && d.Date <= end)
+            .Select(d => new NamedDay(d.Date, d.Note!))
+            .ToList();
+
+        var sections = StopTimetableBuilder.Build(departures, calendars, calendarDates, start, end, names);
         if (sections.Count == 0)
         {
             throw new UnprocessableException("Vozni red se ne može izraditi.", ["Sa stanice u tom razdoblju nema polazaka."]);

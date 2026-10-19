@@ -21,10 +21,13 @@ internal abstract class TimetableTexts
     public abstract string Period(DateOnly from, DateOnly to);
     public abstract string Direction(string headsign);
     public abstract string Platform(string platform);
-    public abstract string NotOn(string mark, string dates);
-    public abstract string OnlyOn(string mark, string dates);
+    /// <param name="named">Datumi počinju nazivom (npr. razdoblja), pa ih uvodi dvotočka.</param>
+    public abstract string NotOn(string mark, string dates, bool named);
+    /// <param name="named">Datumi počinju nazivom (npr. razdoblja), pa ih uvodi dvotočka.</param>
+    public abstract string OnlyOn(string mark, string dates, bool named);
     public abstract string RunsAs(string dates, string column);
-    public abstract string NoService(string dates);
+    /// <param name="named">Datumi počinju nazivom (npr. razdoblja), pa ih uvodi dvotočka.</param>
+    public abstract string NoService(string dates, bool named);
 
     /// <summary>Puni i kratki nazivi dana, od ponedjeljka.</summary>
     protected abstract string[] Days { get; }
@@ -59,6 +62,37 @@ internal abstract class TimetableTexts
             _ => DayRanges(days)
         };
     }
+
+    /// <summary>
+    /// Nazivi s rasponom u zagradi, pa ostali rasponi: "Ljetni raspust (15. 6. – 4. 9.),
+    /// Božić (25. 12.) i 2. 1.".
+    /// </summary>
+    public string Dates(TimetableDates dates, bool withYear)
+    {
+        var parts = dates.Named
+            .Select(n => $"{n.Name} ({Join(n.Ranges.SelectMany(r => Range(r, withYear)).ToList())})")
+            .Concat(dates.Ranges.SelectMany(r => Range(r, withYear)))
+            .ToList();
+        return Join(parts);
+    }
+
+    /// <summary>Raspon; dva uzastopna dana kao dva datuma, jedan dan kao datum.</summary>
+    private IEnumerable<string> Range(DateRange range, bool withYear)
+    {
+        var days = range.To.DayNumber - range.From.DayNumber;
+        if (days == 0)
+        {
+            return [Date(range.From, withYear)];
+        }
+        return days == 1
+            ? [Date(range.From, withYear), Date(range.To, withYear)]
+            : [$"{Date(range.From, withYear)} – {Date(range.To, withYear)}"];
+    }
+
+    private string Join(IReadOnlyList<string> parts) =>
+        parts.Count <= 1
+            ? string.Concat(parts)
+            : $"{string.Join(", ", parts.Take(parts.Count - 1))} {And} {parts[^1]}";
 
     /// <summary>Datumi s nizovima uzastopnih dana kao rasponom: "24. 12. – 27. 12., 31. 12. i 1. 1.".</summary>
     public string Dates(IReadOnlyList<DateOnly> dates, bool withYear)
@@ -125,11 +159,11 @@ internal sealed class CroatianTexts : TimetableTexts
     public override string Direction(string headsign) => $"smjer {headsign}";
     public override string Platform(string platform) => $"peron {platform}";
     public override string Page => "Stranica";
-    public override string NotOn(string mark, string dates) => $"{mark} – ne vozi {dates}";
-    public override string OnlyOn(string mark, string dates) => $"{mark} – vozi samo {dates}";
+    public override string NotOn(string mark, string dates, bool named) => $"{mark} – ne vozi{(named ? ":" : "")} {dates}";
+    public override string OnlyOn(string mark, string dates, bool named) => $"{mark} – vozi samo{(named ? ":" : "")} {dates}";
     // Datum već završava točkom ("25. 12.").
     public override string RunsAs(string dates, string column) => $"{dates} vozi kao „{column}”.";
-    public override string NoService(string dates) => $"Ne vozi {dates}";
+    public override string NoService(string dates, bool named) => $"Ne vozi{(named ? ":" : "")} {dates}";
 
     protected override string[] Days => ["Ponedjeljak", "Utorak", "Srijeda", "Četvrtak", "Petak", "Subota", "Nedjelja"];
     protected override string[] ShortDays => ["Pon", "Uto", "Sri", "Čet", "Pet", "Sub", "Ned"];
@@ -161,10 +195,10 @@ internal sealed class EnglishTexts : TimetableTexts
     public override string Direction(string headsign) => $"to {headsign}";
     public override string Platform(string platform) => $"platform {platform}";
     public override string Page => "Page";
-    public override string NotOn(string mark, string dates) => $"{mark} – not on {dates}";
-    public override string OnlyOn(string mark, string dates) => $"{mark} – only on {dates}";
+    public override string NotOn(string mark, string dates, bool named) => $"{mark} – not on{(named ? ":" : "")} {dates}";
+    public override string OnlyOn(string mark, string dates, bool named) => $"{mark} – only on{(named ? ":" : "")} {dates}";
     public override string RunsAs(string dates, string column) => $"On {dates}: {column} timetable.";
-    public override string NoService(string dates) => $"No service on {dates}.";
+    public override string NoService(string dates, bool named) => $"No service on{(named ? ":" : "")} {dates}.";
 
     protected override string[] Days => ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     protected override string[] ShortDays => ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
