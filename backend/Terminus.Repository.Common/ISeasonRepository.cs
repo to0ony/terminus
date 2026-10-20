@@ -31,6 +31,7 @@ public interface ISeasonRepository
         IReadOnlyDictionary<Guid, Guid>? copyTrips = null,
         CancellationToken cancellationToken = default);
 
+    /// <param name="withTrips">Prvo briše i vožnje koje koriste tipove dana sezone.</param>
     /// <returns>false ako sezona ne postoji.</returns>
-    Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<bool> DeleteAsync(Guid id, bool withTrips = false, CancellationToken cancellationToken = default);
 }

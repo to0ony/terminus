@@ -58,8 +58,11 @@ public interface ISeasonService
     /// <param name="season">Naziv i razdoblje nove sezone.</param>
     Task<SeasonDetail> CopyAsync(Guid id, ITimetableSeasonModel season, bool withTrips, CancellationToken cancellationToken = default);
 
-    /// <summary>Briše sezonu s tipovima dana; ne smije ih koristiti nijedna vožnja.</summary>
-    Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Briše sezonu s tipovima dana; bez <paramref name="withTrips"/> ne smije ih
+    /// koristiti nijedna vožnja, a s njim se brišu i te vožnje.
+    /// </summary>
+    Task DeleteAsync(Guid id, bool withTrips = false, CancellationToken cancellationToken = default);
 
     /// <summary>Države s popisom praznika i prijedlog prema zoni prijevoznika.</summary>
     Task<HolidayCountries> GetHolidayCountriesAsync(CancellationToken cancellationToken = default);

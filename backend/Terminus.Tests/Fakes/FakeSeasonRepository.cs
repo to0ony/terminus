@@ -40,6 +40,6 @@ internal sealed class FakeSeasonRepository : ISeasonRepository
         return Task.CompletedTask;
     }
 
-    public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
+    public Task<bool> DeleteAsync(Guid id, bool withTrips = false, CancellationToken cancellationToken = default) =>
         Task.FromResult(Seasons.Remove(id));
 }

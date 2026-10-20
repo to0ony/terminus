@@ -383,16 +383,19 @@ public class SeasonService(
         return await SaveAsync(current with { Days = days }, cancellationToken);
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid id, bool withTrips = false, CancellationToken cancellationToken = default)
     {
         var current = await LoadAsync(id, cancellationToken);
-        var counts = await seasonRepository.CountTripsAsync(current.DayTypes.Select(d => d.Id).ToList(), cancellationToken);
-        if (counts.Count > 0)
+        if (!withTrips)
         {
-            throw new ConflictException($"Tipove dana sezone koristi {counts.Values.Sum()} vožnji, pa se sezona ne može obrisati.");
+            var counts = await seasonRepository.CountTripsAsync(current.DayTypes.Select(d => d.Id).ToList(), cancellationToken);
+            if (counts.Count > 0)
+            {
+                throw new ConflictException($"Tipove dana sezone koristi {counts.Values.Sum()} vožnji, pa se sezona ne može obrisati.");
+            }
         }
 
-        await seasonRepository.DeleteAsync(id, cancellationToken);
+        await seasonRepository.DeleteAsync(id, withTrips, cancellationToken);
     }
 
     public async Task<HolidayCountries> GetHolidayCountriesAsync(CancellationToken cancellationToken = default)

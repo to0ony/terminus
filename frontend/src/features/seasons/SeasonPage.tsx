@@ -60,24 +60,32 @@ export function SeasonPage() {
   const confirmDelete = () =>
     modals.openConfirmModal({
       title: 'Obriši sezonu',
-      children: (
-        <Text size="sm">
-          Sezona „{data.name}”, njezini tipovi dana i iznimke bit će obrisani. Vožnje ne smiju
-          koristiti njezine tipove dana.
-        </Text>
-      ),
-      labels: { confirm: 'Obriši', cancel: 'Odustani' },
+      children:
+        tripCount > 0 ? (
+          <Text size="sm">
+            Sezona „{data.name}”, njezini tipovi dana i iznimke bit će obrisani, zajedno s{' '}
+            <b>{formatNumber(tripCount)} vožnji</b> koje ih koriste. Ovo se ne može poništiti.
+          </Text>
+        ) : (
+          <Text size="sm">
+            Sezona „{data.name}”, njezini tipovi dana i iznimke bit će obrisani.
+          </Text>
+        ),
+      labels: { confirm: tripCount > 0 ? 'Obriši s vožnjama' : 'Obriši', cancel: 'Odustani' },
       confirmProps: { color: 'red' },
       onConfirm: () =>
-        remove.mutate(data.id, {
-          onSuccess: () => void navigate('/calendars'),
-          onError: (error) =>
-            notifications.show({
-              color: 'red',
-              title: 'Brisanje nije uspjelo',
-              message: errorMessage(error),
-            }),
-        }),
+        remove.mutate(
+          { id: data.id, withTrips: tripCount > 0 },
+          {
+            onSuccess: () => void navigate('/calendars'),
+            onError: (error) =>
+              notifications.show({
+                color: 'red',
+                title: 'Brisanje nije uspjelo',
+                message: errorMessage(error),
+              }),
+          },
+        ),
     })
 
   return (
@@ -108,8 +116,6 @@ export function SeasonPage() {
             color="red"
             leftSection={<IconTrash size={16} />}
             onClick={confirmDelete}
-            disabled={tripCount > 0}
-            title={tripCount > 0 ? 'Tipove dana koriste vožnje' : undefined}
           >
             Obriši
           </Button>

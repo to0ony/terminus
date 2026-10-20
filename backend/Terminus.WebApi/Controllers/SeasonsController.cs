@@ -82,14 +82,17 @@ public class SeasonsController(ISeasonService seasonService, IOutputCacheStore o
         return Ok(season.ToResponse());
     }
 
-    /// <summary>Briše sezonu i njezine tipove dana; 409 ako ih koriste vožnje.</summary>
+    /// <summary>
+    /// Briše sezonu i njezine tipove dana; uz withTrips i vožnje koje ih koriste,
+    /// inače 409 ako takvih vožnji ima.
+    /// </summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(Guid id, [FromQuery] bool withTrips, CancellationToken cancellationToken)
     {
-        await seasonService.DeleteAsync(id, cancellationToken);
+        await seasonService.DeleteAsync(id, withTrips, cancellationToken);
         await EvictAsync(cancellationToken);
         return NoContent();
     }

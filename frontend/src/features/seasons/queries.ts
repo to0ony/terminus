@@ -121,14 +121,22 @@ export function useResetSeasonDay(id: string) {
   )
 }
 
+/** Briše sezonu; uz withTrips i vožnje koje koriste njezine tipove dana. */
 export function useDeleteSeason() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (id: string) =>
-      unwrap(await api.DELETE('/api/seasons/{id}', { params: { path: { id } } })),
-    onSuccess: () => {
+    mutationFn: async ({ id, withTrips }: { id: string; withTrips: boolean }) =>
+      unwrap(
+        await api.DELETE('/api/seasons/{id}', {
+          params: { path: { id }, query: withTrips ? { withTrips } : undefined },
+        }),
+      ),
+    onSuccess: (_, { withTrips }) => {
       void queryClient.invalidateQueries({ queryKey: seasonKeys.all })
       void queryClient.invalidateQueries({ queryKey: calendarKeys.all })
+      if (withTrips) {
+        void queryClient.invalidateQueries({ queryKey: ['routes'] })
+      }
     },
     meta: { handlesErrors: true },
   })

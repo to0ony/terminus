@@ -2078,7 +2078,9 @@ export interface paths {
         post?: never;
         delete: {
             parameters: {
-                query?: never;
+                query?: {
+                    withTrips?: boolean;
+                };
                 header?: never;
                 path: {
                     id: string;

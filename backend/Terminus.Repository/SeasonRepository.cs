@@ -207,12 +207,22 @@ public class SeasonRepository(TerminusDbContext context) : ISeasonRepository
         }
     }
 
-    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(Guid id, bool withTrips = false, CancellationToken cancellationToken = default)
     {
         try
         {
+            await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+
+            // Stajanja vožnji brišu se kaskadno.
+            if (withTrips)
+            {
+                await context.Trips.Where(t => t.ServiceCalendar.SeasonId == id).ExecuteDeleteAsync(cancellationToken);
+            }
+
             // Tipovi dana, njihove iznimke i dani sezone brišu se kaskadno.
-            return await context.TimetableSeasons.Where(s => s.Id == id).ExecuteDeleteAsync(cancellationToken) > 0;
+            var deleted = await context.TimetableSeasons.Where(s => s.Id == id).ExecuteDeleteAsync(cancellationToken) > 0;
+            await transaction.CommitAsync(cancellationToken);
+            return deleted;
         }
         catch (Exception ex) when (ex.GetBaseException() is PostgresException
         {
