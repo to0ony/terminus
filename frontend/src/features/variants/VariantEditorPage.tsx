@@ -28,6 +28,7 @@ import {
   IconGripVertical,
   IconLock,
   IconRuler2,
+  IconSearch,
   IconX,
 } from '@tabler/icons-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -56,6 +57,7 @@ import { reverseStops } from './reverse'
 import { ShapeLayers } from './ShapeLayers'
 import { ShapePanel } from './ShapePanel'
 import { StopNumber } from './StopNumber'
+import { StopSearch } from './StopSearch'
 import { useVariantShape } from './useVariantShape'
 import { formatKm } from './variantMath'
 import { stopDistances } from './variantShape'
@@ -278,6 +280,13 @@ function VariantEditor({
   const [stops, setStops] = useState<EditorStop[]>(initial.stops)
   const [selected, setSelected] = useState<number | null>(null)
   const [newStopAt, setNewStopAt] = useState<{ latitude: number; longitude: number } | null>(null)
+  const [searching, setSearching] = useState(false)
+  const [focus, setFocus] = useState<{ latitude: number; longitude: number } | null>(null)
+  const focusOn = (stop: { latitude: number | null; longitude: number | null }) => {
+    if (stop.latitude !== null && stop.longitude !== null) {
+      setFocus({ latitude: stop.latitude, longitude: stop.longitude })
+    }
+  }
   // Povlačenje retka: ručka "naoruža" redak, a crta pokazuje mjesto ispred kojeg pada.
   const [armed, setArmed] = useState<number | null>(null)
   const [dragFrom, setDragFrom] = useState<number | null>(null)
@@ -350,6 +359,7 @@ function VariantEditor({
     added.travelTime = suggestFrom(stops.at(-1), added)
     setStops([...stops, added])
     setSelected(added.key)
+    focusOn(added)
   }
 
   // Nakon premještanja ili brisanja prva stanica ima 0, ostale zadržavaju vrijeme.
@@ -616,18 +626,36 @@ function VariantEditor({
                       {stops.length} stanica · {Math.round(duration({ stops }) / 60)} min
                     </Text>
                   </div>
-                  <Tooltip label="Vremena vožnje iz zračne udaljenosti i vrste prijevoza">
-                    <Button
-                      size="xs"
-                      variant="default"
-                      leftSection={<IconRuler2 size={14} />}
-                      onClick={suggestAll}
-                      disabled={stops.length < 2}
-                    >
-                      Predloži vremena
-                    </Button>
-                  </Tooltip>
+                  <Group gap="xs">
+                    {!locked && (
+                      <Tooltip label="Traži stanicu i dodaj je na kraj">
+                        <ActionIcon
+                          variant={searching ? 'light' : 'default'}
+                          size="input-xs"
+                          onClick={() => setSearching(!searching)}
+                          aria-label="Traži stanicu"
+                          aria-pressed={searching}
+                        >
+                          <IconSearch size={14} />
+                        </ActionIcon>
+                      </Tooltip>
+                    )}
+                    <Tooltip label="Vremena vožnje iz zračne udaljenosti i vrste prijevoza">
+                      <Button
+                        size="xs"
+                        variant="default"
+                        leftSection={<IconRuler2 size={14} />}
+                        onClick={suggestAll}
+                        disabled={stops.length < 2}
+                      >
+                        Predloži vremena
+                      </Button>
+                    </Tooltip>
+                  </Group>
                 </Group>
+                {searching && !locked && (
+                  <StopSearch onPick={append} onClose={() => setSearching(false)} />
+                )}
                 {locked && (
                   <Alert variant="light" color="yellow" icon={<IconLock size={16} />} p="xs">
                     <Text size="sm">
@@ -685,6 +713,11 @@ function VariantEditor({
                                 : undefined
                             }
                             onClick={() => setSelected(stop.key)}
+                            // Dvoklik na polja za vremena označava broj, a ne pomiče kartu.
+                            onDoubleClick={(event) =>
+                              !(event.target as HTMLElement).closest('input, button') &&
+                              focusOn(stop)
+                            }
                             // Redak se vuče samo za ručku, da polja za vremena rade normalno.
                             draggable={!locked && armed === stop.key}
                             onDragStart={(event) => {
@@ -841,6 +874,7 @@ function VariantEditor({
               extent={mapExtent}
               overlay={overlay}
               selectedId={stops.find((s) => s.key === selected)?.stopId ?? null}
+              focus={focus}
               onSelect={mode === 'stops' ? append : undefined}
               onMapClick={mode === 'stops' && !locked ? setNewStopAt : undefined}
               panel={
@@ -865,7 +899,7 @@ function VariantEditor({
           </Paper>
           <Text size="xs" c="dimmed" mt={6}>
             {mode === 'stops'
-              ? 'Klik na stanicu dodaje je na kraj varijante; klik na prazno mjesto karte dodaje novu stanicu.'
+              ? 'Klik na stanicu dodaje je na kraj varijante; klik na prazno mjesto karte dodaje novu stanicu; dvoklik na redak približava kartu stanici.'
               : 'Ljubičasto: po mreži, plavo: ručno, crveno: put nije nađen, crtkano: još nije izračunato.'}
           </Text>
         </Grid.Col>

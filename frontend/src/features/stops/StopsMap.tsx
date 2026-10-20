@@ -30,6 +30,8 @@ interface StopsMapProps extends BoxProps {
   searchable?: boolean
   /** Dodatni sloj i ploča gore desno (npr. prijedlozi iz OSM-a), kad je karta spremna. */
   panel?: (map: Map) => ReactNode
+  /** Točka na koju se karta približi; svaki novi objekt ponovno pomiče kartu. */
+  focus?: { latitude: number; longitude: number } | null
 }
 
 /**
@@ -44,6 +46,7 @@ export function StopsMap({
   onMapClick,
   searchable = false,
   panel,
+  focus = null,
   ...boxProps
 }: StopsMapProps) {
   const [map, setMap] = useState<Map | null>(null)
@@ -178,6 +181,16 @@ export function StopsMap({
   useEffect(() => {
     map?.getSource<GeoJSONSource>(overlaySource)?.setData(overlayFeatures(overlay))
   }, [map, overlay])
+
+  useEffect(() => {
+    if (map && focus) {
+      map.flyTo({
+        center: [focus.longitude, focus.latitude],
+        zoom: Math.max(map.getZoom(), 16),
+        duration: 600,
+      })
+    }
+  }, [map, focus])
 
   const placing = Boolean(onMapClick)
   useEffect(() => {
