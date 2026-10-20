@@ -12,7 +12,14 @@
 <p align="center">
   <a href="https://github.com/to0ony/terminus/actions/workflows/ci.yml"><img src="https://github.com/to0ony/terminus/actions/workflows/ci.yml/badge.svg?branch=master" alt="Build & Test"></a>
   <img src="https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white" alt=".NET 10">
+  <img src="https://img.shields.io/badge/EF_Core-10-512BD4?logo=dotnet&logoColor=white" alt="EF Core 10">
   <img src="https://img.shields.io/badge/PostgreSQL-13%2B-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL 13+">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React 19">
+  <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white" alt="TypeScript 5.9">
+  <img src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white" alt="Vite 8">
+  <img src="https://img.shields.io/badge/Mantine-9-339AF0?logo=mantine&logoColor=white" alt="Mantine 9">
+  <img src="https://img.shields.io/badge/TanStack_Query-5-FF4154?logo=reactquery&logoColor=white" alt="TanStack Query 5">
+  <img src="https://img.shields.io/badge/MapLibre_GL-6-396CB2?logo=maplibre&logoColor=white" alt="MapLibre GL 6">
   <img src="https://img.shields.io/badge/GTFS-Schedule-0B7A75" alt="GTFS Schedule">
 </p>
 
