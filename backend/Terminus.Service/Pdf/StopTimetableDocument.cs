@@ -118,8 +118,30 @@ internal static class StopTimetableDocument
                         box.Image(image.Content).FitHeight();
                     }
                 }
-                column.Item().Text(displayName).FontSize(10).SemiBold().FontColor(primary);
-                column.Item().Text(timetable.Stop.Name).FontSize(22).Bold();
+                else
+                {
+                    // Naziv prijevoznika samo kad nema loga.
+                    column.Item().Text(displayName).FontSize(10).SemiBold().FontColor(primary);
+                }
+                // Uz naziv stanice linije koje njome prolaze; prelaze u novi red kad ne stanu.
+                var routes = timetable.Sections
+                    .DistinctBy(s => (s.RouteShortName, s.RouteLongName))
+                    .ToList();
+                column.Item().Inlined(inlined =>
+                {
+                    inlined.Spacing(4);
+                    inlined.BaselineMiddle();
+                    inlined.Item().PaddingRight(6).Text(text =>
+                    {
+                        text.DefaultTextStyle(style => style.FontSize(22));
+                        text.Span($"{texts.Stop} ");
+                        text.Span(timetable.Stop.Name).Bold();
+                    });
+                    foreach (var route in routes)
+                    {
+                        inlined.Item().Element(c => RouteBadge(c, route));
+                    }
+                });
                 column.Item().PaddingTop(2).Text(texts.Period(timetable.From, timetable.To)).FontColor(Muted);
             });
 

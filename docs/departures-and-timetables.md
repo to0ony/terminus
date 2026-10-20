@@ -273,7 +273,8 @@ engleskom**:
 - **Razdoblje** bira administrator. Zadano je od danas do zadnjeg dana s
   voznim redom; za vozni red koji tek počinje vrijediti bira se kasniji
   početak. Najviše 366 dana.
-- **Zaglavlje**: naziv i logo instance, naziv stanice, razdoblje i QR kod.
+- **Zaglavlje**: logo instance (naziv samo kad nema loga), „Stanica” i naziv stanice
+  podebljano, razdoblje i QR kod.
 - **Odjeljci** po liniji i smjeru (natpis smjera vožnje), a kod kolodvora i po
   peronu. Poredani su po oznaci linije (2 prije 11).
 - **Stupci** su dani u tjednu s istim voznim redom. Ne uzimaju se iz naziva

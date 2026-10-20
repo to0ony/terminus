@@ -13,6 +13,7 @@ internal abstract class TimetableTexts
     };
 
     public abstract string FilePrefix { get; }
+    public abstract string Stop { get; }
     public abstract string Hour { get; }
     public abstract string LiveDepartures { get; }
     public abstract string ScheduledTimes { get; }
@@ -148,6 +149,7 @@ internal abstract class TimetableTexts
 internal sealed class CroatianTexts : TimetableTexts
 {
     public override string FilePrefix => "vozni-red";
+    public override string Stop => "Stanica";
     public override string Hour => "sat";
     public override string LiveDepartures => "Polasci uživo";
     public override string ScheduledTimes => "Vremena su prema voznom redu.";
@@ -184,6 +186,7 @@ internal sealed class EnglishTexts : TimetableTexts
     private static readonly CultureInfo Culture = CultureInfo.InvariantCulture;
 
     public override string FilePrefix => "timetable";
+    public override string Stop => "Stop";
     public override string Hour => "hour";
     public override string LiveDepartures => "Live departures";
     public override string ScheduledTimes => "Times are as scheduled.";
