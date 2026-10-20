@@ -14,9 +14,20 @@ internal static class StopTimetableDocument
     private const string Muted = "#5B6573";
     private const string HeaderBackground = "#EEF1F5";
 
-    // Polasci s napomenom: blaga crvena podloga, da se vide i bez traženja slova.
-    private const string MarkBackground = "#FDE4E4";
-    private const string MarkColor = "#C62828";
+    // Polasci s napomenom su zaokruženi; susjedni jedan ispod drugog dijele isti okvir.
+    private const string MarkBorder = "#37474F";
+    private const float MarkBorderWidth = 0.75f;
+    private const float MarkRadius = 5;
+
+    /// <summary>Širina jednog polaska u rešetki; stalna, da polasci stoje jedan ispod drugog.</summary>
+    private const float SlotWidth = 18;
+
+    /// <summary>Ikona upozorenja (Tabler alert-triangle) uz napomene koje se ne odnose na zaokružene polaske.</summary>
+    private const string WarningIcon =
+        """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#37474F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z"/><path d="M12 16h.01"/></svg>""";
+
+    private const float HourWidth = 26;
+    private const float CellPadding = 4;
 
     static StopTimetableDocument()
     {
@@ -38,13 +49,19 @@ internal static class StopTimetableDocument
         var texts = TimetableTexts.For(options.Language);
         var primary = $"#{primaryColor ?? DefaultPrimary}";
         var a3 = options.Paper == PaperSize.A3;
+        var pageSize = a3 ? PageSizes.A3 : PageSizes.A4;
+        var margin = (a3 ? 1.6f : 1.2f) * 72 / 2.54f;
+        var columnCount = a3 ? 3 : 2;
+        var columnSpacing = a3 ? 24f : 18f;
+        // Širina stupca stranice, da se zna koliko polazaka stane u redak rešetke.
+        var sectionWidth = (pageSize.Width - 2 * margin - columnSpacing * (columnCount - 1)) / columnCount;
         // Napomene bez godine, osim kad razdoblje prelazi u novu godinu.
         var withYear = timetable.From.Year != timetable.To.Year;
 
         return Document.Create(document => document.Page(page =>
         {
-            page.Size(a3 ? PageSizes.A3 : PageSizes.A4);
-            page.Margin(a3 ? 1.6f : 1.2f, Unit.Centimetre);
+            page.Size(pageSize);
+            page.Margin(margin);
             page.DefaultTextStyle(style => style.FontSize(8.5f).FontFamily("Lato").FontColor(Colors.Black));
 
             page.Content().Column(content =>
@@ -55,9 +72,9 @@ internal static class StopTimetableDocument
                 // Odjeljci teku po stupcima stranice, kao u novinama.
                 content.Item().MultiColumn(columns =>
                 {
-                    columns.Columns(a3 ? 3 : 2);
-                    columns.Spacing(a3 ? 24 : 18);
-                    columns.Content().Element(c => Sections(c, timetable, texts, withYear));
+                    columns.Columns(columnCount);
+                    columns.Spacing(columnSpacing);
+                    columns.Content().Element(c => Sections(c, timetable, texts, withYear, sectionWidth));
                 });
             });
 
@@ -117,7 +134,7 @@ internal static class StopTimetableDocument
         });
     }
 
-    private static void Sections(IContainer container, StopTimetable timetable, TimetableTexts texts, bool withYear)
+    private static void Sections(IContainer container, StopTimetable timetable, TimetableTexts texts, bool withYear, float width)
     {
         container.Column(column =>
         {
@@ -125,12 +142,12 @@ internal static class StopTimetableDocument
             foreach (var section in timetable.Sections)
             {
                 // Naslov odjeljka ne ostaje sam na dnu stranice.
-                column.Item().EnsureSpace(90).Element(c => Section(c, section, texts, withYear));
+                column.Item().EnsureSpace(90).Element(c => Section(c, section, texts, withYear, width));
             }
         });
     }
 
-    private static void Section(IContainer container, TimetableSection section, TimetableTexts texts, bool withYear)
+    private static void Section(IContainer container, TimetableSection section, TimetableTexts texts, bool withYear, float width)
     {
         var labels = section.Columns.Select(c => texts.Column(c, withYear)).ToList();
 
@@ -150,26 +167,37 @@ internal static class StopTimetableDocument
                 });
             });
 
-            column.Item().Element(c => Grid(c, section, labels, texts));
+            column.Item().Element(c => Grid(c, section, labels, texts, width));
 
             var notes = Notes(section, labels, texts, withYear);
             if (notes.Count > 0)
             {
                 column.Item().PaddingTop(4).Column(list =>
                 {
+                    list.Spacing(1);
                     foreach (var (mark, note) in notes)
                     {
-                        list.Item().Text(text =>
+                        list.Item().Row(row =>
                         {
-                            text.DefaultTextStyle(style => style.FontSize(7.5f).FontColor(Muted));
+                            row.Spacing(3);
                             if (mark is not null && note.StartsWith(mark, StringComparison.Ordinal))
                             {
-                                text.Span($" {mark} ").Bold().FontColor(MarkColor).BackgroundColor(MarkBackground);
-                                text.Span(note[mark.Length..]);
+                                // Slovo u krugu, kao uz polaske u rešetki.
+                                row.AutoItem()
+                                    .Border(MarkBorderWidth)
+                                    .BorderColor(MarkBorder)
+                                    .CornerRadius(MarkRadius)
+                                    .PaddingHorizontal(3)
+                                    .Text(mark)
+                                    .FontSize(7)
+                                    .Bold();
+                                row.RelativeItem().AlignMiddle().Text(note[mark.Length..].TrimStart()).FontSize(7.5f).FontColor(Muted);
                             }
                             else
                             {
-                                text.Span(note);
+                                // Napomena cijelog odjeljka nema polaske u krugu, pa je ističe ikona.
+                                row.ConstantItem(10).Height(10).Svg(WarningIcon).FitArea();
+                                row.RelativeItem().AlignMiddle().Text(note).FontSize(7.5f).FontColor(Muted);
                             }
                         });
                     }
@@ -197,8 +225,11 @@ internal static class StopTimetableDocument
             .FontColor(foreground);
     }
 
-    /// <summary>Rešetka sat | minute; svaki redak je jedan sat dana voznog reda.</summary>
-    private static void Grid(IContainer container, TimetableSection section, IReadOnlyList<string> labels, TimetableTexts texts)
+    /// <summary>
+    /// Rešetka sat | minute; svaki redak je jedan sat dana voznog reda. Polasci imaju
+    /// stalnu širinu, pa polasci s istim slovom jedan ispod drugog dijele jedan okvir.
+    /// </summary>
+    private static void Grid(IContainer container, TimetableSection section, IReadOnlyList<string> labels, TimetableTexts texts, float width)
     {
         var hours = section.Columns
             .SelectMany(c => c.Times)
@@ -207,16 +238,56 @@ internal static class StopTimetableDocument
             .Order()
             .ToList();
 
+        // Stupac s više polazaka u satu dobiva više mjesta, da se minute manje prelamaju.
+        var weights = section.Columns
+            .Select(c => (float)Math.Max(3, c.Times.CountBy(t => t.Seconds / 3600).Max(x => x.Value)))
+            .ToList();
+        var perLine = weights
+            .Select(w => Math.Max(1, (int)(((width - HourWidth) * w / weights.Sum() - 2 * CellPadding) / SlotWidth)))
+            .ToList();
+
+        // [stupac][redak]: polasci tog sata.
+        var grid = section.Columns
+            .Select(c => hours.Select(h => c.Times.Where(t => t.Seconds / 3600 == h).ToList()).ToList())
+            .ToList();
+
+        // Redaka teksta u ćeliji; okvir prelazi u idući sat samo iz najviše ćelije retka.
+        int Lines(int column, int row) => Math.Max(1, (grid[column][row].Count + perLine[column] - 1) / perLine[column]);
+        var rowLines = hours.Select((_, row) => section.Columns.Select((_, column) => Lines(column, row)).Max()).ToList();
+
+        // Polazak u zadnjem retku ćelije spaja se s polaskom s istim slovom na istom mjestu u idućem satu.
+        bool JoinsNext(int column, int row, int index)
+        {
+            var times = grid[column][row];
+            if (row + 1 >= hours.Count || times[index].Mark is not { } mark || Lines(column, row) != rowLines[row]
+                || index / perLine[column] != Lines(column, row) - 1)
+            {
+                return false;
+            }
+            var below = index % perLine[column];
+            var next = grid[column][row + 1];
+            return below < next.Count && next[below].Mark == mark;
+        }
+
+        bool JoinsPrevious(int column, int row, int index)
+        {
+            if (row == 0 || index >= perLine[column])
+            {
+                return false;
+            }
+            var above = grid[column][row - 1];
+            var last = (Lines(column, row - 1) - 1) * perLine[column] + index;
+            return last < above.Count && JoinsNext(column, row - 1, last);
+        }
+
         container.Table(table =>
         {
             table.ColumnsDefinition(columns =>
             {
-                columns.ConstantColumn(26);
-                // Stupac s više polazaka u satu dobiva više mjesta, da se minute manje prelamaju.
-                foreach (var timetableColumn in section.Columns)
+                columns.ConstantColumn(HourWidth);
+                foreach (var weight in weights)
                 {
-                    var busiest = timetableColumn.Times.CountBy(t => t.Seconds / 3600).Max(x => x.Value);
-                    columns.RelativeColumn(Math.Max(3, busiest));
+                    columns.RelativeColumn(weight);
                 }
             });
 
@@ -229,28 +300,18 @@ internal static class StopTimetableDocument
                 }
             });
 
-            foreach (var hour in hours)
+            for (var row = 0; row < hours.Count; row++)
             {
                 // Vožnje iza ponoći (24:10) ispisuju se kao 0 h, iza 23 h.
-                table.Cell().Element(HourDivider).Element(Cell).AlignRight().Text((hour % 24).ToString()).Bold();
-                foreach (var timetableColumn in section.Columns)
+                table.Cell().Element(HourDivider).Element(Cell).PaddingVertical(2).AlignRight().Text((hours[row] % 24).ToString()).Bold();
+                for (var column = 0; column < section.Columns.Count; column++)
                 {
-                    table.Cell().Element(Cell).Text(text =>
+                    var (c, r) = (column, row);
+                    table.Cell().Element(Cell).Inlined(inlined =>
                     {
-                        foreach (var time in timetableColumn.Times.Where(t => t.Seconds / 3600 == hour))
+                        for (var index = 0; index < grid[c][r].Count; index++)
                         {
-                            var minutes = (time.Seconds / 60 % 60).ToString("00");
-                            if (time.Mark is null)
-                            {
-                                text.Span(minutes);
-                            }
-                            else
-                            {
-                                // Slovo ostaje i na crno-bijelom ispisu, gdje se podloga ne vidi.
-                                text.Span($" {minutes}").BackgroundColor(MarkBackground);
-                                text.Span($"{time.Mark} ").Superscript().Bold().FontColor(MarkColor).BackgroundColor(MarkBackground);
-                            }
-                            text.Span("  ");
+                            Slot(inlined.Item(), grid[c][r][index], JoinsPrevious(c, r, index), JoinsNext(c, r, index));
                         }
                     });
                 }
@@ -262,7 +323,7 @@ internal static class StopTimetableDocument
             .BorderBottom(0.75f)
             .BorderColor(Line)
             .PaddingVertical(3)
-            .PaddingHorizontal(4)
+            .PaddingHorizontal(CellPadding)
             .DefaultTextStyle(style => style.SemiBold());
 
         // Crta odvaja sate od minuta.
@@ -270,11 +331,55 @@ internal static class StopTimetableDocument
             .BorderRight(0.75f)
             .BorderColor(Line);
 
+        // Bez okomitog razmaka: okvir spojenih polazaka mora doći do ruba ćelije.
         static IContainer Cell(IContainer cell) => cell
             .BorderBottom(0.5f)
             .BorderColor(Line)
-            .PaddingVertical(2)
-            .PaddingHorizontal(4);
+            .PaddingHorizontal(CellPadding);
+    }
+
+    /// <param name="joinsPrevious">Okvir se nastavlja iz sata iznad, pa nema gornji rub.</param>
+    /// <param name="joinsNext">Okvir se nastavlja u sat ispod, pa nema donji rub.</param>
+    private static void Slot(IContainer container, TimetableTime time, bool joinsPrevious, bool joinsNext)
+    {
+        var minutes = (time.Seconds / 60 % 60).ToString("00");
+        var slot = container.Width(SlotWidth);
+
+        if (time.Mark is null)
+        {
+            slot.PaddingVertical(2).PaddingLeft(2).Text(minutes);
+            return;
+        }
+
+        // Razmak iznad i ispod teksta je 2 pt, kao kod polaska bez okvira.
+        var box = slot
+            .PaddingTop(joinsPrevious ? 0 : 0.5f)
+            .PaddingBottom(joinsNext ? 0 : 0.5f)
+            .PaddingRight(1)
+            .BorderLeft(MarkBorderWidth)
+            .BorderRight(MarkBorderWidth)
+            .BorderTop(joinsPrevious ? 0 : MarkBorderWidth)
+            .BorderBottom(joinsNext ? 0 : MarkBorderWidth)
+            .BorderColor(MarkBorder);
+
+        if (!joinsPrevious)
+        {
+            box = box.CornerRadiusTopLeft(MarkRadius).CornerRadiusTopRight(MarkRadius);
+        }
+        if (!joinsNext)
+        {
+            box = box.CornerRadiusBottomLeft(MarkRadius).CornerRadiusBottomRight(MarkRadius);
+        }
+
+        box
+            .PaddingTop(joinsPrevious ? 2 : 1.5f)
+            .PaddingBottom(joinsNext ? 2 : 1.5f)
+            .PaddingLeft(1)
+            .Text(text =>
+            {
+                text.Span(minutes);
+                text.Span(time.Mark).Superscript();
+            });
     }
 
     /// <returns>Napomene i slovo polazaka na koje se odnose (null za napomene cijelog odjeljka).</returns>
