@@ -14,6 +14,10 @@ internal static class StopTimetableDocument
     private const string Muted = "#5B6573";
     private const string HeaderBackground = "#EEF1F5";
 
+    // Polasci s napomenom: blaga crvena podloga, da se vide i bez traženja slova.
+    private const string MarkBackground = "#FDE4E4";
+    private const string MarkColor = "#C62828";
+
     static StopTimetableDocument()
     {
         // Community licenca; uvjeti su u docs/departures-and-timetables.md. Font Lato
@@ -153,9 +157,21 @@ internal static class StopTimetableDocument
             {
                 column.Item().PaddingTop(4).Column(list =>
                 {
-                    foreach (var note in notes)
+                    foreach (var (mark, note) in notes)
                     {
-                        list.Item().Text(note).FontSize(7.5f).FontColor(Muted);
+                        list.Item().Text(text =>
+                        {
+                            text.DefaultTextStyle(style => style.FontSize(7.5f).FontColor(Muted));
+                            if (mark is not null && note.StartsWith(mark, StringComparison.Ordinal))
+                            {
+                                text.Span($" {mark} ").Bold().FontColor(MarkColor).BackgroundColor(MarkBackground);
+                                text.Span(note[mark.Length..]);
+                            }
+                            else
+                            {
+                                text.Span(note);
+                            }
+                        });
                     }
                 });
             }
@@ -206,7 +222,7 @@ internal static class StopTimetableDocument
 
             table.Header(header =>
             {
-                header.Cell().Element(HeaderCell).Text(texts.Hour);
+                header.Cell().Element(HourDivider).Element(HeaderCell).Text(texts.Hour);
                 foreach (var label in labels)
                 {
                     header.Cell().Element(HeaderCell).Text(label);
@@ -216,17 +232,23 @@ internal static class StopTimetableDocument
             foreach (var hour in hours)
             {
                 // Vožnje iza ponoći (24:10) ispisuju se kao 0 h, iza 23 h.
-                table.Cell().Element(Cell).AlignRight().Text((hour % 24).ToString()).Bold();
+                table.Cell().Element(HourDivider).Element(Cell).AlignRight().Text((hour % 24).ToString()).Bold();
                 foreach (var timetableColumn in section.Columns)
                 {
                     table.Cell().Element(Cell).Text(text =>
                     {
                         foreach (var time in timetableColumn.Times.Where(t => t.Seconds / 3600 == hour))
                         {
-                            text.Span((time.Seconds / 60 % 60).ToString("00"));
-                            if (time.Mark is not null)
+                            var minutes = (time.Seconds / 60 % 60).ToString("00");
+                            if (time.Mark is null)
                             {
-                                text.Span(time.Mark).Superscript();
+                                text.Span(minutes);
+                            }
+                            else
+                            {
+                                // Slovo ostaje i na crno-bijelom ispisu, gdje se podloga ne vidi.
+                                text.Span($" {minutes}").BackgroundColor(MarkBackground);
+                                text.Span($"{time.Mark} ").Superscript().Bold().FontColor(MarkColor).BackgroundColor(MarkBackground);
                             }
                             text.Span("  ");
                         }
@@ -243,6 +265,11 @@ internal static class StopTimetableDocument
             .PaddingHorizontal(4)
             .DefaultTextStyle(style => style.SemiBold());
 
+        // Crta odvaja sate od minuta.
+        static IContainer HourDivider(IContainer cell) => cell
+            .BorderRight(0.75f)
+            .BorderColor(Line);
+
         static IContainer Cell(IContainer cell) => cell
             .BorderBottom(0.5f)
             .BorderColor(Line)
@@ -250,19 +277,20 @@ internal static class StopTimetableDocument
             .PaddingHorizontal(4);
     }
 
-    private static List<string> Notes(TimetableSection section, IReadOnlyList<string> labels, TimetableTexts texts, bool withYear)
+    /// <returns>Napomene i slovo polazaka na koje se odnose (null za napomene cijelog odjeljka).</returns>
+    private static List<(string? Mark, string Text)> Notes(TimetableSection section, IReadOnlyList<string> labels, TimetableTexts texts, bool withYear)
     {
         var notes = section.Footnotes
-            .Select(f => f.RunsOnly
+            .Select(f => ((string?)f.Mark, f.RunsOnly
                 ? texts.OnlyOn(f.Mark, texts.Dates(f.Description, withYear), f.Description.Named.Count > 0)
-                : texts.NotOn(f.Mark, texts.Dates(f.Description, withYear), f.Description.Named.Count > 0))
+                : texts.NotOn(f.Mark, texts.Dates(f.Description, withYear), f.Description.Named.Count > 0)))
             .ToList();
 
-        notes.AddRange(section.RunsAs.Select(r => texts.RunsAs(texts.Dates(r.Description, withYear), labels[r.ColumnIndex])));
+        notes.AddRange(section.RunsAs.Select(r => ((string?)null, texts.RunsAs(texts.Dates(r.Description, withYear), labels[r.ColumnIndex]))));
 
         if (!section.NoService.IsEmpty)
         {
-            notes.Add(texts.NoService(texts.Dates(section.NoService, withYear), section.NoService.Named.Count > 0));
+            notes.Add((null, texts.NoService(texts.Dates(section.NoService, withYear), section.NoService.Named.Count > 0)));
         }
 
         return notes;
