@@ -9,6 +9,8 @@ export interface ReversibleStop {
   longitude: number | null
   travelTime: number
   dwellTime: number
+  /** Neaktivnu stanicu vožnje preskaču; bez vrijednosti je aktivna. */
+  isActive?: boolean
 }
 
 /** Stanica s karte koja može biti par s druge strane ceste. */
@@ -92,6 +94,7 @@ export function reverseStops(stops: ReversibleStop[], candidates: PairCandidate[
         // Dionica do k-te stanice povratnog smjera je dionica iza nje u polaznom.
         travelTime: k === 0 ? 0 : stops[n - k].travelTime,
         dwellTime: stop.dwellTime,
+        isActive: match ? true : stop.isActive,
         unpaired: match === null,
       }
     })

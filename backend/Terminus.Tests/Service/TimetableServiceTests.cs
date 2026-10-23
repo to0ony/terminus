@@ -114,6 +114,20 @@ public class TimetableServiceTests
     }
 
     [Fact]
+    public async Task GetRouteTimetableAsync_InactiveStop_IsSkippedAndOtherTimesStay()
+    {
+        _b.IsActive = false;
+        AddTrip(_workdays, TripDirection.Outbound, null, (_a, "15:30"), (_b, "15:32"), (_c, "15:35"));
+
+        var timetable = await Service.GetRouteTimetableAsync(
+            _route.Id, new RouteTimetableQuery(null, _workdays.Id, TripDirection.Outbound), Now, Ct);
+
+        Assert.Equal(["A", "C"], timetable.Stops.Select(s => s.Code));
+        Assert.Equal([15 * 3600 + 1800, (int?)15 * 3600 + 2100],
+            timetable.Trips[0].Times.Select(t => t?.DepartureTime));
+    }
+
+    [Fact]
     public async Task GetRouteTimetableAsync_FiltersDirection()
     {
         AddTrip(_workdays, TripDirection.Outbound, null, (_a, "07:00"), (_b, "07:10"));

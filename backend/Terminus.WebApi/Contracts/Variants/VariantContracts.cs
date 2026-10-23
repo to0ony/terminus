@@ -24,6 +24,7 @@ public record VariantResponse(
 
 /// <param name="TravelTime">Sekunde od polaska s prethodne stanice; 0 za prvu.</param>
 /// <param name="DwellTime">Sekunde stajanja.</param>
+/// <param name="IsActive">Neaktivnu stanicu vožnje preskaču (izvoz, polasci, vozni red).</param>
 public record VariantStopResponse(
     Guid StopId,
     string Code,
@@ -32,7 +33,8 @@ public record VariantStopResponse(
     double? Latitude,
     double? Longitude,
     int TravelTime,
-    int DwellTime);
+    int DwellTime,
+    bool IsActive);
 
 /// <summary>Tijelo zahtjeva za stvaranje (POST) i potpunu izmjenu (PUT) varijante.</summary>
 public class VariantRequest
@@ -89,7 +91,8 @@ public static class VariantMappings
                 stop?.Latitude,
                 stop?.Longitude,
                 s.TravelTime,
-                s.DwellTime);
+                s.DwellTime,
+                stop?.IsActive ?? true);
         }).ToList(),
         variant.CreatedAt,
         variant.UpdatedAt);

@@ -42,7 +42,8 @@ public record ScheduleVariantResponse(
 /// <param name="DwellTime">Sekunde stajanja.</param>
 public record ScheduleVariantStopResponse(Guid StopId, int TravelTime, int DwellTime);
 
-public record ScheduleStopResponse(Guid Id, string Code, string Name, string? PlatformCode);
+/// <param name="IsActive">Neaktivnu stanicu vožnje preskaču (izvoz, polasci, vozni red).</param>
+public record ScheduleStopResponse(Guid Id, string Code, string Name, string? PlatformCode, bool IsActive);
 
 /// <param name="UpdatedAt">Vraća se pri spremanju izmjena, za provjeru sukoba.</param>
 public record ScheduleTripResponse(
@@ -151,7 +152,7 @@ public static class ScheduleMappings
     public static ScheduleResponse ToResponse(this RouteSchedule schedule) => new(
         schedule.Route.Id,
         schedule.DirectionId,
-        schedule.Stops.Select(s => new ScheduleStopResponse(s.Id, s.Code, s.Name, s.PlatformCode)).ToList(),
+        schedule.Stops.Select(s => new ScheduleStopResponse(s.Id, s.Code, s.Name, s.PlatformCode, s.IsActive)).ToList(),
         schedule.Variants.Select(v => new ScheduleVariantResponse(
             v.Id,
             v.Name,

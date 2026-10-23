@@ -82,8 +82,10 @@ public class DepartureRepository(TerminusDbContext context) : IDepartureReposito
                 && st.PickupType != noPickup
                 && serviceCalendarIds.Contains(st.Trip.ServiceCalendarId)
                 && st.Trip.Route.IsActive
+                // Vožnje preskaču neaktivne stanice.
+                && st.Stop.IsActive
                 // Na zadnjoj stanici vožnja samo stiže.
-                && st.Trip.StopTimes.Any(next => next.StopSequence > st.StopSequence))
+                && st.Trip.StopTimes.Any(next => next.StopSequence > st.StopSequence && next.Stop.IsActive))
             .OrderBy(st => st.DepartureTime)
             .ThenBy(st => st.TripId)
             .Take(limit)
@@ -98,6 +100,7 @@ public class DepartureRepository(TerminusDbContext context) : IDepartureReposito
                 st.StopHeadsign
                     ?? st.Trip.Headsign
                     ?? st.Trip.StopTimes
+                        .Where(last => last.Stop.IsActive)
                         .OrderByDescending(last => last.StopSequence)
                         .Select(last => last.Stop.Name)
                         .First(),

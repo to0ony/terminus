@@ -18,3 +18,8 @@ public sealed record TimetableCounts(int Agencies, int Stops, int Routes, int Tr
 
 /// <summary>Pravokutno područje karte (WGS84), rubovi uključeni.</summary>
 public sealed record GeoBounds(double MinLatitude, double MinLongitude, double MaxLatitude, double MaxLongitude);
+
+/// <summary>Varijanta ili vožnja koja prolazi stanicom, sa svim svojim stanicama redom.</summary>
+/// <param name="Name">Naziv varijante ili kod vožnje.</param>
+/// <param name="RouteName">Kratki ili dugi naziv linije.</param>
+public sealed record StopSequenceUse(bool IsVariant, string Name, string? RouteName, IReadOnlyList<Guid> StopIds);

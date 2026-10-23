@@ -83,13 +83,18 @@ public class TimetableService(
             calendarIds = ServiceCalendarRules.ActiveOn(calendars, calendarDates, date.Value);
         }
 
-        var trips = calendarIds.Count == 0
+        var routeTrips = calendarIds.Count == 0
             ? []
-            : (await timetableRepository.GetRouteTripsAsync(routeId, query.DirectionId, calendarIds, cancellationToken))
-                .Where(t => t.StopTimes.Count > 0)
-                .OrderBy(t => t.StopTimes[0].DepartureTime)
-                .ThenBy(t => t.Trip.Code, StringComparer.Ordinal)
-                .ToList();
+            : await timetableRepository.GetRouteTripsAsync(routeId, query.DirectionId, calendarIds, cancellationToken);
+        var stops = await GetStopsAsync(routeTrips.SelectMany(t => t.StopTimes).Select(st => st.StopId), cancellationToken);
+
+        // Vožnje preskaču neaktivne stanice; ostale stanice zadržavaju svoja vremena.
+        var trips = routeTrips
+            .Select(t => t with { StopTimes = t.StopTimes.Where(st => stops.GetValueOrDefault(st.StopId)?.IsActive != false).ToList() })
+            .Where(t => t.StopTimes.Count > 0)
+            .OrderBy(t => t.StopTimes[0].DepartureTime)
+            .ThenBy(t => t.Trip.Code, StringComparer.Ordinal)
+            .ToList();
 
         var sequences = trips
             .Select(t => (IReadOnlyList<Guid>)t.StopTimes.Select(st => st.StopId).ToList())
@@ -97,7 +102,6 @@ public class TimetableService(
             .ToList();
 
         var rows = StopSequenceMerger.Merge(sequences);
-        var stops = await GetStopsAsync(rows, cancellationToken);
 
         var timetableTrips = trips
             .Select(t =>

@@ -96,5 +96,11 @@ internal static class StopTimeRules
                 }
             }
         }
+
+        var skipped = SkippedStops.Check(stopTimes.Select(st => !stops.TryGetValue(st.StopId, out var stop) || stop.IsActive).ToList());
+        if (SkippedStops.Message(skipped, "Vožnja") is { } message)
+        {
+            errors.Add(path, message);
+        }
     }
 }

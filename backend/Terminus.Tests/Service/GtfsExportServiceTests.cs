@@ -84,6 +84,24 @@ public class GtfsExportServiceTests
     }
 
     [Fact]
+    public async Task ExportAsync_InactiveStop_IsSkippedAndOtherTimesStay()
+    {
+        var agency = Agency("Prijevoznik");
+        _repository.Agencies.Add(agency);
+        var (_, trip, _) = AddRouteWithTrip(agency, "L1");
+        var closed = new StopModel { Id = Guid.NewGuid(), Code = "L1-X", Name = "Zatvorena", Latitude = 45.4, Longitude = 18.5, IsActive = false };
+        _repository.Stops.Add(closed);
+        _repository.StopTimes.Insert(1, new StopTimeModel { TripId = trip.Id, StopSequence = 2, StopId = closed.Id, ArrivalTime = 24000, DepartureTime = 24000 });
+        _repository.StopTimes.Single(st => st.TripId == trip.Id && st.StopSequence == 2 && st.StopId != closed.Id).StopSequence = 3;
+
+        var feed = await ExportAsync();
+
+        Assert.Equal(["L1-A", "L1-B"], feed.Column("stop_times.txt", "stop_id"));
+        Assert.Equal(["06:15:00", "07:05:00"], feed.Column("stop_times.txt", "departure_time"));
+        Assert.DoesNotContain("L1-X", feed.Column("stops.txt", "stop_id"));
+    }
+
+    [Fact]
     public async Task ExportAsync_ExtendedRouteType_IsWrittenAsNumber()
     {
         var agency = Agency("Prijevoznik");

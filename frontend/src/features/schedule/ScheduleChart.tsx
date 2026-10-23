@@ -248,9 +248,20 @@ export function ScheduleChart(props: ScheduleChartProps) {
       ctx.moveTo(g.plotLeft, ry)
       ctx.lineTo(g.plotLeft + g.plotWidth, ry)
       ctx.stroke()
-      ctx.fillStyle = colors.text
       const label = stop.platformCode ? `${stop.name} · ${stop.platformCode}` : stop.name
-      ctx.fillText(truncate(ctx, label, labelWidth - 14), g.plotLeft - 8, ry)
+      if (stop.isActive) {
+        ctx.fillStyle = colors.text
+        ctx.fillText(truncate(ctx, label, labelWidth - 14), g.plotLeft - 8, ry)
+        return
+      }
+      // Neaktivnu stanicu vožnje preskaču: blijedi naziv s crvenom točkom.
+      const text = truncate(ctx, label, labelWidth - 28)
+      ctx.fillStyle = colors.dimmed
+      ctx.fillText(text, g.plotLeft - 8, ry)
+      ctx.fillStyle = colors.invalid
+      ctx.beginPath()
+      ctx.arc(g.plotLeft - 16 - ctx.measureText(text).width, ry, 3.5, 0, Math.PI * 2)
+      ctx.fill()
     })
 
     ctx.save()

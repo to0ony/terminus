@@ -13,8 +13,13 @@ interface StopSearchProps {
 export function StopSearch({ onPick, onClose }: StopSearchProps) {
   const [value, setValue] = useState('')
   const [search] = useDebouncedValue(value.trim(), 250)
-  // Varijanta obilazi stajališta i perone, ne kolodvore.
-  const stops = useStops({ LocationType: 0, Search: search || undefined, PageSize: 20 })
+  // Varijanta obilazi stajališta i perone, ne kolodvore; neaktivne vožnje ionako preskaču.
+  const stops = useStops({
+    LocationType: 0,
+    IsActive: true,
+    Search: search || undefined,
+    PageSize: 20,
+  })
   const items = search ? (stops.data?.items ?? []) : []
 
   return (

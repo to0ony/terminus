@@ -110,7 +110,8 @@ function StopForm({
       parentStationId: locationType === '1' ? null : parentId,
       platformCode: platformCode.trim() || null,
       wheelchairBoarding: Number(wheelchair),
-      isActive,
+      // Kolodvor se ne deaktivira, samo njegovi peroni.
+      isActive: locationType === '1' ? true : isActive,
     }
     save.mutate(
       { body: base, autoCode },
@@ -213,12 +214,13 @@ function StopForm({
         onChange={(event) => setCode(event.currentTarget.value)}
         error={fieldError('code')}
       />
-      {stop && (
+      {stop && locationType !== '1' && (
         <Switch
           label="Aktivna"
-          description="Oznaka za tebe: neaktivna stanica je siva na karti, a podaci ostaju."
+          description="Neaktivnu stanicu vožnje preskaču (izvoz, polasci, vozni red), a ostale stanice zadržavaju svoja vremena. Kad je ponovno aktiviraš, sve je kao prije."
           checked={isActive}
           onChange={(event) => setIsActive(event.currentTarget.checked)}
+          error={error?.fieldErrors.isActive?.join(' ')}
         />
       )}
 

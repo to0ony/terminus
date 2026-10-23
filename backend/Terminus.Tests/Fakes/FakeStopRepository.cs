@@ -13,6 +13,9 @@ internal sealed class FakeStopRepository(IEnumerable<IStopModel> stops) : IStopR
     /// <summary>Stanice na kojima staju vožnje.</summary>
     public HashSet<Guid> UsedByTrips { get; } = [];
 
+    /// <summary>Varijante i vožnje sa svojim stanicama.</summary>
+    public List<StopSequenceUse> Sequences { get; } = [];
+
     public Task<IStopModel?> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(_stops.FirstOrDefault(s => s.Id == id));
 
@@ -42,6 +45,9 @@ internal sealed class FakeStopRepository(IEnumerable<IStopModel> stops) : IStopR
 
     public Task<bool> IsUsedByTripsAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(UsedByTrips.Contains(id));
+
+    public Task<IReadOnlyList<StopSequenceUse>> GetSequencesThroughAsync(Guid id, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<StopSequenceUse>>(Sequences.Where(s => s.StopIds.Contains(id)).ToList());
 
     public Task<IStopModel> InsertAsync(IStopModel stop, CancellationToken cancellationToken = default)
     {

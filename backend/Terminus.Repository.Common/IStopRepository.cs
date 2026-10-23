@@ -29,6 +29,9 @@ public interface IStopRepository
     /// <returns>true ako na stanici staje barem jedna vožnja.</returns>
     Task<bool> IsUsedByTripsAsync(Guid id, CancellationToken cancellationToken = default);
 
+    /// <returns>Varijante pa vožnje koje prolaze stanicom.</returns>
+    Task<IReadOnlyList<StopSequenceUse>> GetSequencesThroughAsync(Guid id, CancellationToken cancellationToken = default);
+
     Task<IStopModel> InsertAsync(IStopModel stop, CancellationToken cancellationToken = default);
 
     /// <returns>Ažurirana stanica ili null ako ne postoji.</returns>

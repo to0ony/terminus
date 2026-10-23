@@ -205,6 +205,12 @@ public class RouteVariantService(
                     errors.Add($"{prefix}.DwellTime", "Stajanje mora biti između 0 i 60 minuta.");
                 }
             }
+
+            var skipped = SkippedStops.Check(variant.Stops.Select(s => !stops.TryGetValue(s.StopId, out var model) || model.IsActive).ToList());
+            if (SkippedStops.Message(skipped, "Varijanta") is { } message)
+            {
+                errors.Add("Stops", message);
+            }
         }
 
         errors.ThrowIfAny();

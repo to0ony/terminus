@@ -145,6 +145,40 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
     public Task<bool> IsUsedByTripsAsync(Guid id, CancellationToken cancellationToken = default) =>
         context.StopTimes.AnyAsync(st => st.StopId == id, cancellationToken);
 
+    public async Task<IReadOnlyList<StopSequenceUse>> GetSequencesThroughAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var variants = await VariantsThroughQuery(context, id).ToListAsync(cancellationToken);
+        var trips = await TripsThroughQuery(context, id).ToListAsync(cancellationToken);
+
+        return [.. variants, .. trips];
+    }
+
+    /// <summary>Izdvojeno da test može provjeriti prevodi li EF upit u SQL.</summary>
+    internal static IQueryable<StopSequenceUse> VariantsThroughQuery(TerminusDbContext context, Guid id) =>
+        context.RouteVariants
+            .AsNoTracking()
+            .Where(v => v.Stops.Any(s => s.StopId == id))
+            .OrderBy(v => v.Route.SortOrder)
+            .ThenBy(v => v.Route.ShortName)
+            .ThenBy(v => v.SortOrder)
+            .Select(v => new StopSequenceUse(
+                true,
+                v.Name,
+                v.Route.ShortName ?? v.Route.LongName,
+                v.Stops.OrderBy(s => s.Sequence).Select(s => s.StopId).ToList()));
+
+    /// <summary>Izdvojeno da test može provjeriti prevodi li EF upit u SQL.</summary>
+    internal static IQueryable<StopSequenceUse> TripsThroughQuery(TerminusDbContext context, Guid id) =>
+        context.Trips
+            .AsNoTracking()
+            .Where(t => t.StopTimes.Any(st => st.StopId == id))
+            .OrderBy(t => t.Code)
+            .Select(t => new StopSequenceUse(
+                false,
+                t.Code,
+                t.Route.ShortName ?? t.Route.LongName,
+                t.StopTimes.OrderBy(st => st.StopSequence).Select(st => st.StopId).ToList()));
+
     public async Task<IStopModel> InsertAsync(IStopModel stop, CancellationToken cancellationToken = default)
     {
         var entity = new Stop();

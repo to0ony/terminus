@@ -58,6 +58,40 @@ public class RouteVariantServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_InactiveStopInMiddle_IsAllowed()
+    {
+        _stops[1].IsActive = false;
+
+        var created = await _service.CreateAsync(_route.Id, Variant("Glavna", 0, 1, 2, 3), TestContext.Current.CancellationToken);
+
+        Assert.Equal(4, created.Variant.Stops.Count);
+    }
+
+    [Theory]
+    [InlineData(0, "počinjati")]
+    [InlineData(3, "završavati")]
+    public async Task CreateAsync_InactiveFirstOrLastStop_IsRejected(int inactive, string expected)
+    {
+        _stops[inactive].IsActive = false;
+
+        var error = await Assert.ThrowsAsync<ValidationException>(() =>
+            _service.CreateAsync(_route.Id, Variant("Glavna", 0, 1, 2, 3), TestContext.Current.CancellationToken));
+
+        Assert.Contains(expected, Assert.Single(error.Errors["Stops"]));
+    }
+
+    [Fact]
+    public async Task CreateAsync_InactiveStopLeavingTwo_IsRejected()
+    {
+        _stops[1].IsActive = false;
+
+        var error = await Assert.ThrowsAsync<ValidationException>(() =>
+            _service.CreateAsync(_route.Id, Variant("Glavna", 0, 1, 2), TestContext.Current.CancellationToken));
+
+        Assert.Contains("Stops", error.Errors.Keys);
+    }
+
+    [Fact]
     public async Task UpdateAsync_ChangingStopsOfVariantWithTrips_IsConflict()
     {
         var created = await _service.CreateAsync(_route.Id, Variant("Glavna", 0, 1, 3), TestContext.Current.CancellationToken);

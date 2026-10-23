@@ -74,6 +74,8 @@ interface EditorStop {
   /** Sekunde od prethodne stanice; prva stanica 0. */
   travelTime: number
   dwellTime: number
+  /** Neaktivnu stanicu vožnje preskaču; bez vrijednosti je aktivna. */
+  isActive?: boolean
   /** Povratni smjer: stanica nema para s druge strane, pa je ostala ista. */
   unpaired?: boolean
 }
@@ -98,6 +100,7 @@ function fromVariant(variant: Template): EditorStop[] {
     longitude: s.longitude,
     travelTime: s.travelTime,
     dwellTime: s.dwellTime,
+    isActive: s.isActive,
     unpaired: s.unpaired,
   }))
 }
@@ -355,6 +358,7 @@ function VariantEditor({
       longitude: stop.longitude,
       travelTime: 0,
       dwellTime: 0,
+      isActive: stop.isActive,
     }
     added.travelTime = suggestFrom(stops.at(-1), added)
     setStops([...stops, added])
@@ -782,6 +786,13 @@ function VariantEditor({
                                   <Badge size="xs" variant="light" color="yellow" ml={6}>
                                     provjeri
                                   </Badge>
+                                )}
+                                {stop.isActive === false && (
+                                  <Tooltip label="Stanica je neaktivna: vožnje je preskaču, a ostale stanice zadržavaju svoja vremena.">
+                                    <Badge size="xs" variant="light" color="gray" ml={6}>
+                                      preskače se
+                                    </Badge>
+                                  </Tooltip>
                                 )}
                               </Text>
                             </Table.Td>

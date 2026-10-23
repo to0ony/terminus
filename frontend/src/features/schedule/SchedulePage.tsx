@@ -729,6 +729,15 @@ function ScheduleEditor({
         </Alert>
       )}
 
+      {stops.some((s) => !s.isActive) && (
+        <Alert color="red" variant="light" p="xs">
+          <Text size="sm">
+            Stanice označene crvenom točkom su neaktivne: vožnje ih preskaču (izvoz, polasci, vozni
+            red), a ostale stanice zadržavaju svoja vremena.
+          </Text>
+        </Alert>
+      )}
+
       {stops.length === 0 ? (
         <Alert color="yellow" variant="light">
           Linija u ovom smjeru nema ni varijanti ni vožnji, pa nema redoslijeda stanica. Dodaj

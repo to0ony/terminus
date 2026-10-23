@@ -172,7 +172,59 @@ public class StopService(IStopRepository repository) : IStopService
             }
         }
 
+        if (!stop.IsActive)
+        {
+            if (stop.LocationType == LocationType.Station)
+            {
+                errors.Add(nameof(stop.IsActive), "Kolodvor se ne može deaktivirati; deaktiviraj pojedine perone.");
+            }
+            else if (existing is { IsActive: true })
+            {
+                await ValidateDeactivationAsync(stop.Id, errors, cancellationToken);
+            }
+        }
+
         errors.ThrowIfAny();
+    }
+
+    /// <summary>
+    /// Varijante i vožnje preskaču neaktivnu stanicu, pa ona ne smije biti prva ni
+    /// zadnja, a bez nje (i ostalih neaktivnih) mora ostati dovoljno stanica.
+    /// </summary>
+    private async Task ValidateDeactivationAsync(Guid stopId, ValidationErrors errors, CancellationToken cancellationToken)
+    {
+        var sequences = await repository.GetSequencesThroughAsync(stopId, cancellationToken);
+        if (sequences.Count == 0)
+        {
+            return;
+        }
+
+        var inactive = (await repository.GetManyAsync(sequences.SelectMany(s => s.StopIds).ToHashSet(), cancellationToken))
+            .Where(s => !s.IsActive)
+            .Select(s => s.Id)
+            .ToHashSet();
+        inactive.Add(stopId);
+
+        var blocked = sequences
+            .Select(s => (Use: s, Problem: SkippedStops.Check(s.StopIds.Select(id => !inactive.Contains(id)).ToList())))
+            .Where(x => x.Problem != SkippedStops.Problem.None)
+            .GroupBy(x => (x.Use.IsVariant, x.Problem));
+
+        foreach (var group in blocked)
+        {
+            var (isVariant, problem) = group.Key;
+            var names = SkippedStops.List(group
+                .Select(x => x.Use.RouteName is { } route ? $"{x.Use.Name} (linija {route})" : x.Use.Name)
+                .ToList());
+            var where = isVariant ? $"varijantama {names}" : $"vožnjama {names}";
+
+            errors.Add(nameof(IStopModel.IsActive), problem switch
+            {
+                SkippedStops.Problem.FirstInactive => $"Stanica se ne može deaktivirati jer je prva u {where}.",
+                SkippedStops.Problem.LastInactive => $"Stanica se ne može deaktivirati jer je zadnja u {where}.",
+                _ => $"Stanica se ne može deaktivirati jer bi u {where} ostalo manje od {SkippedStops.MinActiveStops} aktivne stanice."
+            });
+        }
     }
 
     private static void ValidateCoordinates(IStopModel stop, ValidationErrors errors)

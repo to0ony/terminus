@@ -183,6 +183,101 @@ public class StopServiceTests
         Assert.Equal(StopService.MaxAreaStops, result.Stops.Count);
     }
 
+    [Fact]
+    public async Task UpdateAsync_DeactivateStation_IsRejected()
+    {
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            () => _service.UpdateAsync(_station.Id, Inactive(_station), TestContext.Current.CancellationToken));
+
+        Assert.Contains(nameof(StopModel.IsActive), ex.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DeactivateMiddleStop_IsAllowed()
+    {
+        var stops = await AddStopsAsync(4);
+        _repository.Sequences.Add(new StopSequenceUse(true, "Glavna", "1", stops.Select(s => s.Id).ToList()));
+
+        var updated = await _service.UpdateAsync(stops[1].Id, Inactive(stops[1]), TestContext.Current.CancellationToken);
+
+        Assert.False(updated.IsActive);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DeactivateFirstStopOfVariant_IsRejected()
+    {
+        var stops = await AddStopsAsync(4);
+        _repository.Sequences.Add(new StopSequenceUse(true, "Glavna", "1", stops.Select(s => s.Id).ToList()));
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            () => _service.UpdateAsync(stops[0].Id, Inactive(stops[0]), TestContext.Current.CancellationToken));
+
+        var message = Assert.Single(ex.Errors[nameof(StopModel.IsActive)]);
+        Assert.Contains("prva", message);
+        Assert.Contains("Glavna (linija 1)", message);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DeactivateLastStopOfTrip_IsRejected()
+    {
+        var stops = await AddStopsAsync(4);
+        _repository.Sequences.Add(new StopSequenceUse(false, "T-0715", "1", stops.Select(s => s.Id).ToList()));
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            () => _service.UpdateAsync(stops[3].Id, Inactive(stops[3]), TestContext.Current.CancellationToken));
+
+        var message = Assert.Single(ex.Errors[nameof(StopModel.IsActive)]);
+        Assert.Contains("zadnja", message);
+        Assert.Contains("T-0715", message);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DeactivateLeavingTwoStops_IsRejected()
+    {
+        var stops = await AddStopsAsync(3);
+        _repository.Sequences.Add(new StopSequenceUse(true, "Kratka", "1", stops.Select(s => s.Id).ToList()));
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            () => _service.UpdateAsync(stops[1].Id, Inactive(stops[1]), TestContext.Current.CancellationToken));
+
+        Assert.Contains(nameof(StopModel.IsActive), ex.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DeactivateCountsAlreadyInactiveStops()
+    {
+        var stops = await AddStopsAsync(4);
+        stops[1].IsActive = false;
+        _repository.Sequences.Add(new StopSequenceUse(true, "Glavna", "1", stops.Select(s => s.Id).ToList()));
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            () => _service.UpdateAsync(stops[2].Id, Inactive(stops[2]), TestContext.Current.CancellationToken));
+
+        Assert.Contains(nameof(StopModel.IsActive), ex.Errors.Keys);
+    }
+
+    private async Task<List<IStopModel>> AddStopsAsync(int count)
+    {
+        var stops = new List<IStopModel>();
+        for (var i = 0; i < count; i++)
+        {
+            stops.Add(await _repository.InsertAsync(Stop(LocationType.StopOrPlatform, parent: null), TestContext.Current.CancellationToken));
+        }
+        return stops;
+    }
+
+    private static StopModel Inactive(IStopModel stop) => new()
+    {
+        Code = stop.Code,
+        Name = stop.Name,
+        Latitude = stop.Latitude,
+        Longitude = stop.Longitude,
+        LocationType = stop.LocationType,
+        ParentStationId = stop.ParentStationId,
+        PlatformCode = stop.PlatformCode,
+        IsActive = false
+    };
+
     private static StopModel Stop(LocationType type, Guid? parent) => new()
     {
         Code = $"S-{Guid.NewGuid():N}",

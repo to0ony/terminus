@@ -4684,6 +4684,7 @@ export interface components {
             code: string;
             name: string;
             platformCode: null | string;
+            isActive: boolean;
         };
         ScheduleStopTimeRequest: {
             /** Format: uuid */
@@ -5261,6 +5262,7 @@ export interface components {
             travelTime: number;
             /** Format: int32 */
             dwellTime: number;
+            isActive: boolean;
         };
         WheelchairAccessible: number;
         WheelchairBoarding: number;

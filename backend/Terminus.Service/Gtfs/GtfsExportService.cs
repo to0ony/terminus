@@ -61,8 +61,10 @@ public class GtfsExportService(IGtfsExportRepository repository, TimeProvider ti
         var trips = source.Trips.Where(t => routeIds.Contains(t.RouteId)).ToList();
         var tripIds = trips.Select(t => t.Id).ToHashSet();
 
+        // Vožnje preskaču neaktivne stanice; ostale stanice zadržavaju svoja vremena.
+        var inactiveStopIds = source.Stops.Where(s => !s.IsActive).Select(s => s.Id).ToHashSet();
         var stopTimesByTrip = source.StopTimes
-            .Where(st => tripIds.Contains(st.TripId))
+            .Where(st => tripIds.Contains(st.TripId) && !inactiveStopIds.Contains(st.StopId))
             .GroupBy(st => st.TripId)
             .ToDictionary(g => g.Key, g => (IReadOnlyList<IStopTimeModel>)g.ToList());
 
@@ -168,16 +170,6 @@ public class GtfsExportService(IGtfsExportRepository repository, TimeProvider ti
                 problems.Add(stopTimes.Count == 0
                     ? $"Vožnja '{trip.Code}' nema postavljene stanice i vremena."
                     : $"Vožnja '{trip.Code}' ima samo {stopTimes.Count} stanicu; potrebne su barem {MinStopTimesPerTrip}.");
-            }
-
-            var inactiveStops = stopTimes
-                .Select(st => feed.AllStops[st.StopId])
-                .Where(s => !s.IsActive)
-                .DistinctBy(s => s.Id);
-
-            foreach (var stop in inactiveStops)
-            {
-                problems.Add($"Vožnja '{trip.Code}' koristi neaktivnu stanicu '{stop.Name}' ({stop.Code}).");
             }
         }
 
