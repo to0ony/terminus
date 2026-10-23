@@ -205,6 +205,7 @@ export function VariantEditorPage() {
       routeId={routeId}
       routeType={route.data.routeType}
       routeCode={route.data.code}
+      approximate={route.data.timeMode === 'Approximate'}
       routeBadge={<RouteBadge route={route.data} />}
       // Kopija i povratni smjer postaju nova varijanta; izmjena zadržava Id.
       variant={isNew ? null : (source.data ?? null)}
@@ -229,6 +230,11 @@ interface VariantEditorProps {
   routeId: string
   routeType: number
   routeCode: string
+  /**
+   * Linija zadaje samo polaske: vremena vožnje služe za raspored međustanica i
+   * kao zadano trajanje novih vožnji, a stajanje se ne prikazuje.
+   */
+  approximate: boolean
   routeBadge: React.ReactNode
   variant: Variant | null
   template: Template | null
@@ -252,6 +258,7 @@ function VariantEditor({
   routeId,
   routeType,
   routeCode,
+  approximate,
   routeBadge,
   variant,
   template,
@@ -627,7 +634,8 @@ function VariantEditor({
                   <div>
                     <Title order={4}>Stanice</Title>
                     <Text size="sm" c="dimmed">
-                      {stops.length} stanica · {Math.round(duration({ stops }) / 60)} min
+                      {stops.length} stanica · {approximate ? 'zadano trajanje ' : ''}
+                      {Math.round(duration({ stops }) / 60)} min
                     </Text>
                   </div>
                   <Group gap="xs">
@@ -677,6 +685,14 @@ function VariantEditor({
                     </Text>
                   </Alert>
                 )}
+                {approximate && (
+                  <Alert variant="light" color="blue" p="xs">
+                    <Text size="sm">
+                      Linija zadaje samo polaske: vremena vožnje ovdje služe za raspored međustanica
+                      i kao zadano trajanje novih vožnji.
+                    </Text>
+                  </Alert>
+                )}
                 {mirrorFrom && (
                   <Alert variant="light" color="blue" p="xs">
                     <Text size="sm">
@@ -703,7 +719,7 @@ function VariantEditor({
                             </Tooltip>
                           </Table.Th>
                           <Table.Th w={84}>Vožnja (min)</Table.Th>
-                          <Table.Th w={84}>Stajanje (s)</Table.Th>
+                          {!approximate && <Table.Th w={84}>Stajanje (s)</Table.Th>}
                           {!locked && <Table.Th w={84} />}
                         </Table.Tr>
                       </Table.Thead>
@@ -825,16 +841,18 @@ function VariantEditor({
                                 />
                               )}
                             </Table.Td>
-                            <Table.Td>
-                              <NumberInput
-                                size="xs"
-                                min={0}
-                                step={15}
-                                aria-label={`Stajanje na ${stop.name}`}
-                                value={stop.dwellTime}
-                                onChange={(value) => patch(i, { dwellTime: Number(value || 0) })}
-                              />
-                            </Table.Td>
+                            {!approximate && (
+                              <Table.Td>
+                                <NumberInput
+                                  size="xs"
+                                  min={0}
+                                  step={15}
+                                  aria-label={`Stajanje na ${stop.name}`}
+                                  value={stop.dwellTime}
+                                  onChange={(value) => patch(i, { dwellTime: Number(value || 0) })}
+                                />
+                              </Table.Td>
+                            )}
                             {!locked && (
                               <Table.Td>
                                 <Group gap={0} wrap="nowrap">
@@ -932,9 +950,9 @@ function VariantEditor({
         <Stack gap="md">
           <Text size="sm">
             Vremena vožnje su promijenjena, a varijantu koristi {variant?.tripCount ?? 0} vožnji.
-            Nova vremena mogu se presnimiti u sve te vožnje, u svim tipovima dana: polazak s prve
-            stanice ostaje isti, a sva ostala vremena postaju kao u varijanti, i ona ručno dotjerana
-            u grafikonu.
+            {approximate
+              ? 'Nova vremena mogu se presnimiti u sve te vožnje, u svim tipovima dana: polazak i dolazak na terminus svake vožnje ostaju isti, a vremena međustanica rasporedit će se po novim vremenima vožnje.'
+              : 'Nova vremena mogu se presnimiti u sve te vožnje, u svim tipovima dana: polazak s prve stanice ostaje isti, a sva ostala vremena postaju kao u varijanti, i ona ručno dotjerana u grafikonu.'}
           </Text>
           <Group justify="flex-end" gap="xs">
             <Button variant="default" onClick={() => setAskRetime(false)}>
