@@ -1,8 +1,10 @@
 import {
+  ActionIcon,
   Anchor,
   Badge,
   Button,
   Group,
+  Menu,
   Paper,
   SegmentedControl,
   Stack,
@@ -11,7 +13,14 @@ import {
 } from '@mantine/core'
 import { DatePickerInput } from '@mantine/dates'
 import { useDisclosure } from '@mantine/hooks'
-import { IconArrowLeft, IconCalendar, IconChartLine, IconPencil } from '@tabler/icons-react'
+import {
+  IconArrowLeft,
+  IconCalendar,
+  IconChartLine,
+  IconDots,
+  IconPencil,
+  IconTrash,
+} from '@tabler/icons-react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
@@ -20,7 +29,9 @@ import { formatNumber } from '@/lib/format'
 import { directionOptions } from './directions'
 import { type TimetableParams, useRoute, useRoutePatterns, useRouteTimetable } from './queries'
 import { RouteBadge } from './RouteBadge'
+import { useRouteVariants } from '@/features/variants/queries'
 import { VariantsSection } from '@/features/variants/VariantsSection'
+import { DeleteRouteDialog } from './DeleteRouteDialog'
 import { RouteDialog } from './RouteDialog'
 import { routeTypeLabel } from './routeTypes'
 import { TimetableGrid } from './TimetableGrid'
@@ -33,7 +44,9 @@ export function RouteDetailPage() {
   const route = useRoute(routeId)
   const patterns = useRoutePatterns(routeId)
   const agencies = useAgencies()
+  const variants = useRouteVariants(routeId)
   const [editOpened, edit] = useDisclosure(false)
+  const [deleteOpened, deleteDialog] = useDisclosure(false)
 
   const directions = directionOptions(patterns.data ?? [])
   const direction =
@@ -110,9 +123,34 @@ export function RouteDetailPage() {
           >
             Grafikon i vožnje
           </Button>
+          <Menu position="bottom-end" withinPortal>
+            <Menu.Target>
+              <ActionIcon variant="default" size={36} aria-label="Ostale radnje">
+                <IconDots size={16} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
+                color="red"
+                leftSection={<IconTrash size={14} />}
+                // Broj varijanti i vožnji mora biti poznat prije potvrde.
+                disabled={!variants.isSuccess || !patterns.isSuccess}
+                onClick={deleteDialog.open}
+              >
+                Obriši liniju…
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </Group>
       </Group>
       <RouteDialog route={route.data} opened={editOpened} onClose={edit.close} />
+      <DeleteRouteDialog
+        route={route.data}
+        opened={deleteOpened}
+        onClose={deleteDialog.close}
+        variantCount={variants.data?.length ?? 0}
+        tripCount={(patterns.data ?? []).reduce((sum, p) => sum + p.tripCount, 0)}
+      />
 
       <VariantsSection routeId={routeId} hasTrips={(patterns.data?.length ?? 0) > 0} />
 

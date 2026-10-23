@@ -80,3 +80,18 @@ export function useSaveRoute(id?: string) {
     meta: { handlesErrors: true },
   })
 }
+
+/** Briše liniju sa svim varijantama, vožnjama i pravilima cijena (kaskadno u bazi). */
+export function useDeleteRoute() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) =>
+      unwrap(await api.DELETE('/api/routes/{id}', { params: { path: { id } } })),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: routeKeys.all })
+      // Linije stanica i polasci više ne uključuju obrisanu liniju.
+      void queryClient.invalidateQueries({ queryKey: ['stops'] })
+    },
+    meta: { handlesErrors: true },
+  })
+}
