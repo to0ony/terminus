@@ -200,6 +200,10 @@
   color: var(--board-dimmed);
 }
 
+.footer p {
+  margin: 0;
+}
+
 .stale {
   color: var(--board-warning);
 }

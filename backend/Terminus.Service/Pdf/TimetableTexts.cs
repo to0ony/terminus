@@ -16,7 +16,7 @@ internal abstract class TimetableTexts
     public abstract string Stop { get; }
     public abstract string Hour { get; }
     public abstract string LiveDepartures { get; }
-    public abstract string ScheduledTimes { get; }
+    public abstract string Disclaimer { get; }
     public abstract string Page { get; }
 
     public abstract string Period(DateOnly from, DateOnly to);
@@ -152,7 +152,7 @@ internal sealed class CroatianTexts : TimetableTexts
     public override string Stop => "Stanica";
     public override string Hour => "sat";
     public override string LiveDepartures => "Polasci uživo";
-    public override string ScheduledTimes => "Vremena su prema voznom redu.";
+    public override string Disclaimer => "Vremena su informativnog karaktera; moguća su manja odstupanja.";
 
     public override string Period(DateOnly from, DateOnly to) => from == to
         ? $"Vrijedi {Date(from, true)}"
@@ -189,7 +189,7 @@ internal sealed class EnglishTexts : TimetableTexts
     public override string Stop => "Stop";
     public override string Hour => "hour";
     public override string LiveDepartures => "Live departures";
-    public override string ScheduledTimes => "Times are as scheduled.";
+    public override string Disclaimer => "Times are for information only; minor deviations are possible.";
 
     public override string Period(DateOnly from, DateOnly to) => from == to
         ? $"Valid on {Date(from, true)}"

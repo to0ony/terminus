@@ -122,11 +122,10 @@ export function BoardPage() {
         </ol>
       )}
 
-      {staleSince && (
-        <footer className={`${classes.footer} ${classes.stale}`}>
-          Polasci nisu osvježeni od {staleSince}.
-        </footer>
-      )}
+      <footer className={classes.footer}>
+        {staleSince && <p className={classes.stale}>Polasci nisu osvježeni od {staleSince}.</p>}
+        <p>Vremena su informativnog karaktera; moguća su manja odstupanja.</p>
+      </footer>
     </main>
   )
 }

@@ -80,7 +80,7 @@ internal static class StopTimetableDocument
 
             page.Footer().PaddingTop(6).Row(row =>
             {
-                row.RelativeItem().Text($"{displayName} · {texts.ScheduledTimes}").FontSize(7).FontColor(Muted);
+                row.RelativeItem().Text($"{displayName} · {texts.Disclaimer}").FontSize(7).FontColor(Muted);
                 row.AutoItem().Text(text =>
                 {
                     text.DefaultTextStyle(style => style.FontSize(7).FontColor(Muted));
