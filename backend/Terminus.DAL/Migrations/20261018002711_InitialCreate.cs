@@ -284,6 +284,7 @@ namespace Terminus.DAL.Migrations
                     continuous_pickup = table.Column<short>(type: "smallint", nullable: true),
                     continuous_drop_off = table.Column<short>(type: "smallint", nullable: true),
                     network_id = table.Column<string>(type: "text", nullable: true),
+                    time_mode = table.Column<short>(type: "smallint", nullable: false, defaultValue: (short)0),
                     is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
@@ -296,6 +297,7 @@ namespace Terminus.DAL.Migrations
                     table.CheckConstraint("ck_routes_continuous_pickup", "continuous_pickup IS NULL OR continuous_pickup IN (0, 1, 2, 3)");
                     table.CheckConstraint("ck_routes_name", "short_name IS NOT NULL OR long_name IS NOT NULL");
                     table.CheckConstraint("ck_routes_text_color", "text_color IS NULL OR text_color ~ '^[0-9A-Fa-f]{6}$'");
+                    table.CheckConstraint("ck_routes_time_mode", "time_mode IN (0, 1)");
                     table.ForeignKey(
                         name: "fk_routes_agencies_agency_id",
                         column: x => x.agency_id,
@@ -448,7 +450,27 @@ namespace Terminus.DAL.Migrations
                 {
                     table.PrimaryKey("pk_season_days", x => new { x.season_id, x.date });
                     table.CheckConstraint("ck_season_days_mode", "mode IN (0, 1, 2)");
-                    table.CheckConstraint("ck_season_days_source", "source IN (0, 1)");
+                    table.CheckConstraint("ck_season_days_source", "source IN (0, 1, 2)");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "season_periods",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+                    season_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    name = table.Column<string>(type: "text", nullable: false),
+                    start_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    end_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    replaced_calendar_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    mode = table.Column<short>(type: "smallint", nullable: false),
+                    calendar_id = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_season_periods", x => x.id);
+                    table.CheckConstraint("ck_season_periods_dates", "end_date >= start_date");
+                    table.CheckConstraint("ck_season_periods_mode", "mode IN (1, 2)");
                 });
 
             migrationBuilder.CreateTable(
@@ -518,6 +540,7 @@ namespace Terminus.DAL.Migrations
                     block_id = table.Column<string>(type: "text", nullable: true),
                     shape_id = table.Column<Guid>(type: "uuid", nullable: true),
                     variant_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    departure_id = table.Column<Guid>(type: "uuid", nullable: true),
                     wheelchair_accessible = table.Column<short>(type: "smallint", nullable: false, defaultValue: (short)0),
                     bikes_allowed = table.Column<short>(type: "smallint", nullable: false, defaultValue: (short)0),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
@@ -682,6 +705,21 @@ namespace Terminus.DAL.Migrations
                 column: "calendar_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_season_periods_calendar_id",
+                table: "season_periods",
+                column: "calendar_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_season_periods_replaced_calendar_id",
+                table: "season_periods",
+                column: "replaced_calendar_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_season_periods_season_id",
+                table: "season_periods",
+                column: "season_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_service_calendars_season_id",
                 table: "service_calendars",
                 column: "season_id");
@@ -718,6 +756,11 @@ namespace Terminus.DAL.Migrations
                 name: "ix_timetable_seasons_holiday_calendar_id",
                 table: "timetable_seasons",
                 column: "holiday_calendar_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_trips_departure_id",
+                table: "trips",
+                column: "departure_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_trips_route_id",
@@ -770,6 +813,30 @@ namespace Terminus.DAL.Migrations
                 onDelete: ReferentialAction.Cascade);
 
             migrationBuilder.AddForeignKey(
+                name: "fk_season_periods_service_calendars_calendar_id",
+                table: "season_periods",
+                column: "calendar_id",
+                principalTable: "service_calendars",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "fk_season_periods_service_calendars_replaced_calendar_id",
+                table: "season_periods",
+                column: "replaced_calendar_id",
+                principalTable: "service_calendars",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "fk_season_periods_timetable_seasons_season_id",
+                table: "season_periods",
+                column: "season_id",
+                principalTable: "timetable_seasons",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
                 name: "fk_service_calendars_timetable_seasons_season_id",
                 table: "service_calendars",
                 column: "season_id",
@@ -811,6 +878,9 @@ namespace Terminus.DAL.Migrations
 
             migrationBuilder.DropTable(
                 name: "season_days");
+
+            migrationBuilder.DropTable(
+                name: "season_periods");
 
             migrationBuilder.DropTable(
                 name: "settings");
