@@ -110,6 +110,7 @@ internal sealed partial class GtfsFeedReader
         {
             ReadTrips();
             ReadStopTimesAndFrequencies();
+            InferTimeModes();
         }
         ReadFares();
 
@@ -552,6 +553,27 @@ internal sealed partial class GtfsFeedReader
             => "GTFS-Flex (prijevoz na poziv) nije podržan.",
         _ => "Datoteka nije dio GTFS-a koji Terminus podržava."
     };
+
+    /// <summary>
+    /// Linija čije su međustanice uglavnom okvirne (timepoint = 0, ili ih je uvoz
+    /// interpolirao) zadaje samo polazak i dolazak na terminus.
+    /// </summary>
+    private void InferTimeModes()
+    {
+        var routeByTrip = _trips.ToDictionary(t => t.Id, t => t.RouteId);
+        var intermediate = _stopTimes
+            .GroupBy(st => st.TripId)
+            .SelectMany(g => g.OrderBy(st => st.StopSequence).Skip(1).SkipLast(1))
+            .GroupBy(st => routeByTrip[st.TripId])
+            .ToDictionary(g => g.Key, g => (Approximate: g.Count(st => !st.Timepoint), Total: g.Count()));
+
+        foreach (var route in _routesByCode.Values)
+        {
+            route.TimeMode = intermediate.TryGetValue(route.Id, out var counts) && counts.Approximate * 2 > counts.Total
+                ? TimeMode.Approximate
+                : TimeMode.Exact;
+        }
+    }
 
     private GtfsImportCounts Counts() => new(
         Agencies: _agencies.Count,

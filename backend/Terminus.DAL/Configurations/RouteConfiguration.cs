@@ -15,6 +15,7 @@ public class RouteConfiguration : IEntityTypeConfiguration<Route>
             t.HasCheckConstraint("ck_routes_text_color", "text_color IS NULL OR text_color ~ '^[0-9A-Fa-f]{6}$'");
             t.HasCheckConstraint("ck_routes_continuous_pickup", "continuous_pickup IS NULL OR continuous_pickup IN (0, 1, 2, 3)");
             t.HasCheckConstraint("ck_routes_continuous_drop_off", "continuous_drop_off IS NULL OR continuous_drop_off IN (0, 1, 2, 3)");
+            t.HasCheckConstraint("ck_routes_time_mode", "time_mode IN (0, 1)");
         });
 
         builder.HasKey(e => e.Id);
@@ -24,6 +25,7 @@ public class RouteConfiguration : IEntityTypeConfiguration<Route>
         builder.Property(e => e.RouteType).HasDefaultValue((short)3).ValueGeneratedNever();
         builder.Property(e => e.Color).HasColumnType("char(6)");
         builder.Property(e => e.TextColor).HasColumnType("char(6)");
+        builder.Property(e => e.TimeMode).HasDefaultValue((short)0).ValueGeneratedNever();
         builder.Property(e => e.IsActive).HasDefaultValue(true).ValueGeneratedNever();
 
         builder.ConfigureAuditColumns();

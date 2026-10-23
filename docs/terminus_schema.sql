@@ -100,6 +100,9 @@ CREATE INDEX        ix_stops_parent_station_id ON stops (parent_station_id);
 --   continuous_pickup, continuous_drop_off: 0 = bilo gdje na trasi,
 --               1 = samo na stanicama, 2 = nazvati, 3 = dogovor s vozačem;
 --               NULL = nije zadano (u GTFS-u isto kao 1)
+--   time_mode:  0 = točna vremena na svim stanicama,
+--               1 = okvirno: zadaju se polazak i dolazak na terminus, a
+--               međustanice imaju stop_times.timepoint = false
 -- ---------------------------------------------------------------------
 CREATE TABLE routes (
     id                  uuid        NOT NULL DEFAULT gen_random_uuid(),
@@ -116,6 +119,7 @@ CREATE TABLE routes (
     continuous_pickup   smallint,
     continuous_drop_off smallint,
     network_id          text,                          -- GTFS network_id
+    time_mode           smallint    NOT NULL DEFAULT 0,
     is_active           boolean     NOT NULL DEFAULT true,
     created_at          timestamptz NOT NULL DEFAULT now(),
     updated_at          timestamptz NOT NULL DEFAULT now(),
@@ -127,7 +131,8 @@ CREATE TABLE routes (
     CONSTRAINT ck_routes_color               CHECK (color      IS NULL OR color      ~ '^[0-9A-Fa-f]{6}$'),
     CONSTRAINT ck_routes_text_color          CHECK (text_color IS NULL OR text_color ~ '^[0-9A-Fa-f]{6}$'),
     CONSTRAINT ck_routes_continuous_pickup   CHECK (continuous_pickup   IS NULL OR continuous_pickup   IN (0, 1, 2, 3)),
-    CONSTRAINT ck_routes_continuous_drop_off CHECK (continuous_drop_off IS NULL OR continuous_drop_off IN (0, 1, 2, 3))
+    CONSTRAINT ck_routes_continuous_drop_off CHECK (continuous_drop_off IS NULL OR continuous_drop_off IN (0, 1, 2, 3)),
+    CONSTRAINT ck_routes_time_mode           CHECK (time_mode IN (0, 1))
 );
 
 CREATE UNIQUE INDEX uq_routes_code      ON routes (code);

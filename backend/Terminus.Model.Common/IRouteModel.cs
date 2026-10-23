@@ -40,6 +40,9 @@ public interface IRouteModel
     /// <summary>Mreža kojoj linija pripada (GTFS network_id).</summary>
     string? NetworkId { get; set; }
 
+    /// <summary>Točna ili okvirna vremena na međustanicama.</summary>
+    TimeMode TimeMode { get; set; }
+
     bool IsActive { get; set; }
     DateTime CreatedAt { get; set; }
     DateTime UpdatedAt { get; set; }

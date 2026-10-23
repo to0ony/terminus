@@ -174,6 +174,8 @@ public class ScheduleService(
                     stopTimes[j].TripId = trip.Id;
                     stopTimes[j].StopSequence = j + 1;
                     stopTimes[j].StopHeadsign = string.IsNullOrWhiteSpace(stopTimes[j].StopHeadsign) ? null : stopTimes[j].StopHeadsign!.Trim();
+                    // Okvirna linija: točni su samo polazak i dolazak na terminus (GTFS timepoint).
+                    stopTimes[j].Timepoint = route.TimeMode == TimeMode.Exact || j == 0 || j == stopTimes.Count - 1;
                 }
                 StopTimeRules.Validate(stopTimes, stops, errors, $"{path}.StopTimes");
             }

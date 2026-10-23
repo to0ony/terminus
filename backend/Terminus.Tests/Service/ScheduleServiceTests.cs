@@ -90,6 +90,19 @@ public class ScheduleServiceTests
         Assert.All(saved.StopTimes, st => Assert.Equal(saved.Trip.Id, st.TripId));
     }
 
+    [Theory]
+    [InlineData(TimeMode.Exact, new[] { true, true, true })]
+    [InlineData(TimeMode.Approximate, new[] { true, false, true })]
+    public async Task SaveAsync_TimepointsFollowRouteTimeMode(TimeMode mode, bool[] expected)
+    {
+        _route.TimeMode = mode;
+        var change = new ScheduleTripChange(NewTrip(_workdays), StopTimes(7 * 3600, 7 * 3600 + 300, 7 * 3600 + 600), null);
+
+        await _service.SaveAsync(_route.Id, new ScheduleChanges(TripDirection.Outbound, [change], []), TestContext.Current.CancellationToken);
+
+        Assert.Equal(expected, Assert.Single(_schedule.Saved).StopTimes.Select(st => st.Timepoint));
+    }
+
     [Fact]
     public async Task SaveAsync_TimesGoingBackwards_IsRejected()
     {

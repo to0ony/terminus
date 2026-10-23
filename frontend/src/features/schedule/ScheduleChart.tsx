@@ -10,8 +10,8 @@ import {
   hour,
   minute,
   resizeView,
+  moveStop,
   rowIndexes,
-  shiftStop,
   shiftTrip,
   type View,
 } from './model'
@@ -49,6 +49,8 @@ interface ScheduleChartProps {
   onSelect: (keys: string[]) => void
   onShiftTrips: (keys: string[], delta: number) => void
   onShiftStop: (key: string, index: number, delta: number, cascade: boolean) => void
+  /** Okvirna linija: povlačenje prve ili zadnje točkice rasteže vožnju (moveStop). */
+  approximate: boolean
   /** Nova vožnja s prvim polaskom u zadano vrijeme; null ako nema predloška. */
   onCreate: ((departure: number) => void) | null
   /** Predložak nove vožnje: redak i pomak od prvog polaska za svako vrijeme. */
@@ -127,7 +129,9 @@ export function ScheduleChart(props: ScheduleChartProps) {
       return p.trips.map((t) => (keys.has(t.key) ? shiftTrip(t, d.delta) : t))
     }
     if (d?.kind === 'stop' && d.delta !== 0) {
-      return p.trips.map((t) => (t.key === d.key ? shiftStop(t, d.index, d.delta, d.cascade) : t))
+      return p.trips.map((t) =>
+        t.key === d.key ? moveStop(t, d.index, d.delta, d.cascade, p.approximate) : t,
+      )
     }
     return p.trips
   }

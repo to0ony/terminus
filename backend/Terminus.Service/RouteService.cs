@@ -100,6 +100,11 @@ public class RouteService(IRouteRepository repository, IAgencyRepository agencyR
             errors.Add(nameof(route.ContinuousDropOff), "Nepoznata vrijednost za iskrcavanje duž trase.");
         }
 
+        if (!Enum.IsDefined(route.TimeMode))
+        {
+            errors.Add(nameof(route.TimeMode), "Nepoznat način zadavanja vremena.");
+        }
+
         if (route.Color is not null && !Validators.IsHexColor(route.Color))
         {
             errors.Add(nameof(route.Color), "Boja mora biti hex vrijednost od 6 znakova, npr. FF0000.");

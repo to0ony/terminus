@@ -60,7 +60,7 @@ export function useRetimeTrips(routeId: string) {
       )
       const original = schedule.trips.filter((t) => t.variantId === variant.id).map(fromResponse)
       const updated = original.flatMap((trip) => {
-        const retimed = retimeTrip(trip, variant)
+        const retimed = retimeTrip(trip, variant, schedule.timeMode === 'Approximate')
         return retimed && retimed.stopTimes.at(-1)!.departureTime <= maxSeconds ? [retimed] : []
       })
       const { upserts } = changes(original, updated)

@@ -19,9 +19,11 @@ public class ScheduleQuery
 /// <param name="Stops">Redci grafikona, redom kojim ih varijante i vožnje obilaze.</param>
 /// <param name="Variants">Varijante smjera (glavna prva): predlošci za nove vožnje.</param>
 /// <param name="TripCounts">Broj vožnji smjera po Id-u kalendara.</param>
+/// <param name="TimeMode">Okvirna linija zadaje samo polazak i dolazak; međustanice se raspoređuju.</param>
 public record ScheduleResponse(
     Guid RouteId,
     TripDirection? DirectionId,
+    TimeMode TimeMode,
     IReadOnlyList<ScheduleStopResponse> Stops,
     IReadOnlyList<ScheduleVariantResponse> Variants,
     IReadOnlyList<ScheduleTripResponse> Trips,
@@ -152,6 +154,7 @@ public static class ScheduleMappings
     public static ScheduleResponse ToResponse(this RouteSchedule schedule) => new(
         schedule.Route.Id,
         schedule.DirectionId,
+        schedule.Route.TimeMode,
         schedule.Stops.Select(s => new ScheduleStopResponse(s.Id, s.Code, s.Name, s.PlatformCode, s.IsActive)).ToList(),
         schedule.Variants.Select(v => new ScheduleVariantResponse(
             v.Id,

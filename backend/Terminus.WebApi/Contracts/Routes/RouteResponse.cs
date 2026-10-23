@@ -17,6 +17,7 @@ public record RouteResponse(
     ContinuousPickupDropOff? ContinuousPickup,
     ContinuousPickupDropOff? ContinuousDropOff,
     string? NetworkId,
+    TimeMode TimeMode,
     bool IsActive,
     DateTime CreatedAt,
     DateTime UpdatedAt);

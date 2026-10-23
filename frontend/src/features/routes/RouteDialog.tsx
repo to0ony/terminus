@@ -5,6 +5,7 @@ import {
   ColorInput,
   Group,
   Modal,
+  Radio,
   Select,
   SimpleGrid,
   Stack,
@@ -17,7 +18,7 @@ import { useNavigate } from 'react-router'
 import { ApiError, errorMessage } from '@/api/errors'
 import { useAgencies } from '@/features/agencies/queries'
 import { toHex } from '@/lib/color'
-import { type Route, useSaveRoute } from './queries'
+import { type Route, type TimeMode, useRoutes, useSaveRoute } from './queries'
 import { routeTypeOptions } from './routeTypes'
 
 interface RouteDialogProps {
@@ -55,6 +56,14 @@ function RouteForm({ route, onClose }: { route?: Route; onClose: () => void }) {
   const [color, setColor] = useState(route?.color ? `#${route.color}` : '#1565C0')
   const [textColor, setTextColor] = useState(route?.textColor ? `#${route.textColor}` : '#FFFFFF')
   const [isActive, setIsActive] = useState(route?.isActive ?? true)
+  // Nova linija zadano preuzima način koji ima većina postojećih linija.
+  const routes = useRoutes({ PageSize: 100 })
+  const approximateCount =
+    routes.data?.items.filter((r) => r.timeMode === 'Approximate').length ?? 0
+  const usual: TimeMode =
+    approximateCount * 2 > (routes.data?.items.length ?? 0) ? 'Approximate' : 'Exact'
+  const [timeMode, setTimeMode] = useState<TimeMode | null>(route?.timeMode ?? null)
+  const shownTimeMode = timeMode ?? usual
 
   const agency = agencyId ?? agencies.data?.[0]?.id ?? null
   const shownCode = code ?? shortName.trim()
@@ -81,6 +90,7 @@ function RouteForm({ route, onClose }: { route?: Route; onClose: () => void }) {
         routeType: Number(routeType),
         color: toHex(color),
         textColor: toHex(textColor),
+        timeMode: shownTimeMode,
         isActive,
       },
       {
@@ -169,6 +179,34 @@ function RouteForm({ route, onClose }: { route?: Route; onClose: () => void }) {
           Pregled oznake
         </Text>
       </Group>
+      <Radio.Group
+        label="Vremena po stanicama"
+        value={shownTimeMode}
+        onChange={(value) => setTimeMode(value as TimeMode)}
+        error={fieldError('timeMode')}
+      >
+        <Stack gap="xs" mt={4}>
+          <Radio
+            value="Exact"
+            label="Točna"
+            description="Vremena dolaze iz varijante i mogu se dotjerati za svaku vožnju."
+          />
+          <Radio
+            value="Approximate"
+            label="Samo polasci (okvirno)"
+            description="Zadaje se polazak i dolazak na terminus; vremena međustanica Terminus raspoređuje sam i označi kao okvirna."
+          />
+        </Stack>
+      </Radio.Group>
+      {route && shownTimeMode !== route.timeMode && (
+        <Alert color="yellow" variant="light" p="xs">
+          <Text size="sm">
+            {shownTimeMode === 'Approximate'
+              ? 'Postojeće vožnje zadržavaju svoja vremena, ali vremena međustanica postaju okvirna.'
+              : 'Postojeće vožnje zadržavaju svoja vremena, a vremena međustanica postaju točna. Provjeri ih, jer su bila raspoređena okvirno.'}
+          </Text>
+        </Alert>
+      )}
       <Switch
         label="Aktivna"
         description="Neaktivna linija ne ide u GTFS izvoz ni na zaslone."

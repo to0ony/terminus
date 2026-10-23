@@ -33,5 +33,9 @@ public class RouteRequest
 
     public ContinuousPickupDropOff? ContinuousDropOff { get; set; }
     public string? NetworkId { get; set; }
+
+    /// <summary>Točna vremena na svim stanicama ili samo polazak i dolazak (okvirno).</summary>
+    public TimeMode TimeMode { get; set; }
+
     public bool IsActive { get; set; } = true;
 }

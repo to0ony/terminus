@@ -4618,6 +4618,7 @@ export interface components {
             continuousPickup?: null | components["schemas"]["ContinuousPickupDropOff"];
             continuousDropOff?: null | components["schemas"]["ContinuousPickupDropOff"];
             networkId?: null | string;
+            timeMode?: components["schemas"]["TimeMode"];
             isActive?: boolean;
         };
         RouteResponse: {
@@ -4638,6 +4639,7 @@ export interface components {
             continuousPickup: null | components["schemas"]["ContinuousPickupDropOff"];
             continuousDropOff: null | components["schemas"]["ContinuousPickupDropOff"];
             networkId: null | string;
+            timeMode: components["schemas"]["TimeMode"];
             isActive: boolean;
             /** Format: date-time */
             createdAt: string;
@@ -4666,6 +4668,7 @@ export interface components {
             /** Format: uuid */
             routeId: string;
             directionId: null | components["schemas"]["TripDirection"];
+            timeMode: components["schemas"]["TimeMode"];
             stops: components["schemas"]["ScheduleStopResponse"][];
             variants: components["schemas"]["ScheduleVariantResponse"][];
             trips: components["schemas"]["ScheduleTripResponse"][];
@@ -5137,6 +5140,8 @@ export interface components {
             serviceCalendarId: string;
             times: components["schemas"]["TimetableTimeResponse"][];
         };
+        /** @enum {unknown} */
+        TimeMode: "Exact" | "Approximate";
         TripDirection: number;
         TripRequest: {
             /** Format: uuid */

@@ -23,6 +23,7 @@ internal static class RouteMapper
         ContinuousPickup = (ContinuousPickupDropOff?)entity.ContinuousPickup,
         ContinuousDropOff = (ContinuousPickupDropOff?)entity.ContinuousDropOff,
         NetworkId = entity.NetworkId,
+        TimeMode = (TimeMode)entity.TimeMode,
         IsActive = entity.IsActive,
         CreatedAt = entity.CreatedAt,
         UpdatedAt = entity.UpdatedAt
@@ -44,6 +45,7 @@ internal static class RouteMapper
         entity.ContinuousPickup = (short?)model.ContinuousPickup;
         entity.ContinuousDropOff = (short?)model.ContinuousDropOff;
         entity.NetworkId = model.NetworkId;
+        entity.TimeMode = (short)model.TimeMode;
         entity.IsActive = model.IsActive;
     }
 }

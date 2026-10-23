@@ -117,6 +117,29 @@ public class GtfsImportServiceTests
     }
 
     [Fact]
+    public async Task ImportAsync_RouteWithInterpolatedStops_IsApproximate()
+    {
+        await Service.ImportAsync(Zip(_files), null, Ct);
+
+        Assert.Equal(TimeMode.Approximate, Assert.Single(_repository.Feed!.Routes).TimeMode);
+    }
+
+    [Fact]
+    public async Task ImportAsync_RouteWithAllTimes_IsExact()
+    {
+        _files["stop_times.txt"] = """
+            trip_id,arrival_time,departure_time,stop_id,stop_sequence
+            T1,06:00:00,06:00:00,AK-1,1
+            T1,06:10:00,06:10:00,B,2
+            T1,06:20:00,06:20:00,C,3
+            """;
+
+        await Service.ImportAsync(Zip(_files), null, Ct);
+
+        Assert.Equal(TimeMode.Exact, Assert.Single(_repository.Feed!.Routes).TimeMode);
+    }
+
+    [Fact]
     public async Task ImportAsync_MissingTimeWithoutDistance_UsesStopDistance()
     {
         // B je bliže C nego AK-1, pa vrijeme na B mora biti bliže 06:20 nego polovina puta.

@@ -10,6 +10,7 @@ import { unwrap } from '@/api/errors'
 import type { components, paths } from '@/api/schema'
 
 export type Route = components['schemas']['RouteResponse']
+export type TimeMode = components['schemas']['TimeMode']
 export type RouteListParams = NonNullable<paths['/api/routes']['get']['parameters']['query']>
 
 export const routeKeys = {

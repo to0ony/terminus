@@ -22,6 +22,7 @@ public static class RouteMappings
         ContinuousPickup = request.ContinuousPickup,
         ContinuousDropOff = request.ContinuousDropOff,
         NetworkId = request.NetworkId,
+        TimeMode = request.TimeMode,
         IsActive = request.IsActive
     };
 
@@ -40,6 +41,7 @@ public static class RouteMappings
         model.ContinuousPickup,
         model.ContinuousDropOff,
         model.NetworkId,
+        model.TimeMode,
         model.IsActive,
         model.CreatedAt,
         model.UpdatedAt);

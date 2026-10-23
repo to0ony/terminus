@@ -24,6 +24,8 @@ import {
   moveToDayType,
   parseTime,
   setStopTime,
+  shiftTrip,
+  stretchTrip,
   withDayTypes,
 } from './model'
 
@@ -46,6 +48,8 @@ interface TripPanelProps {
   onTakt: () => void
   /** Postoji li predložak za nove vožnje. */
   canCreate: boolean
+  /** Okvirna linija: zadaju se polazak i dolazak na terminus, međustanice se raspoređuju. */
+  approximate: boolean
 }
 
 /** Detalji odabrane vožnje ili zajedničke radnje za više njih. */
@@ -83,7 +87,7 @@ export function TripPanel(props: TripPanelProps) {
 }
 
 function Overview(props: TripPanelProps) {
-  const { trips, onTakt, canCreate } = props
+  const { trips, onTakt, canCreate, approximate } = props
   const departures = trips.map(firstDeparture).sort((a, b) => a - b)
   return (
     <Stack gap="sm">
@@ -115,7 +119,11 @@ function Overview(props: TripPanelProps) {
         </Text>
         <Help keys="Klik" text="odabir vožnje (Ctrl+klik dodaje)" />
         <Help keys="Povuci crtu" text="pomak cijele vožnje" />
-        <Help keys="Povuci točkicu" text="vrijeme na stanici; sa Shiftom i sve iza" />
+        {approximate ? (
+          <Help keys="Povuci zadnju točkicu" text="dolazak na terminus (trajanje vožnje)" />
+        ) : (
+          <Help keys="Povuci točkicu" text="vrijeme na stanici; sa Shiftom i sve iza" />
+        )}
         <Help keys="Klik u retku prve stanice" text="nova vožnja" />
         <Help keys="Povuci po praznom" text="odabir okvirom" />
         <Help keys="← →" text="±1 min (Shift ±5)" />
@@ -144,6 +152,7 @@ function TripDetails({
   onShift,
   onCopy,
   onDelete,
+  approximate,
   ...props
 }: TripPanelProps & { trip: EditorTrip }) {
   const [headsign, setHeadsign] = useState(trip.headsign ?? '')
@@ -225,26 +234,36 @@ function TripDetails({
                     {stopName(st.stopId)}
                   </Text>
                 </Table.Td>
-                <Table.Td>
-                  <TimeInput
-                    value={st.arrivalTime}
-                    onCommit={(arrival) =>
-                      onChange(trip.key, (t) =>
-                        setStopTime(t, index, arrival, Math.max(arrival, st.departureTime)),
-                      )
-                    }
+                {approximate ? (
+                  <ApproximateTimes
+                    trip={trip}
+                    index={index}
+                    onChange={(update) => onChange(trip.key, update)}
                   />
-                </Table.Td>
-                <Table.Td>
-                  <TimeInput
-                    value={st.departureTime}
-                    onCommit={(departure) =>
-                      onChange(trip.key, (t) =>
-                        setStopTime(t, index, Math.min(st.arrivalTime, departure), departure),
-                      )
-                    }
-                  />
-                </Table.Td>
+                ) : (
+                  <>
+                    <Table.Td>
+                      <TimeInput
+                        value={st.arrivalTime}
+                        onCommit={(arrival) =>
+                          onChange(trip.key, (t) =>
+                            setStopTime(t, index, arrival, Math.max(arrival, st.departureTime)),
+                          )
+                        }
+                      />
+                    </Table.Td>
+                    <Table.Td>
+                      <TimeInput
+                        value={st.departureTime}
+                        onCommit={(departure) =>
+                          onChange(trip.key, (t) =>
+                            setStopTime(t, index, Math.min(st.arrivalTime, departure), departure),
+                          )
+                        }
+                      />
+                    </Table.Td>
+                  </>
+                )}
               </Table.Tr>
             ))}
           </Table.Tbody>
@@ -259,6 +278,65 @@ function TripDetails({
         onPick={(id) => props.onCopyTo(id, [trip.key])}
       />
     </Stack>
+  )
+}
+
+/**
+ * Vremena stanice okvirne vožnje: polazak s prve stanice pomiče vožnju, dolazak
+ * na terminus mijenja trajanje, a međustanice su okvirne i ne uređuju se.
+ */
+function ApproximateTimes({
+  trip,
+  index,
+  onChange,
+}: {
+  trip: EditorTrip
+  index: number
+  onChange: (update: (trip: EditorTrip) => EditorTrip) => void
+}) {
+  const st = trip.stopTimes[index]
+  const last = trip.stopTimes.length - 1
+  const approximateTime = (seconds: number) => (
+    <Text size="xs" c="dimmed" ta="center" title="Okvirno vrijeme">
+      ≈ {formatTime(seconds)}
+    </Text>
+  )
+
+  if (index === 0) {
+    return (
+      <>
+        <Table.Td />
+        <Table.Td>
+          <TimeInput
+            value={st.departureTime}
+            onCommit={(departure) => onChange((t) => shiftTrip(t, departure - firstDeparture(t)))}
+          />
+        </Table.Td>
+      </>
+    )
+  }
+  if (index === last) {
+    return (
+      <>
+        <Table.Td>
+          <TimeInput
+            value={st.arrivalTime}
+            onCommit={(arrival) =>
+              onChange((t) =>
+                stretchTrip(t, firstDeparture(t), Math.max(firstDeparture(t), arrival)),
+              )
+            }
+          />
+        </Table.Td>
+        <Table.Td />
+      </>
+    )
+  }
+  return (
+    <>
+      <Table.Td>{approximateTime(st.arrivalTime)}</Table.Td>
+      <Table.Td>{approximateTime(st.departureTime)}</Table.Td>
+    </>
   )
 }
 

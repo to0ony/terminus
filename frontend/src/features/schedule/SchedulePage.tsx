@@ -49,10 +49,12 @@ import {
   formatTime,
   fromResponse,
   hour,
+  lastArrival,
+  moveStop,
   rowIndexes,
   rowPositions,
-  shiftStop,
   shiftTrip,
+  stretchTrip,
   templateTrip,
   tripFrom,
   tripFromVariant,
@@ -292,6 +294,7 @@ function ScheduleEditor({
   onReload,
 }: ScheduleEditorProps) {
   const original = useMemo(() => schedule.trips.map(fromResponse), [schedule])
+  const approximate = schedule.timeMode === 'Approximate'
   const editor = useScheduleEditor(original)
   const save = useSaveSchedule(routeId)
   const ghostTrips = useMemo(() => ghosts.map(fromResponse), [ghosts])
@@ -416,14 +419,26 @@ function ScheduleEditor({
         }))
       : null
   const canCreate = active !== null || mainTemplate !== null
+  // Trajanje vožnje predloška: zadano trajanje novih okvirnih vožnji u taktu.
+  const templateDuration = active
+    ? (variantOffsets(active).arrival.at(-1) ?? 0)
+    : mainTemplate
+      ? lastArrival(mainTemplate) - firstDeparture(mainTemplate)
+      : 0
 
-  const create = (departures: number[]) => {
+  /** Nove vožnje s polascima; uz <paramref name="duration"/> i s dolaskom na terminus (okvirno). */
+  const create = (departures: number[], duration?: number) => {
     const created = departures.flatMap((t) => {
-      if (active) {
-        return [tripFromVariant(active, t, dayType.id)]
+      const template = active ? null : templateTrip(templateSource, t)
+      const trip = active
+        ? tripFromVariant(active, t, dayType.id)
+        : template
+          ? tripFrom(template, t, dayType.id)
+          : null
+      if (!trip) {
+        return []
       }
-      const template = templateTrip(templateSource, t)
-      return template ? [tripFrom(template, t, dayType.id)] : []
+      return [duration === undefined ? trip : stretchTrip(trip, t, t + duration)]
     })
     if (created.length === 0) {
       return
@@ -766,9 +781,12 @@ function ScheduleEditor({
                 }
                 onShiftStop={(key, index, delta, cascade) =>
                   editor.apply((trips) =>
-                    trips.map((t) => (t.key === key ? shiftStop(t, index, delta, cascade) : t)),
+                    trips.map((t) =>
+                      t.key === key ? moveStop(t, index, delta, cascade, approximate) : t,
+                    ),
                   )
                 }
+                approximate={approximate}
                 onCreate={canCreate ? (departure) => create([departure]) : null}
                 preview={preview}
                 drawing={drawing}
@@ -805,6 +823,7 @@ function ScheduleEditor({
               onDelete={deleteSelected}
               onTakt={takt.open}
               canCreate={canCreate}
+              approximate={approximate}
             />
           </Grid.Col>
         </Grid>
@@ -833,6 +852,7 @@ function ScheduleEditor({
         onCreate={create}
         existing={visible.map(firstDeparture)}
         template={active?.name ?? null}
+        duration={approximate ? templateDuration : null}
       />
 
       <Modal

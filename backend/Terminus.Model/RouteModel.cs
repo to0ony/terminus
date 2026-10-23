@@ -19,6 +19,7 @@ public class RouteModel : IRouteModel
     public ContinuousPickupDropOff? ContinuousPickup { get; set; }
     public ContinuousPickupDropOff? ContinuousDropOff { get; set; }
     public string? NetworkId { get; set; }
+    public TimeMode TimeMode { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

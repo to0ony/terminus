@@ -16,6 +16,8 @@ public class Route : IAuditable
     public short? ContinuousPickup { get; set; }
     public short? ContinuousDropOff { get; set; }
     public string? NetworkId { get; set; }
+    /// <summary>TimeMode: točna ili okvirna vremena na međustanicama.</summary>
+    public short TimeMode { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

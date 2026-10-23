@@ -62,19 +62,35 @@ export function CopyDialog({ opened, count, onClose, onCopy }: CopyDialogProps) 
 interface TaktDialogProps {
   opened: boolean
   onClose: () => void
-  /** Prvi polasci novih vožnji. */
-  onCreate: (departures: number[]) => void
+  /** Prvi polasci novih vožnji i, na okvirnoj liniji, trajanje vožnje (sekunde). */
+  onCreate: (departures: number[], duration?: number) => void
   /** Postojeći prvi polasci, da se ne naprave dvostruki. */
   existing: number[]
   /** Naziv varijante po kojoj nastaju vožnje; null kad se kopira postojeća vožnja. */
   template: string | null
+  /**
+   * Okvirna linija: zadano trajanje vožnje (sekunde) do dolaska na terminus, a
+   * međustanice se raspoređuju; null kad vremena vožnje dolaze iz predloška.
+   */
+  duration: number | null
 }
 
 /** Generator takta: polasci od–do svakih N minuta, po predlošku glavnog obrasca. */
-export function TaktDialog({ opened, onClose, onCreate, existing, template }: TaktDialogProps) {
+export function TaktDialog({
+  opened,
+  onClose,
+  onCreate,
+  existing,
+  template,
+  duration,
+}: TaktDialogProps) {
   const [from, setFrom] = useState('05:00')
   const [to, setTo] = useState('23:00')
   const [every, setEvery] = useState<number | string>(15)
+  // Bez unosa vrijedi trajanje predloška.
+  const [minutes, setMinutes] = useState<number | string | null>(null)
+  const shownMinutes = minutes ?? Math.round((duration ?? 0) / minute)
+  const validDuration = duration === null || Number(shownMinutes) > 0
 
   const start = parseTime(from)
   const end = parseTime(to)
@@ -115,6 +131,16 @@ export function TaktDialog({ opened, onClose, onCreate, existing, template }: Ta
           value={every}
           onChange={(value) => setEvery(String(value))}
         />
+        {duration !== null && (
+          <NumberInput
+            label="Trajanje vožnje (min)"
+            description="Do dolaska na terminus; vremena međustanica raspoređuju se okvirno."
+            min={1}
+            max={1440}
+            value={shownMinutes}
+            onChange={(value) => setMinutes(String(value))}
+          />
+        )}
         <Text size="sm">
           {fresh.length === 0
             ? 'Nema novih polazaka.'
@@ -126,9 +152,9 @@ export function TaktDialog({ opened, onClose, onCreate, existing, template }: Ta
             Odustani
           </Button>
           <Button
-            disabled={fresh.length === 0}
+            disabled={fresh.length === 0 || !validDuration}
             onClick={() => {
-              onCreate(fresh)
+              onCreate(fresh, duration === null ? undefined : Number(shownMinutes) * minute)
               onClose()
             }}
           >

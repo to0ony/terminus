@@ -5,6 +5,7 @@ using Terminus.Common.Exceptions;
 using Terminus.DAL;
 using Terminus.DAL.Entities;
 using Terminus.Model.Common;
+using Terminus.Model.Common.Enums;
 using Terminus.Model.Common.Filters;
 using Terminus.Repository.Common;
 using Terminus.Repository.Mapping;
@@ -95,9 +96,37 @@ public class RouteRepository(TerminusDbContext context) : IRouteRepository
             return null;
         }
 
+        var modeChanged = entity.TimeMode != (short)route.TimeMode;
         RouteMapper.Apply(route, entity);
+
+        if (!modeChanged)
+        {
+            await SaveChangesAsync(route, cancellationToken);
+            return RouteMapper.ToModel(entity);
+        }
+
+        // ExecuteUpdate se izvršava odmah, izvan SaveChanges, pa ide u istu transakciju.
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
         await SaveChangesAsync(route, cancellationToken);
 
+        // Promjena načina mijenja samo oznaku vremena međustanica (GTFS timepoint);
+        // vremena ostaju ista. Prva i zadnja stanica su uvijek točne.
+        var exact = route.TimeMode == TimeMode.Exact;
+        await context.StopTimes
+            .Where(st => st.Trip.RouteId == route.Id)
+            .ExecuteUpdateAsync(s => s.SetProperty(
+                st => st.Timepoint,
+                st => exact
+                    || st.StopSequence == st.Trip.StopTimes.Min(x => x.StopSequence)
+                    || st.StopSequence == st.Trip.StopTimes.Max(x => x.StopSequence)),
+                cancellationToken);
+
+        // Promjena vremena je promjena vožnje (bitno npr. za GTFS izvoz i otvoreni grafikon).
+        await context.Trips
+            .Where(t => t.RouteId == route.Id)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.UpdatedAt, DateTime.UtcNow), cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
         return RouteMapper.ToModel(entity);
     }
 

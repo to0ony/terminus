@@ -6,6 +6,7 @@ import {
   type EditorTrip,
   formatTime,
   headways,
+  moveStop,
   moveToDayType,
   parseTime,
   resizeView,
@@ -14,6 +15,7 @@ import {
   rowPositions,
   shiftStop,
   shiftTrip,
+  stretchTrip,
   taktDepartures,
   templateTrip,
   tripFrom,
@@ -296,7 +298,55 @@ describe('retimeTrip', () => {
     expect(retimed.key).toBe('t1')
   })
 
+  it('keeps both ends of an approximate trip and spreads the stops by the variant', () => {
+    const retimed = retimeTrip(trip('t1', ['a', 'b', 'c'], 3600, 100), variant, true)!
+    expect(retimed.stopTimes.map((st) => [st.arrivalTime, st.departureTime])).toEqual([
+      [3600, 3600],
+      [3720, 3720],
+      [3800, 3800],
+    ])
+  })
+
   it('skips a trip with other stops than the variant', () => {
     expect(retimeTrip(trip('t1', ['a', 'c'], 3600), variant)).toBeNull()
+  })
+})
+
+describe('approximate trips', () => {
+  const times = (t: EditorTrip) => t.stopTimes.map((st) => st.departureTime)
+
+  it('stretch the stops in between by their running times', () => {
+    const stretched = stretchTrip(trip('t1', ['a', 'b', 'c', 'd'], 3600), 3600, 4320)
+    expect(times(stretched)).toEqual([3600, 3840, 4080, 4320])
+  })
+
+  it('round the stops in between to whole minutes', () => {
+    const stretched = stretchTrip(trip('t1', ['a', 'b', 'c', 'd'], 3600), 3600, 3900)
+    expect(times(stretched)).toEqual([3600, 3720, 3780, 3900])
+  })
+
+  it('change the duration when the last stop is dragged', () => {
+    const moved = moveStop(trip('t1', ['a', 'b', 'c', 'd'], 3600), 3, 360, false, true)
+    expect(times(moved)).toEqual([3600, 3840, 4080, 4320])
+  })
+
+  it('move the whole trip when the first stop is dragged', () => {
+    const moved = moveStop(trip('t1', ['a', 'b', 'c'], 3600), 0, 600, false, true)
+    expect(times(moved)).toEqual([4200, 4320, 4440])
+  })
+
+  it('never end before they start', () => {
+    const moved = moveStop(trip('t1', ['a', 'b', 'c'], 3600), 2, -3600, false, true)
+    expect(times(moved)).toEqual([3600, 3600, 3600])
+  })
+
+  it('keep the stops in between in place', () => {
+    const original = trip('t1', ['a', 'b', 'c'], 3600)
+    expect(moveStop(original, 1, 60, false, true)).toBe(original)
+  })
+
+  it('move only one stop on an exact route', () => {
+    const moved = moveStop(trip('t1', ['a', 'b', 'c'], 3600), 2, 60, false, false)
+    expect(times(moved)).toEqual([3600, 3720, 3900])
   })
 })

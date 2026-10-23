@@ -180,6 +180,59 @@ export function shiftStop(
   }
 }
 
+/**
+ * Okvirna vožnja: polazak s prve stanice u <paramref name="start"/>, dolazak na
+ * terminus u <paramref name="end"/>, a vremena međustanica razmjerno dosadašnjima
+ * (vremenima vožnje), zaokružena na minutu.
+ */
+export function stretchTrip(trip: EditorTrip, start: number, end: number): EditorTrip {
+  const times = trip.stopTimes
+  if (times.length < 2) {
+    return trip
+  }
+  const from = times[0].departureTime
+  const to = times.at(-1)!.arrivalTime
+  const scale = to > from ? (end - start) / (to - from) : 0
+  const at = (t: number) => start + Math.round(((t - from) * scale) / minute) * minute
+  const last = times.length - 1
+  return {
+    ...trip,
+    stopTimes: times.map((st, i) =>
+      i === 0
+        ? { ...st, arrivalTime: start - (st.departureTime - st.arrivalTime), departureTime: start }
+        : i === last
+          ? { ...st, arrivalTime: end, departureTime: end + (st.departureTime - st.arrivalTime) }
+          : { ...st, arrivalTime: at(st.arrivalTime), departureTime: at(st.departureTime) },
+    ),
+  }
+}
+
+/**
+ * Pomak točkice na grafikonu. Na okvirnoj liniji polazak s prve stanice pomiče
+ * cijelu vožnju, dolazak na terminus mijenja trajanje (međustanice se
+ * raspoređuju iznova), a okvirne međustanice se ne pomiču.
+ */
+export function moveStop(
+  trip: EditorTrip,
+  index: number,
+  delta: number,
+  cascade: boolean,
+  approximate: boolean,
+): EditorTrip {
+  const last = trip.stopTimes.length - 1
+  if (!approximate || last < 1) {
+    return shiftStop(trip, index, delta, cascade)
+  }
+  if (index !== 0 && index !== last) {
+    return trip
+  }
+  if (index === 0) {
+    return shiftTrip(trip, delta)
+  }
+  const start = firstDeparture(trip)
+  return stretchTrip(trip, start, Math.max(start, lastArrival(trip) + delta))
+}
+
 /** Postavlja dolazak i polazak na stanici (npr. iz tablice u panelu). */
 export function setStopTime(
   trip: EditorTrip,
@@ -221,6 +274,10 @@ export function validateTrip(trip: EditorTrip, stopName: (id: string) => string)
 
 export function firstDeparture(trip: EditorTrip): number {
   return trip.stopTimes[0]?.departureTime ?? 0
+}
+
+export function lastArrival(trip: EditorTrip): number {
+  return trip.stopTimes.at(-1)?.arrivalTime ?? 0
 }
 
 /**
@@ -375,10 +432,15 @@ export function variantOffsets(variant: ScheduleVariant): {
 
 /**
  * Vremena vožnje po varijanti uz isti polazak s prve stanice (presnimavanje
- * izmijenjene varijante u njezine vožnje). null ako vožnja nema iste stanice
- * kao varijanta.
+ * izmijenjene varijante u njezine vožnje); okvirna vožnja zadržava i dolazak na
+ * terminus, a međustanice se raspoređuju po novim vremenima. null ako vožnja
+ * nema iste stanice kao varijanta.
  */
-export function retimeTrip(trip: EditorTrip, variant: ScheduleVariant): EditorTrip | null {
+export function retimeTrip(
+  trip: EditorTrip,
+  variant: ScheduleVariant,
+  approximate = false,
+): EditorTrip | null {
   if (
     trip.stopTimes.length !== variant.stops.length ||
     trip.stopTimes.some((st, i) => st.stopId !== variant.stops[i].stopId)
@@ -387,7 +449,7 @@ export function retimeTrip(trip: EditorTrip, variant: ScheduleVariant): EditorTr
   }
   const offsets = variantOffsets(variant)
   const start = firstDeparture(trip)
-  return {
+  const retimed = {
     ...trip,
     stopTimes: trip.stopTimes.map((st, i) => ({
       ...st,
@@ -395,6 +457,7 @@ export function retimeTrip(trip: EditorTrip, variant: ScheduleVariant): EditorTr
       departureTime: start + offsets.departure[i],
     })),
   }
+  return approximate ? stretchTrip(retimed, start, lastArrival(trip)) : retimed
 }
 
 /** Nova vožnja po varijanti s polaskom s prve stanice u <paramref name="departure"/>. */
