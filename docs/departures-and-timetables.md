@@ -353,11 +353,12 @@ GET /api/routes/{routeId}/diagram.pdf?paper=A4&language=hr
   okvirnim vremenima međustanice imaju `~`.
 - Naslov je naziv linije (`route_long_name`); ispod su krajevi glavne trase
   i broj stanica.
-- Ostale varijante su **zagrade desno od naziva stanica**, kao zatvoreni
-  interval položen okomito: kvačica prema stanici gdje varijanta počinje ili
-  završava, a uz gornji kraj naziv varijante. Kad varijanta nastavlja do
-  stanica izvan sheme (npr. iz garaže), taj kraj nema kvačicu. Varijante koje
-  se preklapaju dobivaju zasebne trake.
+- Ostale varijante su **tanke crte uz glavnu** (svjetlija nijansa boje
+  linije), lijevo od nje. Gdje varijanta počinje ili završava, crta zaobljenim
+  kutom ulazi u kružić stanice, a uz naziv stanice je oznaka s nazivom
+  varijante. Kad varijanta nastavlja do stanica izvan sheme (npr. iz garaže),
+  crta se tu nastavlja isprekidano, a oznaka u zagradi kaže kamo
+  („Iz garaže (Garaža)”). Varijante koje se preklapaju dobivaju zasebne trake.
 - Stanice gdje ostale varijante počinju ili završavaju podebljane su na shemi.
 - Varijante koje ne prolaze nijednom stanicom sheme navedene su ispod nje.
 - Kratka linija dobiva više retke; duga se lomi u dva ili tri stupca.

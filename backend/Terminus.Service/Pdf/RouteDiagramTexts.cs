@@ -18,6 +18,7 @@ internal abstract class RouteDiagramTexts
     public abstract string OneDirection { get; }
     public abstract string ApproximateTimes { get; }
     public abstract string OtherVariants { get; }
+    public abstract string VariantLane { get; }
 
     /// <summary>Opis stupca minuta, npr. "↓ min od Kolodvora".</summary>
     public abstract string MinutesFrom(string from);
@@ -34,6 +35,7 @@ internal sealed class CroatianDiagramTexts : RouteDiagramTexts
     public override string OneDirection => "staje samo u smjeru strelice";
     public override string ApproximateTimes => "Vremena međustanica (~) su okvirna.";
     public override string OtherVariants => "Ostale varijante";
+    public override string VariantLane => "ostala varijanta; oznaka je uz stanicu gdje počinje ili završava";
 
     // Naziv stanice ostaje u nominativu, pa "polazak:" umjesto "od Kolodvora".
     public override string MinutesFrom(string from) => $"min, polazak: {from}";
@@ -52,6 +54,7 @@ internal sealed class EnglishDiagramTexts : RouteDiagramTexts
     public override string OneDirection => "stops only in the direction of the arrow";
     public override string ApproximateTimes => "Times at intermediate stops (~) are approximate.";
     public override string OtherVariants => "Other variants";
+    public override string VariantLane => "other variant; labelled at the stop where it starts or ends";
 
     public override string MinutesFrom(string from) => $"min from {from}";
 
