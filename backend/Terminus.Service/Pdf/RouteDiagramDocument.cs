@@ -246,6 +246,11 @@ internal static class RouteDiagramDocument
             {
                 name.FontSize(10).Bold();
             }
+            else if (stop.VariantTerminus)
+            {
+                // Početak ili kraj neke od ostalih varijanti (npr. skraćene).
+                name.FontSize(9).Bold();
+            }
             else
             {
                 name.FontSize(9);
@@ -321,7 +326,7 @@ internal static class RouteDiagramDocument
 
         // Kružić stanice; gdje staju oba smjera, jedan ovalni preko obje trake.
         var radius = stop.Terminus ? 4.2f : 3f;
-        var width = stop.Terminus ? 1.8f : 1.2f;
+        var width = stop.Terminus || stop.VariantTerminus ? 1.8f : 1.2f;
         if (twoWay && Shared(index))
         {
             svg.Pill(Center, mid, SharedOffset + radius, radius, width);
@@ -377,6 +382,9 @@ internal static class RouteDiagramDocument
 
     private static void OtherVariants(IContainer container, RouteDiagram diagram, RouteDiagramTexts texts)
     {
+        // Podebljani su počeci i krajevi koji nisu i krajevi glavne trase.
+        var mainEnds = diagram.Stops.Where(s => s.Terminus).Select(s => s.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         container.Column(column =>
         {
             column.Spacing(1);
@@ -387,7 +395,12 @@ internal static class RouteDiagramDocument
                 {
                     text.DefaultTextStyle(style => style.FontSize(8).FontColor(Muted));
                     text.Span($"{variant.Name}: ").FontColor(Colors.Black);
-                    text.Span($"{variant.From} – {variant.To} ({texts.StopCount(variant.StopCount)})");
+                    var from = text.Span(variant.From);
+                    if (!mainEnds.Contains(variant.From)) from.Bold().FontColor(Colors.Black);
+                    text.Span(" – ");
+                    var to = text.Span(variant.To);
+                    if (!mainEnds.Contains(variant.To)) to.Bold().FontColor(Colors.Black);
+                    text.Span($" ({texts.StopCount(variant.StopCount)})");
                 });
             }
         });

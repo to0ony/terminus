@@ -79,12 +79,21 @@ internal static class RouteDiagramBuilder
             terminus[backwardRows[0]] = terminus[backwardRows[^1]] = true;
         }
 
-        var diagramStops = rows
-            .Select((_, i) => new RouteDiagramStop(names[i]!, forwardMinutes[i], backwardMinutes[i], terminus[i]))
+        var otherVariants = usable
+            .Where(v => v.Variant != forward.Variant && v.Variant != backward.Variant)
             .ToList();
 
-        var others = usable
-            .Where(v => v.Variant != forward.Variant && v.Variant != backward.Variant)
+        // Gdje ostale varijante počinju i završavaju, ako to nije kraj glavne trase.
+        var variantEnds = otherVariants
+            .SelectMany(v => new[] { Key(Name(v.Stops[0].StopId)), Key(Name(v.Stops[^1].StopId)) })
+            .ToHashSet();
+
+        var diagramStops = rows
+            .Select((key, i) => new RouteDiagramStop(
+                names[i]!, forwardMinutes[i], backwardMinutes[i], terminus[i], !terminus[i] && variantEnds.Contains(key)))
+            .ToList();
+
+        var others = otherVariants
             .OrderBy(v => v.Variant.DirectionId ?? TripDirection.Outbound)
             .ThenBy(v => v.Variant.SortOrder)
             .Select(v => new RouteDiagramVariant(

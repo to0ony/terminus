@@ -352,6 +352,8 @@ GET /api/routes/{routeId}/diagram.pdf?paper=A4&language=hr
 - Lijevo od crte su minute od polazne stanice za svaki smjer; kod linija s
   okvirnim vremenima međustanice imaju `~`.
 - Ostale varijante su ispod sheme kao popis (naziv, prva – zadnja stanica).
+  Njihovi počeci i krajevi koji nisu i krajevi glavne trase podebljani su i
+  u popisu i na shemi (npr. gdje skraćena varijanta završava).
 - Kratka linija dobiva više retke; duga se lomi u dva ili tri stupca.
 - 422 ako linija nema varijantu sa stanicama.
 

@@ -39,8 +39,9 @@ public sealed record RouteDiagramDirection(string Headsign, string From);
 /// <summary>Stanica sheme; vrijeme je null u smjeru koji tu ne staje.</summary>
 /// <param name="ForwardMinutes">Minute od polaska u smjeru 0 do dolaska na stanicu.</param>
 /// <param name="BackwardMinutes">Minute od polaska u smjeru 1 do dolaska na stanicu.</param>
-/// <param name="Terminus">Prva ili zadnja stanica nekog smjera.</param>
-public sealed record RouteDiagramStop(string Name, int? ForwardMinutes, int? BackwardMinutes, bool Terminus)
+/// <param name="Terminus">Prva ili zadnja stanica glavne varijante nekog smjera.</param>
+/// <param name="VariantTerminus">Prva ili zadnja stanica neke od ostalih varijanti, a nije <paramref name="Terminus"/>.</param>
+public sealed record RouteDiagramStop(string Name, int? ForwardMinutes, int? BackwardMinutes, bool Terminus, bool VariantTerminus = false)
 {
     public bool Forward => ForwardMinutes is not null;
     public bool Backward => BackwardMinutes is not null;

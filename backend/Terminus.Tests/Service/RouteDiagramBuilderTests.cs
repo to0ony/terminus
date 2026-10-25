@@ -68,6 +68,20 @@ public class RouteDiagramBuilderTests
     }
 
     [Fact]
+    public void Build_MarksEndsOfOtherVariantsThatAreNotMainEnds()
+    {
+        Variant(TripDirection.Outbound, 0, "Kolodvor", "Trg", "Bolnica", "Tvrđa");
+        Variant(TripDirection.Outbound, 1, "Kolodvor", "Trg", "Bolnica");
+        Variant(TripDirection.Inbound, 0, "Tvrđa", "Bolnica", "Trg", "Kolodvor");
+        Variant(TripDirection.Inbound, 1, "Trg", "Kolodvor");
+
+        var diagram = Build();
+
+        Assert.Equal(["Trg", "Bolnica"], diagram.Stops.Where(s => s.VariantTerminus).Select(s => s.Name));
+        Assert.Equal(["Kolodvor", "Tvrđa"], diagram.Stops.Where(s => s.Terminus).Select(s => s.Name));
+    }
+
+    [Fact]
     public void Build_WithoutStops_ReturnsNull()
     {
         _variants.Add(new RouteVariantModel { Id = Guid.NewGuid(), Name = "Prazna", DirectionId = TripDirection.Outbound, Stops = [] });
