@@ -14,15 +14,15 @@ internal static class StopSequenceMerger
     /// zajedničkog podniza. Između dvije zajedničke stanice prvo dolaze stanice
     /// osnove, zatim nove.
     /// </summary>
-    /// <returns>Redci: Id-evi stanica redom kojim se prikazuju.</returns>
-    public static List<Guid> Merge(IEnumerable<IReadOnlyList<Guid>> sequences)
+    /// <returns>Redci: Id-evi (ili drugi ključevi) stanica redom kojim se prikazuju.</returns>
+    public static List<T> Merge<T>(IEnumerable<IReadOnlyList<T>> sequences) where T : notnull
     {
-        var rows = new List<Guid>();
+        var rows = new List<T>();
 
         foreach (var sequence in sequences.OrderByDescending(s => s.Count))
         {
             var matches = Match(rows, sequence);
-            var merged = new List<Guid>(rows.Count + sequence.Count - matches.Count);
+            var merged = new List<T>(rows.Count + sequence.Count - matches.Count);
             int r = 0, s = 0;
 
             foreach (var (rowIndex, sequenceIndex) in matches.Append((rows.Count, sequence.Count)))
@@ -45,7 +45,7 @@ internal static class StopSequenceMerger
 
     /// <summary>Za svaku stanicu redoslijeda indeks retka u <paramref name="rows"/>.</summary>
     /// <exception cref="ArgumentException">Redoslijed nije sadržan u redcima.</exception>
-    public static int[] Map(IReadOnlyList<Guid> rows, IReadOnlyList<Guid> sequence)
+    public static int[] Map<T>(IReadOnlyList<T> rows, IReadOnlyList<T> sequence) where T : notnull
     {
         var matches = Match(rows, sequence);
         if (matches.Count != sequence.Count)
@@ -57,8 +57,9 @@ internal static class StopSequenceMerger
     }
 
     /// <summary>Najdulji zajednički podniz (dinamičko programiranje), kao parovi indeksa.</summary>
-    private static List<(int RowIndex, int SequenceIndex)> Match(IReadOnlyList<Guid> rows, IReadOnlyList<Guid> sequence)
+    private static List<(int RowIndex, int SequenceIndex)> Match<T>(IReadOnlyList<T> rows, IReadOnlyList<T> sequence) where T : notnull
     {
+        var comparer = EqualityComparer<T>.Default;
         var n = rows.Count;
         var m = sequence.Count;
 
@@ -68,7 +69,7 @@ internal static class StopSequenceMerger
         {
             for (var j = m - 1; j >= 0; j--)
             {
-                lengths[i, j] = rows[i] == sequence[j]
+                lengths[i, j] = comparer.Equals(rows[i], sequence[j])
                     ? lengths[i + 1, j + 1] + 1
                     : Math.Max(lengths[i + 1, j], lengths[i, j + 1]);
             }
@@ -77,7 +78,7 @@ internal static class StopSequenceMerger
         var matches = new List<(int, int)>(lengths[0, 0]);
         for (int i = 0, j = 0; i < n && j < m;)
         {
-            if (rows[i] == sequence[j])
+            if (comparer.Equals(rows[i], sequence[j]))
             {
                 matches.Add((i++, j++));
             }

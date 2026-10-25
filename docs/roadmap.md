@@ -196,11 +196,11 @@ red linije.
 | Karta | MapLibre GL s podlogom OpenFreeMap | Besplatno, bez API ključa i brzo s tisućama stanica. |
 | Mjesta i stajališta | Photon (pretraga mjesta) i Overpass API (stajališta iz OSM-a), izravno iz preglednika | Besplatno i bez ključa; prijevoznik bez GTFS-a dobije stanice u nekoliko minuta. |
 | Trase | Ceste ili pruge iz vektorskih pločica OpenFreeMapa (OSM podaci, iste kao podloga karte) u koridoru oko stanica i najkraći put u pregledniku, uz jednosmjerne ulice; bez rutera (Valhalla, OSRM) i bez Overpassa | Mali i srednji prijevoznici trebaju trasu koja prati ulicu, ne bus trake ni pravila skretanja; bez dodatnog servisa u produkciji. |
-| PDF | QuestPDF i QRCoder | Vidi [departures-and-timetables.md](departures-and-timetables.md#35-licenca-za-questpdf) zbog licence. |
+| PDF | QuestPDF i QRCoder | Vidi [departures-and-timetables.md](departures-and-timetables.md#36-licenca-za-questpdf) zbog licence. |
 
 ## Otvorena pitanja
 
 - **Hosting**: gdje će instance raditi (VPS s Dockerom, Azure, vlastiti server)?
   O tome ovisi faza 6.
 - **Licenca za QuestPDF** u produkciji: Community licenca ne vrijedi za javni
-  sektor; vidi [licencu](departures-and-timetables.md#35-licenca-za-questpdf).
+  sektor; vidi [licencu](departures-and-timetables.md#36-licenca-za-questpdf).

@@ -8,10 +8,14 @@ import {
 import { api } from '@/api/client'
 import { unwrap } from '@/api/errors'
 import type { components, paths } from '@/api/schema'
+import { type DownloadedFile, fileNameOf } from '@/lib/download'
 
 export type Route = components['schemas']['RouteResponse']
 export type TimeMode = components['schemas']['TimeMode']
 export type RouteListParams = NonNullable<paths['/api/routes']['get']['parameters']['query']>
+export type RouteDiagramPdfParams = NonNullable<
+  paths['/api/routes/{id}/diagram.pdf']['get']['parameters']['query']
+>
 
 export const routeKeys = {
   all: ['routes'] as const,
@@ -91,6 +95,24 @@ export function useDeleteRoute() {
       void queryClient.invalidateQueries({ queryKey: routeKeys.all })
       // Linije stanica i polasci više ne uključuju obrisanu liniju.
       void queryClient.invalidateQueries({ queryKey: ['stops'] })
+    },
+    meta: { handlesErrors: true },
+  })
+}
+
+/**
+ * PDF shema linije. Bez varijante sa stanicama backend vraća 422, a
+ * ApiError.problems kaže zašto.
+ */
+export function useRouteDiagramPdf(id: string) {
+  return useMutation({
+    mutationFn: async (params: RouteDiagramPdfParams): Promise<DownloadedFile> => {
+      const result = await api.GET('/api/routes/{id}/diagram.pdf', {
+        params: { path: { id }, query: params },
+        parseAs: 'blob',
+      })
+      const blob = unwrap(result) as unknown as Blob
+      return { blob, fileName: fileNameOf(result.response) ?? 'linija.pdf' }
     },
     meta: { handlesErrors: true },
   })

@@ -330,7 +330,37 @@ U planu je i jedan PDF za sve stanice odjednom (vidi [roadmap](roadmap.md)).
 | Tekstovi na hrvatskom i engleskom | `Pdf/TimetableTexts` |
 | QR kod (SVG) | [QRCoder](https://github.com/codebude/QRCoder) |
 
-### 3.5 Licenca za QuestPDF
+### 3.5 Shema linije (PDF)
+
+PDF s redoslijedom stanica linije, za ispis u vozilu ili na stanici. Na
+stranici linije u dashboardu: izbornik **⋯ → PDF shema linije** (A4/A3,
+hrvatski/engleski).
+
+```
+GET /api/routes/{routeId}/diagram.pdf?paper=A4&language=hr
+```
+
+- Crta se iz **glavnih varijanti** (prva po redoslijedu) smjera 0 i smjera 1.
+  Smjer 0 ide odozgo prema dolje, smjer 1 se obrne i spoji s njim (najdulji
+  zajednički podniz, kao redci grafikona).
+- Stanice se spajaju **po nazivu** (bez razlike u velikim slovima i
+  razmacima), jer su stanice suprotnih smjerova obično zasebni zapisi s dvije
+  strane ulice.
+- Gdje staju oba smjera, crta je jedna i deblja. Gdje smjerovi idu različitim
+  stanicama, razdvaja se u dvije tanje trake; traka koja u retku ne staje nosi
+  strelicu smjera.
+- Lijevo od crte su minute od polazne stanice za svaki smjer; kod linija s
+  okvirnim vremenima međustanice imaju `~`.
+- Ostale varijante su ispod sheme kao popis (naziv, prva – zadnja stanica).
+- Kratka linija dobiva više retke; duga se lomi u dva ili tri stupca.
+- 422 ako linija nema varijantu sa stanicama.
+
+| Dio | Gdje |
+|---|---|
+| Spajanje smjerova i minute | `RouteDiagramBuilder`, testovi u `RouteDiagramBuilderTests` |
+| Izgled (crta kao SVG po retku) | `Pdf/RouteDiagramDocument`, tekstovi u `Pdf/RouteDiagramTexts` |
+
+### 3.6 Licenca za QuestPDF
 
 QuestPDF Community licenca (verzija 3.0, srpanj 2026.) besplatna je među
 ostalim za open-source projekte s OSI licencom, organizacije s godišnjim
@@ -338,7 +368,7 @@ prihodom ispod 1 milijun USD i korisnike čiji kod ne poziva QuestPDF izravno.
 **Javni sektor i državne agencije nisu obuhvaćeni bez obzira na prihod**, a
 gradski prijevoznici često su u javnom vlasništvu. Prije produkcije treba
 provjeriti koja licenca vrijedi. Sav kod koji poziva QuestPDF je u
-`StopTimetableDocument`, pa se biblioteka može zamijeniti (npr. PDFsharp i
+`StopTimetableDocument` i `RouteDiagramDocument`, pa se biblioteka može zamijeniti (npr. PDFsharp i
 MigraDoc, MIT licenca).
 
 ---
