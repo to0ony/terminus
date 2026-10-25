@@ -35,6 +35,12 @@ internal static class RouteDiagramDocument
     private const float GraphicWidth = 30;
     private const float MinutesWidth = 24;
 
+    // Zagrade ostalih varijanti desno od naziva: zasebna traka za varijante koje se preklapaju.
+    private const float LaneWidth = 9;
+    private const float TickLength = 5;
+    private const float BracketStroke = 1.2f;
+    private const float MinLabelWidth = 70;
+
     // Trake smjerova: zajedno se dodiruju (jedna debela crta), razdvojene su udaljene.
     private const float Center = GraphicWidth / 2;
     private const float SharedOffset = 1.6f;
@@ -63,12 +69,19 @@ internal static class RouteDiagramDocument
         var pageSize = a3 ? PageSizes.A3 : PageSizes.A4;
         var margin = (a3 ? 1.6f : 1.2f) * 72 / 2.54f;
 
+        // Varijante koje ne prolaze nijednom stanicom sheme ostaju popis ispod nje.
+        var offDiagram = diagram.OtherVariants.Where(v => v.Range is null).ToList();
+
         // Stupaca toliko da linija stane na jednu stranicu, najviše tri.
-        var available = pageSize.Height - 2 * margin - ChromeHeight - (diagram.OtherVariants.Count > 0 ? 30 + 11 * diagram.OtherVariants.Count : 0);
+        var available = pageSize.Height - 2 * margin - ChromeHeight - (offDiagram.Count > 0 ? 30 + 11 * offDiagram.Count : 0);
         var capacity = (int)(available / MinRowHeight);
         var columnCount = Math.Clamp((diagram.Stops.Count + capacity - 1) / capacity, 1, 3);
         var perColumn = (diagram.Stops.Count + columnCount - 1) / columnCount;
         var rowHeight = Math.Clamp(MathF.Floor(available / perColumn), MinRowHeight, MaxRowHeight);
+
+        var columnSpacing = a3 ? 24f : 16f;
+        var columnWidth = (pageSize.Width - 2 * margin - columnSpacing * (columnCount - 1)) / columnCount;
+        var brackets = Brackets.Of(diagram, columnWidth);
 
         return Document.Create(document => document.Page(page =>
         {
@@ -85,22 +98,22 @@ internal static class RouteDiagramDocument
                 // MultiColumn traži barem dva stupca.
                 if (columnCount == 1)
                 {
-                    content.Item().Element(c => StopRows(c, diagram, line, rowHeight));
+                    content.Item().Element(c => StopRows(c, diagram, brackets, line, rowHeight));
                 }
                 else
                 {
                     content.Item().MultiColumn(columns =>
                     {
                         columns.Columns(columnCount);
-                        columns.Spacing(a3 ? 24 : 16);
+                        columns.Spacing(columnSpacing);
                         columns.BalanceHeight();
-                        columns.Content().Element(c => StopRows(c, diagram, line, rowHeight));
+                        columns.Content().Element(c => StopRows(c, diagram, brackets, line, rowHeight));
                     });
                 }
 
-                if (diagram.OtherVariants.Count > 0)
+                if (offDiagram.Count > 0)
                 {
-                    content.Item().PaddingTop(14).Element(c => OtherVariants(c, diagram, texts));
+                    content.Item().PaddingTop(14).Element(c => OtherVariants(c, offDiagram, texts));
                 }
             });
 
@@ -130,6 +143,8 @@ internal static class RouteDiagramDocument
         string primary,
         (byte[] Content, bool IsSvg)? logo)
     {
+        var ends = $"{diagram.Forward.From} – {diagram.Forward.Headsign}";
+
         container.Column(column =>
         {
             if (logo is { } image)
@@ -153,23 +168,12 @@ internal static class RouteDiagramDocument
             {
                 row.Spacing(8);
                 row.AutoItem().AlignMiddle().Element(c => RouteBadge(c, diagram));
-                row.RelativeItem().AlignMiddle().Text(text =>
-                {
-                    text.DefaultTextStyle(style => style.FontSize(20));
-                    text.Span(diagram.Forward.From).Bold();
-                    text.Span(" – ");
-                    text.Span(diagram.Forward.Headsign).Bold();
-                });
+                // Naslov je naziv linije; krajevi glavne trase samo kad naziva nema.
+                var title = string.IsNullOrWhiteSpace(diagram.Route.LongName) ? ends : diagram.Route.LongName.Trim();
+                row.RelativeItem().AlignMiddle().Text(title).FontSize(20).Bold();
             });
 
-            var details = new List<string>();
-            if (!string.IsNullOrWhiteSpace(diagram.Route.LongName)
-                && diagram.Route.LongName != $"{diagram.Forward.From} - {diagram.Forward.Headsign}")
-            {
-                details.Add(diagram.Route.LongName.Trim());
-            }
-            details.Add(texts.StopCount(diagram.Stops.Count));
-            column.Item().PaddingTop(2).Text(string.Join(" · ", details)).FontColor(Muted);
+            column.Item().PaddingTop(2).Text($"{ends} · {texts.StopCount(diagram.Stops.Count)}").FontColor(Muted);
         });
     }
 
@@ -212,19 +216,19 @@ internal static class RouteDiagramDocument
         });
     }
 
-    private static void StopRows(IContainer container, RouteDiagram diagram, string line, float rowHeight)
+    private static void StopRows(IContainer container, RouteDiagram diagram, Brackets brackets, string line, float rowHeight)
     {
         container.Column(rows =>
         {
             for (var i = 0; i < diagram.Stops.Count; i++)
             {
                 var index = i;
-                rows.Item().Height(rowHeight).Element(c => StopRow(c, diagram, index, line, rowHeight));
+                rows.Item().Height(rowHeight).Element(c => StopRow(c, diagram, brackets, index, line, rowHeight));
             }
         });
     }
 
-    private static void StopRow(IContainer container, RouteDiagram diagram, int index, string line, float rowHeight)
+    private static void StopRow(IContainer container, RouteDiagram diagram, Brackets brackets, int index, string line, float rowHeight)
     {
         var stop = diagram.Stops[index];
         var approximate = diagram.Route.TimeMode == TimeMode.Approximate && !stop.Terminus;
@@ -241,7 +245,8 @@ internal static class RouteDiagramDocument
 
             row.ConstantItem(GraphicWidth).Height(rowHeight).Svg(RowSvg(diagram, index, line, rowHeight)).FitArea();
 
-            var name = row.RelativeItem().AlignMiddle().PaddingLeft(4).Text(stop.Name).ClampLines(1);
+            var nameCell = brackets.LaneCount == 0 ? row.RelativeItem() : row.ConstantItem(brackets.NameWidth);
+            var name = nameCell.AlignMiddle().PaddingLeft(4).Text(stop.Name).ClampLines(1);
             if (stop.Terminus)
             {
                 name.FontSize(10).Bold();
@@ -255,7 +260,55 @@ internal static class RouteDiagramDocument
             {
                 name.FontSize(9);
             }
+
+            // Svaka traka: zagrada, a uz njezin gornji kraj naziv varijante.
+            for (var lane = 0; lane < brackets.LaneCount; lane++)
+            {
+                row.ConstantItem(LaneWidth).Height(rowHeight).Svg(BracketSvg(brackets, lane, index, rowHeight)).FitArea();
+
+                var label = brackets.Items.FirstOrDefault(b => b.Lane == lane && b.Range.Top == index).Variant?.Name;
+                row.ConstantItem(brackets.LabelWidths[lane]).AlignMiddle().PaddingLeft(2)
+                    .Text(label ?? "").FontSize(7.5f).Italic().FontColor(Ink).ClampLines(1);
+            }
+            if (brackets.LaneCount > 0)
+            {
+                row.RelativeItem();
+            }
         });
+    }
+
+    /// <summary>
+    /// Zagrada jedne trake u jednom retku, kao zatvoreni interval položen okomito:
+    /// crta uz stanice kojima varijanta prolazi, s kvačicom prema nazivu gdje
+    /// varijanta počinje ili završava. Bez kvačice crta ide do ruba retka, jer
+    /// varijanta nastavlja do stanica izvan sheme.
+    /// </summary>
+    private static string BracketSvg(Brackets brackets, int lane, int index, float rowHeight)
+    {
+        var svg = new SvgBuilder(LaneWidth, rowHeight);
+        var mid = rowHeight / 2;
+
+        foreach (var (_, range, _) in brackets.Items.Where(b => b.Lane == lane))
+        {
+            if (index < range.Top || index > range.Bottom)
+            {
+                continue;
+            }
+
+            var x = TickLength + 1;
+            var top = index > range.Top || !range.TopClosed ? 0 : mid;
+            var bottom = index < range.Bottom || !range.BottomClosed ? rowHeight : mid;
+            if (bottom > top)
+            {
+                svg.Line(x, top, x, bottom, Ink, BracketStroke);
+            }
+            if (index == range.Top && range.TopClosed || index == range.Bottom && range.BottomClosed)
+            {
+                svg.Line(x - TickLength, mid, x + BracketStroke / 2, mid, Ink, BracketStroke);
+            }
+        }
+
+        return svg.ToString();
     }
 
     private static string Minutes(int? minutes, bool approximate) => minutes switch
@@ -380,30 +433,72 @@ internal static class RouteDiagramDocument
         return svg.ToString();
     }
 
-    private static void OtherVariants(IContainer container, RouteDiagram diagram, RouteDiagramTexts texts)
+    private static void OtherVariants(IContainer container, IReadOnlyList<RouteDiagramVariant> variants, RouteDiagramTexts texts)
     {
-        // Podebljani su počeci i krajevi koji nisu i krajevi glavne trase.
-        var mainEnds = diagram.Stops.Where(s => s.Terminus).Select(s => s.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
-
         container.Column(column =>
         {
             column.Spacing(1);
             column.Item().PaddingBottom(2).Text(texts.OtherVariants).FontSize(9).SemiBold();
-            foreach (var variant in diagram.OtherVariants)
+            foreach (var variant in variants)
             {
                 column.Item().Text(text =>
                 {
                     text.DefaultTextStyle(style => style.FontSize(8).FontColor(Muted));
                     text.Span($"{variant.Name}: ").FontColor(Colors.Black);
-                    var from = text.Span(variant.From);
-                    if (!mainEnds.Contains(variant.From)) from.Bold().FontColor(Colors.Black);
-                    text.Span(" – ");
-                    var to = text.Span(variant.To);
-                    if (!mainEnds.Contains(variant.To)) to.Bold().FontColor(Colors.Black);
-                    text.Span($" ({texts.StopCount(variant.StopCount)})");
+                    text.Span($"{variant.From} – {variant.To} ({texts.StopCount(variant.StopCount)})");
                 });
             }
         });
+    }
+
+    /// <summary>Zagrade ostalih varijanti: traka svake, širine naziva traka i širina stupca naziva stanica.</summary>
+    private sealed record Brackets(
+        IReadOnlyList<(RouteDiagramVariant Variant, RouteDiagramRange Range, int Lane)> Items,
+        IReadOnlyList<float> LabelWidths,
+        float NameWidth)
+    {
+        public int LaneCount => LabelWidths.Count;
+
+        public static Brackets Of(RouteDiagram diagram, float columnWidth)
+        {
+            // Varijanta dobiva prvu traku u kojoj se ne preklapa s drugom; ranije i duže idu prve.
+            var items = new List<(RouteDiagramVariant, RouteDiagramRange, int)>();
+            var laneBottoms = new List<int>();
+            foreach (var variant in diagram.OtherVariants
+                .Where(v => v.Range is not null)
+                .OrderBy(v => v.Range!.Top)
+                .ThenByDescending(v => v.Range!.Bottom))
+            {
+                var range = variant.Range!;
+                var lane = laneBottoms.FindIndex(bottom => bottom < range.Top);
+                if (lane < 0)
+                {
+                    lane = laneBottoms.Count;
+                    laneBottoms.Add(range.Bottom);
+                }
+                else
+                {
+                    laneBottoms[lane] = range.Bottom;
+                }
+                items.Add((variant, range, lane));
+            }
+
+            // Širine po broju slova (procjena): zagrade stoje odmah iza najduljeg
+            // naziva stanice, a ne uz rub stranice. Kad ne stane, nazivi se skraćuju.
+            var labelWidths = Enumerable.Range(0, laneBottoms.Count)
+                .Select(lane => items.Where(i => i.Item3 == lane).Max(i => i.Item1.Name.Length * 4.2f) + 6)
+                .ToList();
+            var space = columnWidth - 2 * MinutesWidth - GraphicWidth - laneBottoms.Count * LaneWidth;
+            var longest = diagram.Stops.Max(s => s.Name.Length * (s.Terminus ? 5.6f : 5f)) + 10;
+            var nameWidth = Math.Max(Math.Min(longest, space - laneBottoms.Count * MinLabelWidth), 60);
+            var labelSpace = space - nameWidth;
+            var labelTotal = labelWidths.Sum();
+            if (labelTotal > labelSpace)
+            {
+                labelWidths = labelWidths.Select(w => Math.Max(w * labelSpace / labelTotal, 1)).ToList();
+            }
+            return new Brackets(items, labelWidths, nameWidth);
+        }
     }
 
     private static void RouteBadge(IContainer container, RouteDiagram diagram)

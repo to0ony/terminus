@@ -68,6 +68,22 @@ public class RouteDiagramBuilderTests
     }
 
     [Fact]
+    public void Build_GivesOtherVariantsTheRowsTheyRunThrough()
+    {
+        Variant(TripDirection.Outbound, 0, "Kolodvor", "Trg", "Bolnica", "Tvrđa");
+        Variant(TripDirection.Outbound, 1, "Trg", "Bolnica");
+        // Iz garaže: počinje izvan sheme, pa je gornji kraj otvoren.
+        Variant(TripDirection.Outbound, 2, "Garaža", "Bolnica", "Tvrđa");
+        Variant(TripDirection.Outbound, 3, "Garaža", "Spremište");
+
+        var diagram = Build();
+
+        Assert.Equal(new RouteDiagramRange(1, 2, true, true), diagram.OtherVariants[0].Range);
+        Assert.Equal(new RouteDiagramRange(2, 3, false, true), diagram.OtherVariants[1].Range);
+        Assert.Null(diagram.OtherVariants[2].Range);
+    }
+
+    [Fact]
     public void Build_MarksEndsOfOtherVariantsThatAreNotMainEnds()
     {
         Variant(TripDirection.Outbound, 0, "Kolodvor", "Trg", "Bolnica", "Tvrđa");

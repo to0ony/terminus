@@ -351,9 +351,15 @@ GET /api/routes/{routeId}/diagram.pdf?paper=A4&language=hr
   strelicu smjera.
 - Lijevo od crte su minute od polazne stanice za svaki smjer; kod linija s
   okvirnim vremenima međustanice imaju `~`.
-- Ostale varijante su ispod sheme kao popis (naziv, prva – zadnja stanica).
-  Njihovi počeci i krajevi koji nisu i krajevi glavne trase podebljani su i
-  u popisu i na shemi (npr. gdje skraćena varijanta završava).
+- Naslov je naziv linije (`route_long_name`); ispod su krajevi glavne trase
+  i broj stanica.
+- Ostale varijante su **zagrade desno od naziva stanica**, kao zatvoreni
+  interval položen okomito: kvačica prema stanici gdje varijanta počinje ili
+  završava, a uz gornji kraj naziv varijante. Kad varijanta nastavlja do
+  stanica izvan sheme (npr. iz garaže), taj kraj nema kvačicu. Varijante koje
+  se preklapaju dobivaju zasebne trake.
+- Stanice gdje ostale varijante počinju ili završavaju podebljane su na shemi.
+- Varijante koje ne prolaze nijednom stanicom sheme navedene su ispod nje.
 - Kratka linija dobiva više retke; duga se lomi u dva ili tri stupca.
 - 422 ako linija nema varijantu sa stanicama.
 

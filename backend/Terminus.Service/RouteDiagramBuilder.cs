@@ -96,8 +96,13 @@ internal static class RouteDiagramBuilder
         var others = otherVariants
             .OrderBy(v => v.Variant.DirectionId ?? TripDirection.Outbound)
             .ThenBy(v => v.Variant.SortOrder)
-            .Select(v => new RouteDiagramVariant(
-                v.Variant.Name, v.Variant.DirectionId, Name(v.Stops[0].StopId), Name(v.Stops[^1].StopId), v.Stops.Count))
+            .Select(v =>
+            {
+                var from = Name(v.Stops[0].StopId);
+                var to = Name(v.Stops[^1].StopId);
+                var range = Range(rows, v.Stops.Select(s => Key(Name(s.StopId))).ToList(), Key(from), Key(to));
+                return new RouteDiagramVariant(v.Variant.Name, v.Variant.DirectionId, from, to, v.Stops.Count, range);
+            })
             .ToList();
 
         return new RouteDiagram(
@@ -107,6 +112,24 @@ internal static class RouteDiagramBuilder
             backward.Variant is null ? null : Direction(backward.Variant, backward.Stops, Name),
             diagramStops,
             others);
+    }
+
+    /// <summary>
+    /// Raspon redaka sheme kojima varijanta prolazi. Kraj je zatvoren ako je tu
+    /// i kraj varijante; inače varijanta nastavlja do stanica izvan sheme.
+    /// </summary>
+    private static RouteDiagramRange? Range(List<string> rows, List<string> keys, string from, string to)
+    {
+        var indexes = keys.Select(k => rows.IndexOf(k)).Where(i => i >= 0).ToList();
+        if (indexes.Count == 0)
+        {
+            return null;
+        }
+
+        var top = indexes.Min();
+        var bottom = indexes.Max();
+        var ends = new[] { rows.IndexOf(from), rows.IndexOf(to) };
+        return new RouteDiagramRange(top, bottom, ends.Contains(top), ends.Contains(bottom));
     }
 
     /// <summary>Naziv bez razlike u velikim slovima i razmacima.</summary>

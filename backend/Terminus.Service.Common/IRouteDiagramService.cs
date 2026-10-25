@@ -47,4 +47,16 @@ public sealed record RouteDiagramStop(string Name, int? ForwardMinutes, int? Bac
     public bool Backward => BackwardMinutes is not null;
 }
 
-public sealed record RouteDiagramVariant(string Name, TripDirection? DirectionId, string From, string To, int StopCount);
+/// <param name="Range">Retci sheme kojima varijanta prolazi; null ako nijednim.</param>
+public sealed record RouteDiagramVariant(
+    string Name,
+    TripDirection? DirectionId,
+    string From,
+    string To,
+    int StopCount,
+    RouteDiagramRange? Range = null);
+
+/// <summary>Raspon redaka sheme, kao interval: zatvoren kraj je i kraj varijante.</summary>
+/// <param name="TopClosed">Varijanta počinje ili završava u retku <paramref name="Top"/>.</param>
+/// <param name="BottomClosed">Varijanta počinje ili završava u retku <paramref name="Bottom"/>.</param>
+public sealed record RouteDiagramRange(int Top, int Bottom, bool TopClosed, bool BottomClosed);
