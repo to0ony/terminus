@@ -60,6 +60,15 @@ export function MapView({
     })
     instance.addControl(new NavigationControl({ showCompass: false }), 'top-right')
     instance.touchZoomRotate.disableRotation()
+    // Atribucija podloge (© OpenStreetMap…) počinje skupljena kao gumb "i";
+    // MapLibre je inače prvi put prikaže raširenu. Skuplja se kad je popunjena.
+    instance.once('idle', () => {
+      const attribution = container.current?.querySelector(
+        '.maplibregl-ctrl-attrib.maplibregl-compact',
+      )
+      attribution?.classList.remove('maplibregl-compact-show')
+      attribution?.removeAttribute('open')
+    })
     instance.once('load', () => {
       setMap(instance)
       onReady?.(instance)
