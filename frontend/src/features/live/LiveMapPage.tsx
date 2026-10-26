@@ -1,6 +1,5 @@
 import {
   ActionIcon,
-  Badge,
   Box,
   CloseButton,
   Group,
@@ -18,6 +17,7 @@ import { RouteBadge } from '@/features/routes/RouteBadge'
 import { type MapStop, useStopDepartures, useStopsExtent } from '@/features/stops/queries'
 import { browserTimeZone, formatTime } from './clock'
 import { ClockPanel } from './ClockPanel'
+import { DepartureStrip } from './DepartureStrip'
 import { type Departure, departuresFrom, minutesUntil, sameDirection } from './departures'
 import { LiveMap } from './LiveMap'
 import classes from './LiveMapPage.module.css'
@@ -324,28 +324,7 @@ function DirectionPanel({
         <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
           Vremena polazaka
         </Text>
-        <Group gap={6}>
-          {departures.map((departure) => {
-            const active =
-              departure.tripId === selected.tripId && departure.seconds === selected.seconds
-            const past = departure.seconds < time
-            return (
-              <Badge
-                key={`${departure.tripId}-${departure.seconds}`}
-                component="button"
-                onClick={() => onSelect(departure)}
-                variant={active ? 'filled' : 'light'}
-                color={past ? 'gray' : 'blue'}
-                tt="none"
-                size="lg"
-                radius="sm"
-                style={{ cursor: 'pointer' }}
-              >
-                {formatTime(departure.seconds, false)}
-              </Badge>
-            )
-          })}
-        </Group>
+        <DepartureStrip departures={departures} selected={selected} onSelect={onSelect} />
         {selected.seconds >= time && (
           <Text size="sm">
             Odabrani polazak {formatTime(selected.seconds, false)}
