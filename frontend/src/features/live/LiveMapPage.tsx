@@ -179,7 +179,12 @@ function LiveMapView({ standalone }: { standalone: boolean }) {
         ) : (
           <Group gap="sm" wrap="nowrap" p="md">
             <IconClick size={20} />
-            <Text size="sm">Klikni stanicu na karti za polaske s nje.</Text>
+            <div>
+              <Text size="sm">Klikni stanicu na karti za polaske s nje.</Text>
+              <Text size="xs" c="dimmed">
+                Vozila su prema voznom redu, ne prema GPS-u.
+              </Text>
+            </div>
           </Group>
         )}
       </Paper>
