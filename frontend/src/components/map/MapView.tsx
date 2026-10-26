@@ -23,6 +23,8 @@ interface MapViewProps extends BoxProps {
   onReady?: (map: Map) => void
   /** Vlastita zapamćena podloga; bez nje zajednička. */
   styleSetting?: MapStyleSetting
+  /** Razmak gumba za podlogu od dna (npr. iznad ploče na mobitelu). */
+  pickerBottom?: number
 }
 
 /**
@@ -33,6 +35,7 @@ export function MapView({
   bounds,
   onReady,
   styleSetting = sharedMapStyle,
+  pickerBottom = 10,
   ...boxProps
 }: MapViewProps) {
   const container = useRef<HTMLDivElement>(null)
@@ -75,7 +78,7 @@ export function MapView({
   return (
     <Box pos="relative" {...boxProps}>
       <Box ref={container} pos="absolute" inset={0} />
-      <Box pos="absolute" left={10} bottom={10}>
+      <Box pos="absolute" left={10} bottom={pickerBottom}>
         <MapStylePicker setting={styleSetting} />
       </Box>
     </Box>

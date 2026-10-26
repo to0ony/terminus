@@ -359,6 +359,8 @@ stanice. Vozila su **prema voznom redu** (simulacija), ne prema GPS-u.
 - **Simulacija**: odabrani dan, vrijeme (klizač) i brzina od 1× do 600×; služi
   za provjeru voznog reda.
 - Ispred svake linije je ikona vrste prijevoza (autobus, vlak, brod…).
+- Na mobitelu je panel **donja ploča** koja se skuplja i širi (ručka na
+  vrhu), sat i simulacija su gore, a karta se trasi prilagođava oko njih.
 - Kod odabranog polaska vremena smjera su u jednom redu (ranija blago siva,
   bira se klikom ili strelicama), a ispod su **stanice tog polaska**: ova
   stanica, tri sljedeće i zadnja, s vremenom dolaska i koliko se vozi od ove

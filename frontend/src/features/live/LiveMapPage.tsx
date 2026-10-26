@@ -11,6 +11,7 @@ import {
   UnstyledButton,
 } from '@mantine/core'
 import { IconArrowLeft, IconBus, IconClick } from '@tabler/icons-react'
+import { useMediaQuery } from '@mantine/hooks'
 import { createElement, useMemo, useState } from 'react'
 import { RouteBadge } from '@/features/routes/RouteBadge'
 import { routeTypeIcon } from '@/features/routes/routeTypes'
@@ -80,14 +81,20 @@ export function LiveMapPage() {
     }
   }, [day, allVehicles, selected?.tripId])
 
+  // Mobitel: panel je donja ploča koja se skuplja, a sat je gore.
+  const mobile = useMediaQuery('(max-width: 48em)') ?? false
+  const [sheetOpen, setSheetOpen] = useState(true)
+
   const selectStop = (next: MapStop | null) => {
     setStop(next)
+    setSheetOpen(true)
     setSelected(null)
     setSelectedVehicle(null)
   }
 
   const selectDeparture = (departure: Departure | null) => {
     setSelected(departure)
+    setSheetOpen(true)
     setSelectedVehicle(null)
   }
 
@@ -95,12 +102,12 @@ export function LiveMapPage() {
     <Stack gap="sm">
       <Group justify="space-between">
         <Title order={2}>Karta uživo</Title>
-        <Text size="sm" c="dimmed">
+        <Text size="sm" c="dimmed" visibleFrom="sm">
           Vozila su prema voznom redu, ne prema GPS-u.
         </Text>
       </Group>
 
-      <Box pos="relative" h="calc(100dvh - 150px)" mih={520}>
+      <Box pos="relative" h="calc(100dvh - 150px)" mih={420}>
         {extent.isSuccess && (
           <LiveMap
             h="100%"
@@ -113,19 +120,40 @@ export function LiveMapPage() {
             timeRef={clock.timeRef}
             selectedVehicle={selectedVehicle}
             onSelectVehicle={setSelectedVehicle}
+            fitPadding={
+              mobile
+                ? { top: clock.mode === 'simulation' ? 150 : 70, bottom: 320, left: 30, right: 30 }
+                : { top: 60, bottom: 160, left: 400, right: 60 }
+            }
+            pickerBottom={mobile ? 84 : 10}
           />
         )}
 
         <Paper
           pos="absolute"
-          top={12}
-          left={12}
-          w={360}
-          maw="calc(100% - 24px)"
           shadow="md"
-          radius="md"
           withBorder
+          {...(mobile
+            ? {
+                left: 0,
+                right: 0,
+                bottom: 0,
+                style: { borderRadius: '16px 16px 0 0' },
+              }
+            : { top: 12, left: 12, w: 380, maw: 'calc(100% - 24px)', radius: 'md' })}
         >
+          {mobile && (
+            <UnstyledButton
+              onClick={() => setSheetOpen(!sheetOpen)}
+              w="100%"
+              pt={8}
+              pb={2}
+              aria-label={sheetOpen ? 'Skupi' : 'Proširi'}
+              style={{ display: 'flex', justifyContent: 'center' }}
+            >
+              <Box w={40} h={4} bg="gray.4" style={{ borderRadius: 2 }} />
+            </UnstyledButton>
+          )}
           {stop ? (
             <StopPanel
               stop={stop}
@@ -139,6 +167,8 @@ export function LiveMapPage() {
               loading={selected !== null && live.isPending}
               selectedVehicle={selectedVehicle}
               onSelectVehicle={setSelectedVehicle}
+              collapsed={mobile && !sheetOpen}
+              bodyMaxHeight={mobile ? '45dvh' : undefined}
             />
           ) : (
             <Group gap="sm" wrap="nowrap" p="md">
@@ -150,15 +180,19 @@ export function LiveMapPage() {
 
         <Paper
           pos="absolute"
-          bottom={32}
-          left="50%"
-          w={560}
-          maw="calc(100% - 24px)"
           shadow="md"
           radius="md"
           withBorder
-          p="sm"
-          style={{ transform: 'translateX(-50%)' }}
+          p={mobile ? 'xs' : 'sm'}
+          {...(mobile
+            ? { top: 8, left: 8, right: 52 }
+            : {
+                bottom: 32,
+                left: '50%',
+                w: 560,
+                maw: 'calc(100% - 24px)',
+                style: { transform: 'translateX(-50%)' },
+              })}
         >
           <ClockPanel clock={clock} />
         </Paper>
@@ -179,6 +213,9 @@ interface StopPanelProps {
   loading: boolean
   selectedVehicle: string | null
   onSelectVehicle: (key: string) => void
+  /** Samo naslov (skupljena ploča na mobitelu). */
+  collapsed: boolean
+  bodyMaxHeight?: string
 }
 
 /** Stanica: polasci do kraja dana, a nakon klika na polazak njegov smjer. */
@@ -194,6 +231,8 @@ function StopPanel({
   loading,
   selectedVehicle,
   onSelectVehicle,
+  collapsed,
+  bodyMaxHeight,
 }: StopPanelProps) {
   const departures = useStopDepartures(stop.id, date)
   const routes = useStopRoutes(stop.id)
@@ -224,9 +263,7 @@ function StopPanel({
             >
               <IconArrowLeft size={18} />
             </ActionIcon>
-          ) : (
-            <BusDot color="#1a73e8" size={32} />
-          )}
+          ) : null}
           <div>
             <Text fw={600} lh={1.3}>
               {stop.name}
@@ -241,7 +278,11 @@ function StopPanel({
         <CloseButton aria-label="Zatvori" onClick={onClose} />
       </Group>
 
-      <Box className={classes.panelBody}>
+      <Box
+        className={classes.panelBody}
+        display={collapsed ? 'none' : undefined}
+        mah={bodyMaxHeight}
+      >
         <Box px="md" pb="md">
           {departures.isPending ? (
             <Loader size="sm" />

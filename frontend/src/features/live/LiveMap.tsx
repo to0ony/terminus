@@ -39,6 +39,9 @@ interface LiveMapProps extends BoxProps {
   timeRef: RefObject<number>
   selectedVehicle: string | null
   onSelectVehicle: (key: string) => void
+  /** Rub karte koji pokrivaju paneli, za prilagodbu trasi. */
+  fitPadding: { top: number; bottom: number; left: number; right: number }
+  pickerBottom?: number
 }
 
 /**
@@ -55,6 +58,8 @@ export function LiveMap({
   timeRef,
   selectedVehicle,
   onSelectVehicle,
+  fitPadding,
+  pickerBottom,
   ...boxProps
 }: LiveMapProps) {
   const [map, setMap] = useState<Map | null>(null)
@@ -301,11 +306,11 @@ export function LiveMap({
       }
     }
     map.fitBounds(bounds, {
-      padding: { top: 60, bottom: 160, left: 380, right: 60 },
+      padding: fitPadding,
       maxZoom: 15,
       duration: 800,
     })
-  }, [map, day, focusKey])
+  }, [map, day, focusKey, fitPadding])
 
   // Vozila: svaki okvir iz točnog vremena sata.
   useEffect(() => {
@@ -339,6 +344,7 @@ export function LiveMap({
     <MapView
       {...boxProps}
       styleSetting={liveMapStyle}
+      pickerBottom={pickerBottom}
       bounds={
         extent
           ? [extent.minLongitude, extent.minLatitude, extent.maxLongitude, extent.maxLatitude]
