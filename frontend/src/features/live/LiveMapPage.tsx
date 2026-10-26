@@ -12,11 +12,18 @@ import {
   UnstyledButton,
 } from '@mantine/core'
 import { IconArrowLeft, IconBus, IconClick } from '@tabler/icons-react'
-import { useMemo, useState } from 'react'
+import { createElement, useMemo, useState } from 'react'
 import { RouteBadge } from '@/features/routes/RouteBadge'
-import { type MapStop, useStopDepartures, useStopsExtent } from '@/features/stops/queries'
+import { routeTypeIcon } from '@/features/routes/routeTypes'
+import {
+  type MapStop,
+  useStopDepartures,
+  useStopRoutes,
+  useStopsExtent,
+} from '@/features/stops/queries'
 import { browserTimeZone, formatTime } from './clock'
 import { ClockPanel } from './ClockPanel'
+import { TripTimeline } from './TripTimeline'
 import { DepartureStrip } from './DepartureStrip'
 import { type Departure, departuresFrom, minutesUntil, sameDirection } from './departures'
 import { LiveMap } from './LiveMap'
@@ -190,6 +197,11 @@ function StopPanel({
   onSelectVehicle,
 }: StopPanelProps) {
   const departures = useStopDepartures(stop.id, date)
+  const routes = useStopRoutes(stop.id)
+  const routeTypes = useMemo(
+    () => new Map(routes.data?.map((r) => [r.id, r.routeType]) ?? []),
+    [routes.data],
+  )
   // Polasci od sada; odabrani ostaje i kad prođe, da se vidi njegov smjer.
   const upcoming = useMemo(
     () =>
@@ -261,6 +273,7 @@ function StopPanel({
                 >
                   <Group gap="sm" wrap="nowrap" justify="space-between">
                     <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
+                      <RouteTypeIcon routeType={routeTypes.get(departure.routeId)} />
                       <RouteBadge route={routeOf(departure)} size="sm" />
                       <div style={{ minWidth: 0 }}>
                         <Text size="sm" lineClamp={1}>
@@ -306,6 +319,9 @@ function DirectionPanel({
   onSelectVehicle: (key: string) => void
 }) {
   const stopNames = useMemo(() => new Map(view?.day.stops.map((s) => [s.id, s.name]) ?? []), [view])
+  const selectedTrip = view?.vehicles.find(
+    (v) => v.trip.id === selected.tripId && !v.trip.previousDay,
+  )
   const running = (view?.vehicles ?? []).flatMap((vehicle) => {
     const state = vehicleAt(vehicle.track, time)
     return state ? [{ vehicle, state }] : []
@@ -334,6 +350,22 @@ function DirectionPanel({
           </Text>
         )}
       </Stack>
+
+      {selectedTrip && (
+        <Stack gap={6}>
+          <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
+            Stanice
+          </Text>
+          <TripTimeline
+            vehicle={selectedTrip}
+            stopNames={stopNames}
+            color={`#${view?.day.route.color ?? '1a73e8'}`}
+            fromStopId={selected.stopId}
+            fromSeconds={selected.seconds}
+            time={time}
+          />
+        </Stack>
+      )}
 
       <Stack gap={4}>
         <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
@@ -394,6 +426,15 @@ function DepartureTime({ seconds, time }: { seconds: number; time: number }) {
       )}
     </div>
   )
+}
+
+/** Vrsta prijevoza ispred oznake linije (autobus, vlak, brod…). */
+function RouteTypeIcon({ routeType }: { routeType: number | undefined }) {
+  return createElement(routeTypeIcon(routeType ?? 3), {
+    size: 18,
+    color: 'var(--mantine-color-dimmed)',
+    style: { flexShrink: 0 },
+  })
 }
 
 function BusDot({ color, size }: { color: string; size: number }) {

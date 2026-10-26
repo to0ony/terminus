@@ -43,3 +43,68 @@
   outline-offset: 2px;
   border-radius: 6px;
 }
+
+/* Stanice polaska kao vremenska crta: crta u boji linije i točka po stanici. */
+.stopRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+}
+
+.rail {
+  position: relative;
+  align-self: stretch;
+  flex-shrink: 0;
+  width: 18px;
+}
+
+.rail::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 7px;
+  width: 4px;
+  background-color: var(--rail-color);
+}
+
+.stopRow[data-first] .rail::before {
+  top: 50%;
+}
+
+.stopRow[data-last] .rail::before {
+  bottom: 50%;
+}
+
+.dot {
+  position: absolute;
+  top: calc(50% - 6px);
+  left: 3px;
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  border: 3px solid var(--rail-color);
+  border-radius: 50%;
+  background-color: #ffffff;
+}
+
+.stopRow[data-current] .dot {
+  top: calc(50% - 8px);
+  left: 1px;
+  width: 16px;
+  height: 16px;
+  border-color: #ffffff;
+  background-color: var(--rail-color);
+  box-shadow: 0 0 0 2px var(--rail-color);
+}
+
+.stopRow[data-passed] {
+  color: var(--mantine-color-dimmed);
+}
+
+.vehicleOnRail {
+  position: absolute;
+  top: calc(50% - 11px);
+  left: -2px;
+}

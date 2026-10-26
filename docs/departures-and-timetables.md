@@ -358,6 +358,12 @@ stanice. Vozila su **prema voznom redu** (simulacija), ne prema GPS-u.
 - **Uživo**: današnji dan i trenutno vrijeme u zoni prijevoznika.
 - **Simulacija**: odabrani dan, vrijeme (klizač) i brzina od 1× do 600×; služi
   za provjeru voznog reda.
+- Ispred svake linije je ikona vrste prijevoza (autobus, vlak, brod…).
+- Kod odabranog polaska vremena smjera su u jednom redu (ranija blago siva,
+  bira se klikom ili strelicama), a ispod su **stanice tog polaska** od ove
+  stanice do kraja: vrijeme dolaska i koliko se vozi od ove stanice (ranije
+  stanice su skupljene). Promjena vremena gore mijenja vremena stanica, a
+  vozilo tog polaska vidi se na crti stanica.
 - Polasci dolaze iz `GET /api/stops/{id}/departures?date=` (kao zaslon
   stanice); noćne vožnje prethodnog dana nisu na popisu polazaka, ali se na
   trasi vide kao vozila.
