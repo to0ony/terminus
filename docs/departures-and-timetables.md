@@ -415,6 +415,11 @@ stanice. Vozila su **prema voznom redu** (simulacija), ne prema GPS-u.
 - **Simulacija**: odabrani dan, vrijeme (klizač) i brzina od 1× do 600×; služi
   za provjeru voznog reda.
 - Ispred svake linije je ikona vrste prijevoza (autobus, vlak, brod…).
+- Ispod današnjih su **polasci sutra** (naslov s danom, prvih 8, pa
+  „Prikaži sve”). Kad danas više ništa ne vozi, piše „Danas više nema
+  polazaka. Sljedeći: sutra u 05:40.” Klik na sutrašnji polazak prikazuje
+  trasu i stanice s vremenima za taj dan, bez vozila. Polasci iza ponoći
+  prikazuju se kao 00:10 s oznakom „sutra”, ne kao 24:10.
 - Klik na vozilo (na karti ili u popisu): karta mu se približi i **prati
   ga**; na mobitelu se ploča spusti. Povlačenje karte prekida praćenje, a gumb
   **Prati vozilo** ga vraća.

@@ -38,13 +38,32 @@ export function nowInZone(timeZone: string, now = new Date()): { date: string; s
   }
 }
 
-/** Sekunde od ponoći kao HH:MM:SS (ili HH:MM); iza ponoći ide dalje od 24. */
+/** Sekunde od ponoći kao HH:MM:SS (ili HH:MM); iza ponoći opet od 00 (24:10 je 00:10). */
 export function formatTime(seconds: number, withSeconds = true): string {
   const whole = Math.floor(seconds)
   const pad = (value: number) => String(value).padStart(2, '0')
-  const hours = pad(Math.floor(whole / 3600))
+  const hours = pad(Math.floor(whole / 3600) % 24)
   const minutes = pad(Math.floor((whole % 3600) / 60))
   return withSeconds ? `${hours}:${minutes}:${pad(whole % 60)}` : `${hours}:${minutes}`
+}
+
+/** Datum (YYYY-MM-DD) pomaknut za zadani broj dana. */
+export function addDays(date: string, days: number): string {
+  const [year, month, dayOfMonth] = date.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, dayOfMonth + days)).toISOString().slice(0, 10)
+}
+
+const dayLabel = new Intl.DateTimeFormat('hr-HR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'numeric',
+  timeZone: 'UTC',
+})
+
+/** Dan za naslov, npr. "utorak, 28. 10.". */
+export function formatDay(date: string): string {
+  const [year, month, dayOfMonth] = date.split('-').map(Number)
+  return dayLabel.format(new Date(Date.UTC(year, month - 1, dayOfMonth)))
 }
 
 /** Zona preglednika, dok se ne zna zona prijevoznika. */

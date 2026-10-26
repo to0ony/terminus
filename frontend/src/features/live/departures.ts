@@ -3,9 +3,11 @@ import { day, nowInZone } from './clock'
 
 type StopDayDeparture = components['schemas']['StopDayDepartureResponse']
 
-/** Polazak sa stanice, s vremenom u sekundama od ponoći dana karte. */
+/** Polazak sa stanice, s vremenom u sekundama od ponoći svog dana. */
 export interface Departure extends StopDayDeparture {
   seconds: number
+  /** 0 za dan karte, 1 za sljedeći dan. */
+  dayOffset: number
 }
 
 /**
@@ -17,12 +19,13 @@ export function departuresFrom(
   date: string,
   timeZone: string,
   from: number,
+  dayOffset = 0,
 ): Departure[] {
   return departures
     .map((departure) => {
       const local = nowInZone(timeZone, new Date(departure.departureTime))
       const seconds = Math.round(local.seconds) + (local.date > date ? day : 0)
-      return { ...departure, seconds }
+      return { ...departure, seconds, dayOffset }
     })
     .filter((departure) => departure.seconds >= from)
     .sort((a, b) => a.seconds - b.seconds)

@@ -1,7 +1,7 @@
 import { ActionIcon, Box, Group, UnstyledButton } from '@mantine/core'
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 import { useEffect, useRef } from 'react'
-import { formatTime } from './clock'
+import { day, formatTime } from './clock'
 import type { Departure } from './departures'
 import classes from './LiveMapPage.module.css'
 
@@ -74,6 +74,7 @@ export function DepartureStrip({ departures, selected, onSelect }: DepartureStri
               onClick={() => onSelect(departure)}
             >
               {formatTime(departure.seconds, false)}
+              {departure.seconds >= day && <sup> +1</sup>}
             </UnstyledButton>
           ))}
         </Group>
