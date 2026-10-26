@@ -428,6 +428,9 @@ stanice. Vozila su **prema voznom redu** (simulacija), ne prema GPS-u.
   `stops/extent`, `stops/{id}/departures`, `stops/{id}/routes`,
   `routes/{id}/live`, `live`) daje samo aktivne stanice, s ograničenjem
   zahtjeva i cacheom od 5 minuta.
+  Javna karta ima i gumb **moja lokacija** (ispod zuma): plava točka
+  korisnika, uz dopuštenje preglednika; radi samo preko HTTPS-a (ili na
+  localhostu).
 - **Otvori u novoj kartici** otvara `/live/full`: ista karta preko cijelog
   prozora, bez izbornika i zaglavlja dashboarda (traži prijavu kao i
   dashboard).

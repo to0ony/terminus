@@ -47,6 +47,8 @@ interface LiveMapProps extends BoxProps {
   /** Rub karte koji pokrivaju paneli dok karta prati vozilo. */
   followPadding: Padding
   pickerBottom?: number
+  /** Gumb "moja lokacija" (javna karta). */
+  geolocate?: boolean
 }
 
 /**
@@ -68,6 +70,7 @@ export function LiveMap({
   fitPadding,
   followPadding,
   pickerBottom,
+  geolocate,
   ...boxProps
 }: LiveMapProps) {
   const [map, setMap] = useState<Map | null>(null)
@@ -370,6 +373,7 @@ export function LiveMap({
       {...boxProps}
       styleSetting={liveMapStyle}
       pickerBottom={pickerBottom}
+      geolocate={geolocate}
       bounds={
         extent
           ? [extent.minLongitude, extent.minLatitude, extent.maxLongitude, extent.maxLatitude]

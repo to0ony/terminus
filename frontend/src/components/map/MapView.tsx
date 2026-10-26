@@ -1,6 +1,7 @@
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { Box, type BoxProps, useComputedColorScheme } from '@mantine/core'
 import {
+  GeolocateControl,
   type LngLatBoundsLike,
   Map,
   NavigationControl,
@@ -25,6 +26,8 @@ interface MapViewProps extends BoxProps {
   styleSetting?: MapStyleSetting
   /** Razmak gumba za podlogu od dna (npr. iznad ploče na mobitelu). */
   pickerBottom?: number
+  /** Gumb "moja lokacija" ispod zuma (traži dopuštenje preglednika i HTTPS). */
+  geolocate?: boolean
 }
 
 /**
@@ -36,6 +39,7 @@ export function MapView({
   onReady,
   styleSetting = sharedMapStyle,
   pickerBottom = 10,
+  geolocate = false,
   ...boxProps
 }: MapViewProps) {
   const container = useRef<HTMLDivElement>(null)
@@ -45,10 +49,10 @@ export function MapView({
   const styleUrl = mapStyleUrl(style, colorScheme)
 
   // Karta se stvara jednom; početno područje, podloga i onReady čitaju se tada.
-  const initial = useRef({ bounds, styleUrl, onReady })
+  const initial = useRef({ bounds, styleUrl, onReady, geolocate })
 
   useEffect(() => {
-    const { bounds, styleUrl, onReady } = initial.current
+    const { bounds, styleUrl, onReady, geolocate } = initial.current
     const instance = new Map({
       container: container.current!,
       style: styleUrl,
@@ -59,6 +63,17 @@ export function MapView({
       pitchWithRotate: false,
     })
     instance.addControl(new NavigationControl({ showCompass: false }), 'top-right')
+    if (geolocate) {
+      // Plava točka korisnika; karta ga prati dok se ne pomakne ručno.
+      instance.addControl(
+        new GeolocateControl({
+          positionOptions: { enableHighAccuracy: true },
+          trackUserLocation: true,
+          fitBoundsOptions: { maxZoom: 16 },
+        }),
+        'top-right',
+      )
+    }
     instance.touchZoomRotate.disableRotation()
     // Atribucija podloge (© OpenStreetMap…) počinje skupljena kao gumb "i";
     // MapLibre je inače prvi put prikaže raširenu. Skuplja se kad je popunjena.

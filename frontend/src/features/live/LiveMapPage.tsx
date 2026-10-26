@@ -192,6 +192,7 @@ export function LiveMapView({ standalone, brand }: LiveMapViewProps) {
               : { top: 60, bottom: 160, left: 400, right: 60 }
           }
           pickerBottom={mobile ? 84 : 10}
+          geolocate={liveApi.isPublic}
         />
       )}
 
