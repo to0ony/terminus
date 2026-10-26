@@ -1,6 +1,7 @@
 import {
   keepPreviousData,
   queryOptions,
+  type UseMutationResult,
   useMutation,
   useQuery,
   useQueryClient,
@@ -15,6 +16,13 @@ export type TimeMode = components['schemas']['TimeMode']
 export type RouteListParams = NonNullable<paths['/api/routes']['get']['parameters']['query']>
 export type RouteDiagramPdfParams = NonNullable<
   paths['/api/routes/{id}/diagram.pdf']['get']['parameters']['query']
+>
+
+/** Preuzimanje PDF sheme: jedne linije ili svih linija koje staju na stanici. */
+export type RouteDiagramPdfMutation = UseMutationResult<
+  DownloadedFile,
+  Error,
+  RouteDiagramPdfParams
 >
 
 export const routeKeys = {

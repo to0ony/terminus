@@ -141,7 +141,7 @@ internal static class RouteDiagramBuilder
     }
 
     /// <summary>Naziv bez razlike u velikim slovima i razmacima.</summary>
-    private static string Key(string name) =>
+    internal static string Key(string name) =>
         string.Join(' ', name.Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToUpperInvariant();
 
     /// <summary>Minute od polaska s prve stanice do dolaska na svaku, zaokruženo.</summary>

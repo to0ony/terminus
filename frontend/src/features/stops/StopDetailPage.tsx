@@ -5,6 +5,7 @@ import {
   Chip,
   Grid,
   Group,
+  Menu,
   Paper,
   SimpleGrid,
   Stack,
@@ -19,9 +20,11 @@ import { notifications } from '@mantine/notifications'
 import {
   IconArrowLeft,
   IconCalendar,
+  IconChevronDown,
   IconDeviceTv,
   IconFileTypePdf,
   IconPencil,
+  IconRoute,
   IconTrash,
 } from '@tabler/icons-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
@@ -29,10 +32,18 @@ import { errorMessage } from '@/api/errors'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
 import { RouteBadge } from '@/features/routes/RouteBadge'
+import { RouteDiagramPdfDialog } from '@/features/routes/RouteDiagramPdfDialog'
 import { formatNumber } from '@/lib/format'
 import { groupByHour } from './departures'
 import { locationTypeLabel, wheelchairLabels } from './locationTypes'
-import { type Stop, useDeleteStop, useStop, useStopDepartures, useStopRoutes } from './queries'
+import {
+  type Stop,
+  useDeleteStop,
+  useStop,
+  useStopDepartures,
+  useStopRoutes,
+  useStopRoutesPdf,
+} from './queries'
 import { StationPlatforms } from './StationPlatforms'
 import { StopDialog } from './StopDialog'
 import { StopLocation } from './StopLocation'
@@ -49,6 +60,8 @@ export function StopDetailPage() {
   const routes = useStopRoutes(stopId)
   const departures = useStopDepartures(stopId, date)
   const [pdfOpened, pdf] = useDisclosure(false)
+  const [routesPdfOpened, routesPdf] = useDisclosure(false)
+  const diagramPdf = useStopRoutesPdf(stopId)
   const [editOpened, edit] = useDisclosure(false)
   const navigate = useNavigate()
   const remove = useDeleteStop()
@@ -113,6 +126,7 @@ export function StopDetailPage() {
     ) ?? []
   // Polasci postoje samo za stajališta i kolodvore (location_type 0 i 1).
   const hasBoard = stop.data.locationType <= 1
+  const hasRoutes = (routes.data?.length ?? 0) > 0
 
   return (
     <Stack gap="md">
@@ -154,15 +168,37 @@ export function StopDetailPage() {
           >
             Obriši
           </Button>
+          {(hasBoard || hasRoutes) && (
+            <Menu position="bottom-end" withinPortal>
+              <Menu.Target>
+                <Button
+                  variant="default"
+                  leftSection={<IconFileTypePdf size={16} />}
+                  rightSection={<IconChevronDown size={14} />}
+                >
+                  PDF
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  leftSection={<IconFileTypePdf size={14} />}
+                  disabled={!hasBoard}
+                  onClick={pdf.open}
+                >
+                  Vozni red stanice
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconRoute size={14} />}
+                  disabled={!hasRoutes}
+                  onClick={routesPdf.open}
+                >
+                  Sheme linija sa stanice
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          )}
           {hasBoard && (
             <>
-              <Button
-                variant="default"
-                leftSection={<IconFileTypePdf size={16} />}
-                onClick={pdf.open}
-              >
-                PDF vozni red
-              </Button>
               <Button
                 component="a"
                 href={`/board/${encodeURIComponent(stop.data.code)}`}
@@ -178,6 +214,13 @@ export function StopDetailPage() {
       </Group>
       <StopDialog stop={stop.data} opened={editOpened} onClose={edit.close} />
       {hasBoard && <TimetablePdfDialog stop={stop.data} opened={pdfOpened} onClose={pdf.close} />}
+      <RouteDiagramPdfDialog
+        title="PDF sheme linija"
+        description={`Sheme svih linija koje staju na stanici ${stop.data.name}, svaka na svojoj stranici. Stanica je na svakoj shemi istaknuta.`}
+        pdf={diagramPdf}
+        opened={routesPdfOpened}
+        onClose={routesPdf.close}
+      />
 
       <Grid gap="md">
         <Grid.Col span={{ base: 12, md: 5 }}>

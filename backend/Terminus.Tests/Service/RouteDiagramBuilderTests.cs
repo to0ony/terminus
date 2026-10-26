@@ -117,8 +117,10 @@ public class RouteDiagramBuilderTests
         Variant(TripDirection.Inbound, 0, names.Reverse().Where((_, i) => i != 1).ToArray());
         Variant(TripDirection.Inbound, 1, names[2], names[0]);
 
+        var diagram = Build();
         var pdf = RouteDiagramDocument.Generate(
-            Build(), new RouteDiagramPdfOptions(PaperSize.A4, TimetableLanguage.Hr, showMinutes), "Prijevoznik", null, null);
+            [diagram, diagram], new RouteDiagramPdfOptions(PaperSize.A4, TimetableLanguage.Hr, showMinutes), "Prijevoznik", null, null,
+            highlighted: [names[1], names[^1]]);
 
         Assert.Equal("%PDF"u8.ToArray(), pdf[..4]);
     }

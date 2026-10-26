@@ -365,6 +365,16 @@ GET /api/routes/{routeId}/diagram.pdf?paper=A4&language=hr&showMinutes=false
   `~`. Bez minuta nema ni napomene o vremenima.
 - 422 ako linija nema varijantu sa stanicama.
 
+**Sheme svih linija sa stanice.** Na stranici stanice izbornik **PDF → Sheme
+linija sa stanice** izradi jedan PDF sa shemom svake linije koja staje na
+stanici (za kolodvor na bilo kojem peronu), svaka na svojoj stranici. Stanica
+je na svakoj shemi istaknuta (puna tamna točka, naziv na obojenoj podlozi);
+kod kolodvora i peroni, po nazivu.
+
+```
+GET /api/stops/{stopId}/routes.pdf?paper=A4&language=hr&showMinutes=false
+```
+
 | Dio | Gdje |
 |---|---|
 | Spajanje smjerova i minute | `RouteDiagramBuilder`, testovi u `RouteDiagramBuilderTests` |

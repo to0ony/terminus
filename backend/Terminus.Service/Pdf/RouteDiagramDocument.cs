@@ -55,62 +55,109 @@ internal static class RouteDiagramDocument
         Settings.License = LicenseType.Community;
     }
 
+    /// <param name="diagrams">Sheme linija, svaka na svojoj stranici.</param>
     /// <param name="logo">Logo i je li SVG; null bez loga.</param>
+    /// <param name="highlighted">Nazivi stanica koje se ističu (PDF linija sa stanice).</param>
     public static byte[] Generate(
-        RouteDiagram diagram,
+        IReadOnlyList<RouteDiagram> diagrams,
         RouteDiagramPdfOptions options,
         string displayName,
         string? primaryColor,
-        (byte[] Content, bool IsSvg)? logo)
+        (byte[] Content, bool IsSvg)? logo,
+        IReadOnlyCollection<string>? highlighted = null)
     {
         var texts = RouteDiagramTexts.For(options.Language);
         var timetableTexts = TimetableTexts.For(options.Language);
         var primary = $"#{primaryColor ?? DefaultPrimary}";
-        var line = $"#{LineColor(diagram.Route.Color)}";
         var a3 = options.Paper == PaperSize.A3;
         var pageSize = (a3 ? PageSizes.A3 : PageSizes.A4).Landscape();
         var margin = (a3 ? 1.6f : 1.2f) * 72 / 2.54f;
-        var layout = new Layout(diagram, pageSize.Width - 2 * margin, options.ShowMinutes);
+        var highlightedKeys = (highlighted ?? []).Select(RouteDiagramBuilder.Key).ToHashSet();
 
-        return Document.Create(document => document.Page(page =>
+        return Document.Create(document =>
         {
-            page.Size(pageSize);
-            page.Margin(margin);
-            page.DefaultTextStyle(style => style.FontSize(8.5f).FontFamily("Lato").FontColor(Colors.Black));
-
-            page.Content().Column(content =>
+            foreach (var diagram in diagrams)
             {
-                content.Item().Element(c => Header(c, diagram, texts, displayName, primary, logo));
-                content.Item().PaddingTop(4).PaddingBottom(8).Height(3).Background(primary);
-
-                // Shema u sredini preostalog mjesta; preduga se smanji da stane na stranicu.
-                content.Item().Extend().AlignMiddle().ScaleToFit()
-                    .Element(c => Diagram(c, diagram, layout, line, options.ShowMinutes));
-            });
-
-            page.Footer().PaddingTop(6).Column(footer =>
-            {
-                footer.Item().PaddingBottom(8).Element(c => Legend(c, diagram, texts, line, options.ShowMinutes));
-                footer.Item().Element(c => FooterNote(c, diagram, options, texts, timetableTexts, displayName));
-            });
-        })).GeneratePdf();
+                var line = $"#{LineColor(diagram.Route.Color)}";
+                var layout = new Layout(diagram, pageSize.Width - 2 * margin, options.ShowMinutes);
+                var here = diagram.Stops.Select(s => highlightedKeys.Contains(RouteDiagramBuilder.Key(s.Name))).ToArray();
+                var pageNumbers = diagrams.Count > 1;
+                document.Page(page => Page(page, diagram, options, texts, timetableTexts, displayName, primary, logo,
+                    pageSize, margin, line, layout, here, pageNumbers));
+            }
+        }).GeneratePdf();
     }
 
-    /// <summary>Shema je uvijek na jednoj stranici; napomena o vremenima samo uz minute.</summary>
+    private static void Page(
+        PageDescriptor page,
+        RouteDiagram diagram,
+        RouteDiagramPdfOptions options,
+        RouteDiagramTexts texts,
+        TimetableTexts timetableTexts,
+        string displayName,
+        string primary,
+        (byte[] Content, bool IsSvg)? logo,
+        PageSize pageSize,
+        float margin,
+        string line,
+        Layout layout,
+        bool[] here,
+        bool pageNumbers)
+    {
+        page.Size(pageSize);
+        page.Margin(margin);
+        page.DefaultTextStyle(style => style.FontSize(8.5f).FontFamily("Lato").FontColor(Colors.Black));
+
+        page.Content().Column(content =>
+        {
+            content.Item().Element(c => Header(c, diagram, texts, displayName, primary, logo));
+            content.Item().PaddingTop(4).PaddingBottom(8).Height(3).Background(primary);
+
+            // Shema u sredini preostalog mjesta; preduga se smanji da stane na stranicu.
+            content.Item().Extend().AlignMiddle().ScaleToFit()
+                .Element(c => Diagram(c, diagram, layout, line, here, options.ShowMinutes));
+        });
+
+        page.Footer().PaddingTop(6).Column(footer =>
+        {
+            footer.Item().PaddingBottom(8).Element(c => Legend(c, diagram, texts, line, here, options.ShowMinutes));
+            footer.Item().Element(c => FooterNote(c, diagram, options, texts, timetableTexts, displayName, pageNumbers));
+        });
+    }
+
+    /// <summary>
+    /// Shema je uvijek na jednoj stranici, pa su brojevi stranica samo kad je
+    /// linija više. Napomena o vremenima samo uz minute.
+    /// </summary>
     private static void FooterNote(
         IContainer container,
         RouteDiagram diagram,
         RouteDiagramPdfOptions options,
         RouteDiagramTexts texts,
         TimetableTexts timetableTexts,
-        string displayName)
+        string displayName,
+        bool pageNumbers)
     {
         var note = !options.ShowMinutes
             ? displayName
             : diagram.Route.TimeMode == TimeMode.Approximate
                 ? $"{displayName} · {timetableTexts.Disclaimer} {texts.ApproximateTimes}"
                 : $"{displayName} · {timetableTexts.Disclaimer}";
-        container.Text(note).FontSize(7).FontColor(Muted);
+        container.Row(row =>
+        {
+            row.RelativeItem().Text(note).FontSize(7).FontColor(Muted);
+            if (pageNumbers)
+            {
+                row.AutoItem().Text(text =>
+                {
+                    text.DefaultTextStyle(style => style.FontSize(7).FontColor(Muted));
+                    text.Span($"{timetableTexts.Page} ");
+                    text.CurrentPageNumber();
+                    text.Span("/");
+                    text.TotalPages();
+                });
+            }
+        });
     }
 
     private static void Header(
@@ -156,17 +203,17 @@ internal static class RouteDiagramDocument
     }
 
     /// <summary>Crta sa stanicama (jedan SVG) i nazivi i minute postavljeni preko njega.</summary>
-    private static void Diagram(IContainer container, RouteDiagram diagram, Layout layout, string line, bool showMinutes)
+    private static void Diagram(IContainer container, RouteDiagram diagram, Layout layout, string line, bool[] here, bool showMinutes)
     {
         container.Width(layout.Width).Height(layout.Height).Layers(layers =>
         {
-            layers.PrimaryLayer().Svg(DiagramSvg(diagram, layout, line)).FitArea();
+            layers.PrimaryLayer().Svg(DiagramSvg(diagram, layout, line, here)).FitArea();
 
             for (var i = 0; i < diagram.Stops.Count; i++)
             {
                 var stop = diagram.Stops[i];
                 var (x, y, above) = layout.Position(i);
-                var label = new StopLabel(stop.Name, stop.Terminus, stop.VariantTerminus);
+                var label = new StopLabel(stop.Name, stop.Terminus, stop.VariantTerminus, here[i] ? Blend(line, 0.18) : null);
                 layers.Layer().Element(c => Label(c, label, x + 1, above ? y - LabelOffset : y + LabelOffset, above));
 
                 if (showMinutes)
@@ -183,7 +230,8 @@ internal static class RouteDiagramDocument
         });
     }
 
-    private sealed record StopLabel(string Name, bool Terminus, bool VariantTerminus);
+    /// <param name="Highlight">Pozadina naziva istaknute stanice; null bez nje.</param>
+    private sealed record StopLabel(string Name, bool Terminus, bool VariantTerminus, string? Highlight);
 
     /// <summary>
     /// Naziv stanice koso od točke (x, y): iznad crte prema gore desno, ispod nje
@@ -196,21 +244,27 @@ internal static class RouteDiagramDocument
         var left = x + LabelLength / 2 * Cos - LabelLength / 2;
         var top = y + LabelLength / 2 * (above ? -Sin : Sin) - LabelHeight / 2;
 
-        container.TranslateX(left).TranslateY(top).Unconstrained()
-            .Rotate(angle).Width(LabelLength).Height(LabelHeight).AlignMiddle()
-            .Text(text =>
+        var box = container.TranslateX(left).TranslateY(top).Unconstrained()
+            .Rotate(angle).Width(LabelLength).Height(LabelHeight).AlignMiddle();
+        if (label.Highlight is not null)
+        {
+            // Istaknuta stanica: naziv na obojenoj podlozi, samo koliko je dug.
+            box = box.AlignLeft().Background(label.Highlight).CornerRadius(3).PaddingHorizontal(3);
+        }
+
+        box.Text(text =>
+        {
+            text.ClampLines(1);
+            var name = text.Span(label.Name).FontColor(Ink);
+            if (label.Terminus)
             {
-                text.ClampLines(1);
-                var name = text.Span(label.Name).FontColor(Ink);
-                if (label.Terminus)
-                {
-                    name.FontSize(9.5f).Bold();
-                }
-                else if (label.VariantTerminus)
-                {
-                    name.Bold();
-                }
-            });
+                name.FontSize(9.5f).Bold();
+            }
+            else if (label.VariantTerminus || label.Highlight is not null)
+            {
+                name.Bold();
+            }
+        });
     }
 
     private static void MinutesText(IContainer container, string minutes, float x, float top, string color) =>
@@ -225,7 +279,7 @@ internal static class RouteDiagramDocument
     };
 
     /// <summary>Crta linije sa zaokretima između redaka i točke stanica.</summary>
-    private static string DiagramSvg(RouteDiagram diagram, Layout layout, string line)
+    private static string DiagramSvg(RouteDiagram diagram, Layout layout, string line, bool[] here)
     {
         var svg = new SvgBuilder(layout.Width, layout.Height);
         var stops = diagram.Stops;
@@ -259,7 +313,22 @@ internal static class RouteDiagramDocument
         {
             var stop = stops[i];
             var (x, y, above) = layout.Position(i);
-            if (stop.Terminus)
+            var oneWay = twoWay && stop.Forward != stop.Backward;
+            var rightwards = above == stop.Forward;
+            if (here[i])
+            {
+                // Istaknuta stanica: puna tamna točka, sa strelicom ako staje samo u jednom smjeru.
+                svg.Circle(x, y, 6, 1.5f, fill: Ink, stroke: "#FFFFFF");
+                if (oneWay)
+                {
+                    svg.Arrow(x, y, rightwards, "#FFFFFF");
+                }
+                else
+                {
+                    svg.Circle(x, y, 2, 0, fill: "#FFFFFF");
+                }
+            }
+            else if (stop.Terminus)
             {
                 svg.Circle(x, y, 5.2f, 2);
             }
@@ -267,12 +336,11 @@ internal static class RouteDiagramDocument
             {
                 svg.Circle(x, y, 4.6f, 1.8f);
             }
-            else if (twoWay && stop.Forward != stop.Backward)
+            else if (oneWay)
             {
                 // Staje samo u jednom smjeru: strelica u točki. Parni redci idu
                 // nadesno, neparni nalijevo; smjer 1 je obrnut.
                 svg.Circle(x, y, 3.9f, 1.1f);
-                var rightwards = above == stop.Forward;
                 svg.Arrow(x, y, rightwards);
             }
             else
@@ -285,13 +353,21 @@ internal static class RouteDiagramDocument
     }
 
     /// <summary>Značenje oznaka, u jednom retku ispod sheme.</summary>
-    private static void Legend(IContainer container, RouteDiagram diagram, RouteDiagramTexts texts, string line, bool showMinutes)
+    private static void Legend(IContainer container, RouteDiagram diagram, RouteDiagramTexts texts, string line, bool[] here, bool showMinutes)
     {
         var oneWay = diagram.Backward is not null && diagram.Stops.Any(s => !s.Terminus && !s.VariantTerminus && s.Forward != s.Backward);
 
         container.Row(row =>
         {
             row.Spacing(18);
+            if (here.Any(h => h))
+            {
+                row.AutoItem().Element(c => LegendItem(c, SampleSvg(line, s =>
+                {
+                    s.Circle(9, 5, 4.8f, 1.2f, fill: Ink, stroke: "#FFFFFF");
+                    s.Circle(9, 5, 1.6f, 0, fill: "#FFFFFF");
+                }), texts.ThisStop));
+            }
             row.AutoItem().Element(c => LegendItem(c, SampleSvg(line, s => s.Circle(9, 5, 4.2f, 1.8f)), texts.Terminus));
             if (oneWay)
             {
@@ -421,6 +497,14 @@ internal static class RouteDiagramDocument
             .FontColor($"#{route.TextColor ?? "FFFFFF"}");
     }
 
+    /// <summary>Boja pomiješana s bijelom; <paramref name="amount"/> je udio boje.</summary>
+    private static string Blend(string color, double amount)
+    {
+        var rgb = int.Parse(color.TrimStart('#'), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+        int Mix(int shift) => (int)Math.Round(((rgb >> shift) & 0xFF) * amount + 255 * (1 - amount));
+        return $"#{Mix(16):X2}{Mix(8):X2}{Mix(0):X2}";
+    }
+
     /// <summary>Boja linije; preblijeda boja (npr. bijela) ne bi se vidjela na papiru.</summary>
     private static string LineColor(string? color)
     {
@@ -443,18 +527,18 @@ internal static class RouteDiagramDocument
             _content.Append(CultureInfo.InvariantCulture,
                 $"""<path d="{data}" fill="none" stroke="{color}" stroke-width="{stroke}" stroke-linecap="round" stroke-linejoin="round"/>""");
 
-        /// <summary>Točka stanice (bijela s tamnim rubom).</summary>
-        public void Circle(float cx, float cy, float r, float stroke) =>
+        /// <summary>Točka stanice, zadano bijela s tamnim rubom.</summary>
+        public void Circle(float cx, float cy, float r, float strokeWidth, string fill = "#FFFFFF", string stroke = Ink) =>
             _content.Append(CultureInfo.InvariantCulture,
-                $"""<circle cx="{cx}" cy="{cy}" r="{r}" fill="#FFFFFF" stroke="{Ink}" stroke-width="{stroke}"/>""");
+                $"""<circle cx="{cx}" cy="{cy}" r="{r}" fill="{fill}" stroke="{stroke}" stroke-width="{strokeWidth}"/>""");
 
         /// <summary>Mali trokutić smjera u točki stanice.</summary>
-        public void Arrow(float cx, float cy, bool rightwards)
+        public void Arrow(float cx, float cy, bool rightwards, string color = Ink)
         {
             var d = rightwards ? 1 : -1;
             var points = new[] { (cx + d * 1.9f, cy), (cx - d * 1.4f, cy - 2), (cx - d * 1.4f, cy + 2) };
             var text = string.Join(' ', points.Select(p => string.Create(CultureInfo.InvariantCulture, $"{p.Item1},{p.Item2}")));
-            _content.Append(CultureInfo.InvariantCulture, $"""<polygon points="{text}" fill="{Ink}"/>""");
+            _content.Append(CultureInfo.InvariantCulture, $"""<polygon points="{text}" fill="{color}"/>""");
         }
 
         public override string ToString() => string.Create(CultureInfo.InvariantCulture,

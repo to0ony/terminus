@@ -28,7 +28,13 @@ import { QueryError } from '@/components/QueryError'
 import { useAgencies } from '@/features/agencies/queries'
 import { formatNumber } from '@/lib/format'
 import { directionOptions } from './directions'
-import { type TimetableParams, useRoute, useRoutePatterns, useRouteTimetable } from './queries'
+import {
+  type TimetableParams,
+  useRoute,
+  useRouteDiagramPdf,
+  useRoutePatterns,
+  useRouteTimetable,
+} from './queries'
 import { RouteBadge } from './RouteBadge'
 import { useRouteVariants } from '@/features/variants/queries'
 import { VariantsSection } from '@/features/variants/VariantsSection'
@@ -50,6 +56,7 @@ export function RouteDetailPage() {
   const [editOpened, edit] = useDisclosure(false)
   const [deleteOpened, deleteDialog] = useDisclosure(false)
   const [pdfOpened, pdf] = useDisclosure(false)
+  const diagramPdf = useRouteDiagramPdf(routeId)
 
   const directions = directionOptions(patterns.data ?? [])
   const direction =
@@ -156,7 +163,13 @@ export function RouteDetailPage() {
         </Group>
       </Group>
       <RouteDialog route={route.data} opened={editOpened} onClose={edit.close} />
-      <RouteDiagramPdfDialog route={route.data} opened={pdfOpened} onClose={pdf.close} />
+      <RouteDiagramPdfDialog
+        title="PDF shema linije"
+        description="Stanice svih varijanti oba smjera kao točke na vodoravnoj crti, redom kojim ih linija obilazi. Početne i završne stanice su podebljane, a duga linija se lomi u više crta."
+        pdf={diagramPdf}
+        opened={pdfOpened}
+        onClose={pdf.close}
+      />
       <DeleteRouteDialog
         route={route.data}
         opened={deleteOpened}

@@ -14,21 +14,28 @@ import { IconAlertCircle, IconDownload } from '@tabler/icons-react'
 import { useState } from 'react'
 import { ApiError, errorMessage } from '@/api/errors'
 import { saveFile } from '@/lib/download'
-import { type Route, type RouteDiagramPdfParams, useRouteDiagramPdf } from './queries'
+import type { RouteDiagramPdfMutation, RouteDiagramPdfParams } from './queries'
 
 type Paper = NonNullable<RouteDiagramPdfParams['Paper']>
 type Language = NonNullable<RouteDiagramPdfParams['Language']>
 
 interface RouteDiagramPdfDialogProps {
-  route: Route
+  title: string
+  description: string
+  /** Preuzimanje PDF-a: sheme jedne linije ili svih linija sa stanice. */
+  pdf: RouteDiagramPdfMutation
   opened: boolean
   onClose: () => void
 }
 
-/** Izbor formata i jezika za PDF shemu linije (redoslijed stanica oba smjera). */
-export function RouteDiagramPdfDialog({ route, opened, onClose }: RouteDiagramPdfDialogProps) {
-  const pdf = useRouteDiagramPdf(route.id)
-
+/** Izbor formata, jezika i minuta za PDF shemu linije (ili više njih). */
+export function RouteDiagramPdfDialog({
+  title,
+  description,
+  pdf,
+  opened,
+  onClose,
+}: RouteDiagramPdfDialogProps) {
   const [paper, setPaper] = useState<Paper>('A4')
   const [language, setLanguage] = useState<Language>('Hr')
   const [showMinutes, setShowMinutes] = useState(false)
@@ -52,12 +59,10 @@ export function RouteDiagramPdfDialog({ route, opened, onClose }: RouteDiagramPd
   const problems = pdf.error instanceof ApiError ? pdf.error.problems : []
 
   return (
-    <Modal opened={opened} onClose={close} title="PDF shema linije" size="md">
+    <Modal opened={opened} onClose={close} title={title} size="md">
       <Stack gap="md">
         <Text size="sm" c="dimmed">
-          Stanice glavnih varijanti oba smjera kao točke na vodoravnoj crti, redom kojim ih linija
-          obilazi. Početne i završne stanice (i ostalih varijanti) su podebljane, a duga linija se
-          lomi u više crta.
+          {description}
         </Text>
 
         <Input.Wrapper label="Format">

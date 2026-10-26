@@ -12,6 +12,8 @@ internal abstract class RouteDiagramTexts
     };
 
     public abstract string FilePrefix { get; }
+    public abstract string StopFilePrefix { get; }
+    public abstract string ThisStop { get; }
     public abstract string Route { get; }
     public abstract string Minutes { get; }
     public abstract string Terminus { get; }
@@ -27,6 +29,8 @@ internal abstract class RouteDiagramTexts
 internal sealed class CroatianDiagramTexts : RouteDiagramTexts
 {
     public override string FilePrefix => "linija";
+    public override string StopFilePrefix => "linije-stanica";
+    public override string ThisStop => "ova stanica";
     public override string Route => "Linija";
     public override string Minutes => "min";
     public override string Terminus => "početna ili završna stanica";
@@ -44,6 +48,8 @@ internal sealed class CroatianDiagramTexts : RouteDiagramTexts
 internal sealed class EnglishDiagramTexts : RouteDiagramTexts
 {
     public override string FilePrefix => "route";
+    public override string StopFilePrefix => "routes-stop";
+    public override string ThisStop => "this stop";
     public override string Route => "Route";
     public override string Minutes => "min";
     public override string Terminus => "first or last stop";

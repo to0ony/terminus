@@ -7,14 +7,22 @@ namespace Terminus.Service.Common;
 public interface IRouteDiagramService
 {
     /// <summary>
-    /// Stanice glavnih varijanti oba smjera spojene u jedan popis, redom u smjeru 0. Stanice se spajaju po nazivu, jer su stanice suprotnih
-    /// smjerova obično zasebni zapisi (dvije strane ulice). 422 ako linija nema
-    /// varijantu sa stanicama.
+    /// Stanice svih varijanti oba smjera spojene u jedan popis, redom u smjeru 0.
+    /// Stanice se spajaju po nazivu, jer su stanice suprotnih smjerova obično
+    /// zasebni zapisi (dvije strane ulice). 422 ako linija nema varijantu sa
+    /// stanicama.
     /// </summary>
     Task<RouteDiagram> GetAsync(Guid routeId, CancellationToken cancellationToken = default);
 
     /// <summary>Shema linije kao PDF, s nazivom, bojama i logom iz postavki.</summary>
     Task<TimetablePdf> GetPdfAsync(Guid routeId, RouteDiagramPdfOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sheme svih linija koje staju na stanici (za kolodvor na bilo kojem peronu),
+    /// svaka na svojoj stranici, sa stanicom istaknutom. 422 ako na stanici ne
+    /// staje nijedna linija sa stanicama.
+    /// </summary>
+    Task<TimetablePdf> GetStopPdfAsync(Guid stopId, RouteDiagramPdfOptions options, CancellationToken cancellationToken = default);
 }
 
 /// <param name="ShowMinutes">Uz stanice minute vožnje od polazne stanice svakog smjera.</param>
