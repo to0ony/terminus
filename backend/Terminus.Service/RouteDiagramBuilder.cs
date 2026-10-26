@@ -88,9 +88,25 @@ internal static class RouteDiagramBuilder
             .SelectMany(v => new[] { Key(Name(v.Stops[0].StopId)), Key(Name(v.Stops[^1].StopId)) })
             .ToHashSet();
 
+        // U kojem smjeru stanica ima polaske: staje li tu bilo koja varijanta tog smjera.
+        HashSet<string> Served(IRouteVariantModel? main) => main is null
+            ? []
+            : usable
+                .Where(v => v.Variant.DirectionId == main.DirectionId)
+                .SelectMany(v => v.Stops.Select(s => Key(Name(s.StopId))))
+                .ToHashSet();
+        var forwardServed = Served(forward.Variant);
+        var backwardServed = Served(backward.Variant);
+
         var diagramStops = rows
             .Select((key, i) => new RouteDiagramStop(
-                names[i]!, forwardMinutes[i], backwardMinutes[i], terminus[i], !terminus[i] && variantEnds.Contains(key)))
+                names[i]!,
+                forwardServed.Contains(key),
+                backwardServed.Contains(key),
+                forwardMinutes[i],
+                backwardMinutes[i],
+                terminus[i],
+                !terminus[i] && variantEnds.Contains(key)))
             .ToList();
 
         return new RouteDiagram(

@@ -41,6 +41,20 @@ public class RouteDiagramBuilderTests
     }
 
     [Fact]
+    public void Build_StopIsServedInADirectionByAnyVariant()
+    {
+        Variant(TripDirection.Outbound, 0, "Kolodvor", "Ilica", "Bolnica");
+        Variant(TripDirection.Inbound, 0, "Bolnica", "Frankopanska", "Kolodvor");
+        // Skraćena u smjeru 1 staje i u Ilici.
+        Variant(TripDirection.Inbound, 1, "Ilica", "Kolodvor");
+
+        var diagram = Build();
+
+        Assert.True(diagram.Stops[1] is { Name: "Ilica", Forward: true, Backward: true, BackwardMinutes: null });
+        Assert.True(diagram.Stops[2] is { Name: "Frankopanska", Forward: false, Backward: true });
+    }
+
+    [Fact]
     public void Build_CountsMinutesFromTheStartOfEachDirection()
     {
         Variant(TripDirection.Outbound, 0, "A", "B", "C");

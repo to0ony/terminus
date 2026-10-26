@@ -351,7 +351,9 @@ GET /api/routes/{routeId}/diagram.pdf?paper=A4&language=hr&showMinutes=false
   ispod su krajevi glavne trase i broj stanica.
 - **Podebljane** su početne i završne stanice glavnih varijanti (veća točka)
   i stanice gdje ostale varijante počinju ili završavaju.
-- Stanica gdje staje samo jedan smjer ima strelicu smjera u točki.
+- Stanica gdje staje samo jedan smjer ima strelicu smjera u točki. Smjer
+  staje na stanici ako je ima **bilo koja varijanta** tog smjera (po nazivu),
+  ne samo glavna; minute su ipak samo za glavnu varijantu.
 - Duga linija se **lomi u više crta** koje se nastavljaju kao zmija, sa
   zaobljenim zaokretom: druga crta ide zdesna nalijevo, s nazivima ispod.
   Shema je uvijek na jednoj stranici; ako ni tako ne stane, smanji se.
