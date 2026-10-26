@@ -108,3 +108,22 @@
   top: calc(50% - 11px);
   left: -2px;
 }
+
+/* Panel se pomiče samo okomito; ništa ne smije biti šire od njega. */
+.panelBody {
+  max-height: calc(100dvh - 270px);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Red vremena: vodoravno se pomiče samo on, bez trake za pomicanje. */
+.stripTimes {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.stripTimes::-webkit-scrollbar {
+  display: none;
+}

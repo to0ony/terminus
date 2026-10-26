@@ -1,4 +1,4 @@
-import { ActionIcon, Group, ScrollArea, UnstyledButton } from '@mantine/core'
+import { ActionIcon, Box, Group, UnstyledButton } from '@mantine/core'
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 import { useEffect, useRef } from 'react'
 import { formatTime } from './clock'
@@ -61,7 +61,7 @@ export function DepartureStrip({ departures, selected, onSelect }: DepartureStri
       >
         <IconChevronLeft size={18} />
       </ActionIcon>
-      <ScrollArea type="never" style={{ flex: 1 }}>
+      <Box className={classes.stripTimes}>
         <Group gap={6} wrap="nowrap" py={2}>
           {departures.map((departure, i) => (
             <UnstyledButton
@@ -77,7 +77,7 @@ export function DepartureStrip({ departures, selected, onSelect }: DepartureStri
             </UnstyledButton>
           ))}
         </Group>
-      </ScrollArea>
+      </Box>
       <ActionIcon
         variant="subtle"
         color="gray"

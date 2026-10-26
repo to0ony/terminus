@@ -5,7 +5,6 @@ import {
   Group,
   Loader,
   Paper,
-  ScrollArea,
   Stack,
   Text,
   Title,
@@ -242,7 +241,7 @@ function StopPanel({
         <CloseButton aria-label="Zatvori" onClick={onClose} />
       </Group>
 
-      <ScrollArea.Autosize mah="calc(100dvh - 400px)">
+      <Box className={classes.panelBody}>
         <Box px="md" pb="md">
           {departures.isPending ? (
             <Loader size="sm" />
@@ -293,7 +292,7 @@ function StopPanel({
             </Stack>
           )}
         </Box>
-      </ScrollArea.Autosize>
+      </Box>
     </Stack>
   )
 }
