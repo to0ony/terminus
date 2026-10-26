@@ -139,6 +139,7 @@ builder.Services.AddScoped<IFeedInfoService, FeedInfoService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<ITimetableService, TimetableService>();
 builder.Services.AddScoped<IStopTimetableService, StopTimetableService>();
+builder.Services.AddScoped<IRouteDiagramService, RouteDiagramService>();
 builder.Services.AddScoped<ISetupService, SetupService>();
 builder.Services.AddScoped<IGtfsImportService, GtfsImportService>();
 builder.Services.AddScoped<ISeasonService, SeasonService>();

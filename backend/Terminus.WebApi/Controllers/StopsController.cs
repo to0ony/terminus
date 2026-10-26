@@ -15,6 +15,7 @@ public class StopsController(
     ITimetableService timetableService,
     IDepartureService departureService,
     IStopTimetableService stopTimetableService,
+    IRouteDiagramService routeDiagramService,
     TimeProvider timeProvider) : ControllerBase
 {
     [HttpGet]
@@ -100,6 +101,24 @@ public class StopsController(
         CancellationToken cancellationToken)
     {
         var pdf = await stopTimetableService.GetPdfAsync(id, query.ToOptions(), timeProvider.GetUtcNow(), cancellationToken);
+        return File(pdf.Content, "application/pdf", pdf.FileName);
+    }
+
+    /// <summary>
+    /// Sheme linija koje staju na stanici (PDF), svaka na svojoj stranici, sa
+    /// stanicom istaknutom. 422 ako na stanici ne staje nijedna linija.
+    /// </summary>
+    [HttpGet("{id:guid}/routes.pdf")]
+    [ProducesResponseType<FileContentResult>(StatusCodes.Status200OK, "application/pdf")]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> GetRoutesPdf(
+        Guid id,
+        [FromQuery] RouteDiagramQuery query,
+        CancellationToken cancellationToken)
+    {
+        var pdf = await routeDiagramService.GetStopPdfAsync(id, query.ToOptions(), cancellationToken);
         return File(pdf.Content, "application/pdf", pdf.FileName);
     }
 

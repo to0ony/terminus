@@ -330,7 +330,63 @@ U planu je i jedan PDF za sve stanice odjednom (vidi [roadmap](roadmap.md)).
 | Tekstovi na hrvatskom i engleskom | `Pdf/TimetableTexts` |
 | QR kod (SVG) | [QRCoder](https://github.com/codebude/QRCoder) |
 
-### 3.5 Licenca za QuestPDF
+### 3.5 Shema linije (PDF)
+
+PDF s redoslijedom stanica linije, za ispis u vozilu ili na stanici. Na
+stranici linije u dashboardu: izbornik **⋯ → PDF shema linije** (A4/A3,
+hrvatski/engleski, minute po izboru).
+
+```
+GET /api/routes/{routeId}/diagram.pdf?paper=A4&language=hr&showMinutes=false
+```
+
+- Crta se iz **glavnih varijanti** (prva po redoslijedu) smjera 0 i smjera 1.
+  Smjer 1 se obrne i spoji sa smjerom 0 (najdulji zajednički podniz, kao
+  redci grafikona). Zatim se redom umeću **stanice ostalih varijanti** (onih
+  smjera 1 obrnuto), između najbližih zajedničkih stanica; tako je na shemi
+  svaka stanica koju koristi barem jedna varijanta. Stanica izvan trase (npr.
+  garaža) završi uz stanicu s kojom se varijanta spaja.
+- Stanice se spajaju **po nazivu** (bez razlike u velikim slovima i
+  razmacima), jer su stanice suprotnih smjerova obično zasebni zapisi s dvije
+  strane ulice.
+- Stranica je **položena**: stanice su točke na vodoravnoj crti u boji
+  linije, nazivi koso iznad nje. Naslov je naziv linije (`route_long_name`);
+  ispod su krajevi glavne trase i broj stanica.
+- **Podebljane** su početne i završne stanice glavnih varijanti (veća točka)
+  i stanice gdje ostale varijante počinju ili završavaju.
+- Stanica gdje staje samo jedan smjer ima strelicu smjera u točki. Smjer
+  staje na stanici ako je ima **bilo koja varijanta** tog smjera (po nazivu),
+  ne samo glavna; minute su ipak samo za glavnu varijantu.
+- Duga linija se **lomi u više crta** koje se nastavljaju kao zmija, sa
+  zaobljenim zaokretom: druga crta ide zdesna nalijevo, s nazivima ispod.
+  Shema je uvijek na jednoj stranici; ako ni tako ne stane, smanji se.
+- `showMinutes=true`: uz svaku stanicu minute od polazne stanice za oba
+  smjera (smjer 1 sivo); kod linija s okvirnim vremenima međustanice imaju
+  `~`. Bez minuta nema ni napomene o vremenima.
+- 422 ako linija nema varijantu sa stanicama.
+
+**Sheme svih linija sa stanice.** Na stranici stanice izbornik **PDF → Sheme
+linija sa stanice** izradi jedan PDF sa shemom svake linije koja staje na
+stanici (za kolodvor na bilo kojem peronu), svaka na svojoj stranici. Stanica
+je na svakoj shemi istaknuta (puna tamna točka, naziv na obojenoj podlozi);
+kod kolodvora i peroni, po nazivu.
+
+```
+GET /api/stops/{stopId}/routes.pdf?paper=A4&language=hr&showMinutes=true&minutesFromStop=true
+```
+
+Uz `minutesFromStop=true` minute se računaju **od te stanice**: u svakom
+smjeru do stanica iza nje, a stanice prije nje (u tom smjeru) su bez minuta.
+Računa se razlika zaokruženih minuta od polazne stanice, pa može odstupati za
+minutu. Smjer koji na stanici ne staje nema minuta. Kod sheme jedne linije
+opcija se zanemaruje.
+
+| Dio | Gdje |
+|---|---|
+| Spajanje smjerova i minute | `RouteDiagramBuilder`, testovi u `RouteDiagramBuilderTests` |
+| Izgled (crta kao SVG, nazivi preko nje) | `Pdf/RouteDiagramDocument`, tekstovi u `Pdf/RouteDiagramTexts` |
+
+### 3.6 Licenca za QuestPDF
 
 QuestPDF Community licenca (verzija 3.0, srpanj 2026.) besplatna je među
 ostalim za open-source projekte s OSI licencom, organizacije s godišnjim
@@ -338,7 +394,7 @@ prihodom ispod 1 milijun USD i korisnike čiji kod ne poziva QuestPDF izravno.
 **Javni sektor i državne agencije nisu obuhvaćeni bez obzira na prihod**, a
 gradski prijevoznici često su u javnom vlasništvu. Prije produkcije treba
 provjeriti koja licenca vrijedi. Sav kod koji poziva QuestPDF je u
-`StopTimetableDocument`, pa se biblioteka može zamijeniti (npr. PDFsharp i
+`StopTimetableDocument` i `RouteDiagramDocument`, pa se biblioteka može zamijeniti (npr. PDFsharp i
 MigraDoc, MIT licenca).
 
 ---

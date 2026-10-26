@@ -15,9 +15,30 @@ public class RoutesController(
     IRouteService routeService,
     ITimetableService timetableService,
     IScheduleService scheduleService,
+    IRouteDiagramService routeDiagramService,
     IOutputCacheStore outputCache,
     TimeProvider timeProvider) : ControllerBase
 {
+    /// <summary>
+    /// Shema linije za ispis (PDF): stanice glavnih varijanti oba smjera odozgo
+    /// prema dolje, s minutama vožnje. Gdje smjerovi idu različitim stanicama,
+    /// crta se razdvaja u dvije trake sa strelicama. 422 ako linija nema
+    /// varijantu sa stanicama.
+    /// </summary>
+    [HttpGet("{id:guid}/diagram.pdf")]
+    [ProducesResponseType<FileContentResult>(StatusCodes.Status200OK, "application/pdf")]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> GetDiagramPdf(
+        Guid id,
+        [FromQuery] RouteDiagramQuery query,
+        CancellationToken cancellationToken)
+    {
+        var pdf = await routeDiagramService.GetPdfAsync(id, query.ToOptions(), cancellationToken);
+        return File(pdf.Content, "application/pdf", pdf.FileName);
+    }
+
     /// <summary>
     /// Vozni red linije za grafikon: stanice smjera (redoslijed svih obrazaca, za
     /// sve kalendare isti) i vožnje s vremenima u sekundama, po želji samo

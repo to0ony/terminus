@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { api } from '@/api/client'
 import { ApiError, unwrap } from '@/api/errors'
 import type { components, paths } from '@/api/schema'
+import type { RouteDiagramPdfParams } from '@/features/routes/queries'
 import { type DownloadedFile, fileNameOf } from '@/lib/download'
 import { nextStopCode } from './stopCode'
 
@@ -93,6 +94,21 @@ export function useTimetablePdf(id: string) {
       })
       const blob = unwrap(result) as unknown as Blob
       return { blob, fileName: fileNameOf(result.response) ?? 'vozni-red.pdf' }
+    },
+    meta: { handlesErrors: true },
+  })
+}
+
+/** Sheme svih linija koje staju na stanici, svaka na svojoj stranici. */
+export function useStopRoutesPdf(id: string) {
+  return useMutation({
+    mutationFn: async (params: RouteDiagramPdfParams): Promise<DownloadedFile> => {
+      const result = await api.GET('/api/stops/{id}/routes.pdf', {
+        params: { path: { id }, query: params },
+        parseAs: 'blob',
+      })
+      const blob = unwrap(result) as unknown as Blob
+      return { blob, fileName: fileNameOf(result.response) ?? 'linije.pdf' }
     },
     meta: { handlesErrors: true },
   })
