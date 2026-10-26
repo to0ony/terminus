@@ -12,5 +12,8 @@ public class RouteDiagramQuery
     /// <summary>Minute vožnje od polazne stanice uz svaku stanicu.</summary>
     public bool ShowMinutes { get; set; }
 
-    public RouteDiagramPdfOptions ToOptions() => new(Paper, Language, ShowMinutes);
+    /// <summary>Minute od stanice umjesto od polazne stanice; samo za PDF linija sa stanice.</summary>
+    public bool MinutesFromStop { get; set; }
+
+    public RouteDiagramPdfOptions ToOptions() => new(Paper, Language, ShowMinutes, MinutesFromStop);
 }

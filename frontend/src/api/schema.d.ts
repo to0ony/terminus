@@ -1173,6 +1173,7 @@ export interface paths {
                     Paper?: components["schemas"]["PaperSize"];
                     Language?: components["schemas"]["TimetableLanguage"];
                     ShowMinutes?: boolean;
+                    MinutesFromStop?: boolean;
                 };
                 header?: never;
                 path: {
@@ -3720,6 +3721,7 @@ export interface paths {
                     Paper?: components["schemas"]["PaperSize"];
                     Language?: components["schemas"]["TimetableLanguage"];
                     ShowMinutes?: boolean;
+                    MinutesFromStop?: boolean;
                 };
                 header?: never;
                 path: {

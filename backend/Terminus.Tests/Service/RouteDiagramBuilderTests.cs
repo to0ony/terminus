@@ -112,6 +112,20 @@ public class RouteDiagramBuilderTests
     }
 
     [Fact]
+    public void MinutesFromStop_CountsFromTheStopInEachDirection()
+    {
+        Variant(TripDirection.Outbound, 0, "A", "B", "C", "D");
+        Variant(TripDirection.Inbound, 0, "D", "C", "B", "A");
+
+        // Svaka vožnja traje 2 min uz 30 s stajanja; od polazne stanice 0, 3, 5, 8
+        // (zaokruženo), pa je razlika od B do C 2 min, a ne stvarnih 2,5.
+        var (forward, backward) = RouteDiagramDocument.MinutesFromStop(Build(), [false, true, false, false]);
+
+        Assert.Equal([null, 0, 2, 5], forward);
+        Assert.Equal([3, 0, null, null], backward);
+    }
+
+    [Fact]
     public void Build_WithoutStops_ReturnsNull()
     {
         _variants.Add(new RouteVariantModel { Id = Guid.NewGuid(), Name = "Prazna", DirectionId = TripDirection.Outbound, Stops = [] });
@@ -133,7 +147,7 @@ public class RouteDiagramBuilderTests
 
         var diagram = Build();
         var pdf = RouteDiagramDocument.Generate(
-            [diagram, diagram], new RouteDiagramPdfOptions(PaperSize.A4, TimetableLanguage.Hr, showMinutes), "Prijevoznik", null, null,
+            [diagram, diagram], new RouteDiagramPdfOptions(PaperSize.A4, TimetableLanguage.Hr, showMinutes, MinutesFromStop: true), "Prijevoznik", null, null,
             highlighted: [names[1], names[^1]]);
 
         Assert.Equal("%PDF"u8.ToArray(), pdf[..4]);

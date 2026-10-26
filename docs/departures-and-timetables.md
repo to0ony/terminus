@@ -372,8 +372,14 @@ je na svakoj shemi istaknuta (puna tamna točka, naziv na obojenoj podlozi);
 kod kolodvora i peroni, po nazivu.
 
 ```
-GET /api/stops/{stopId}/routes.pdf?paper=A4&language=hr&showMinutes=false
+GET /api/stops/{stopId}/routes.pdf?paper=A4&language=hr&showMinutes=true&minutesFromStop=true
 ```
+
+Uz `minutesFromStop=true` minute se računaju **od te stanice**: u svakom
+smjeru do stanica iza nje, a stanice prije nje (u tom smjeru) su bez minuta.
+Računa se razlika zaokruženih minuta od polazne stanice, pa može odstupati za
+minutu. Smjer koji na stanici ne staje nema minuta. Kod sheme jedne linije
+opcija se zanemaruje.
 
 | Dio | Gdje |
 |---|---|

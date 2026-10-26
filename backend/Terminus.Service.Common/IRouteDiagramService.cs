@@ -26,7 +26,15 @@ public interface IRouteDiagramService
 }
 
 /// <param name="ShowMinutes">Uz stanice minute vožnje od polazne stanice svakog smjera.</param>
-public sealed record RouteDiagramPdfOptions(PaperSize Paper, TimetableLanguage Language, bool ShowMinutes = false);
+/// <param name="MinutesFromStop">
+/// Minute od istaknute stanice umjesto od polazne (PDF linija sa stanice); bez
+/// istaknute stanice se zanemaruje.
+/// </param>
+public sealed record RouteDiagramPdfOptions(
+    PaperSize Paper,
+    TimetableLanguage Language,
+    bool ShowMinutes = false,
+    bool MinutesFromStop = false);
 
 /// <param name="AgencyName">Naziv prvog unesenog prijevoznika.</param>
 /// <param name="Forward">Glavna varijanta smjera 0 (ili jedina).</param>

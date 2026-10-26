@@ -24,6 +24,8 @@ interface RouteDiagramPdfDialogProps {
   description: string
   /** Preuzimanje PDF-a: sheme jedne linije ili svih linija sa stanice. */
   pdf: RouteDiagramPdfMutation
+  /** PDF sa stanice: minute se mogu računati i od te stanice. */
+  fromStop?: boolean
   opened: boolean
   onClose: () => void
 }
@@ -33,12 +35,14 @@ export function RouteDiagramPdfDialog({
   title,
   description,
   pdf,
+  fromStop = false,
   opened,
   onClose,
 }: RouteDiagramPdfDialogProps) {
   const [paper, setPaper] = useState<Paper>('A4')
   const [language, setLanguage] = useState<Language>('Hr')
   const [showMinutes, setShowMinutes] = useState(false)
+  const [minutesFrom, setMinutesFrom] = useState<'start' | 'stop'>('start')
 
   const close = () => {
     pdf.reset()
@@ -47,7 +51,12 @@ export function RouteDiagramPdfDialog({
 
   const submit = () =>
     pdf.mutate(
-      { Paper: paper, Language: language, ShowMinutes: showMinutes },
+      {
+        Paper: paper,
+        Language: language,
+        ShowMinutes: showMinutes,
+        MinutesFromStop: fromStop && minutesFrom === 'stop',
+      },
       {
         onSuccess: (file) => {
           saveFile(file)
@@ -95,6 +104,23 @@ export function RouteDiagramPdfDialog({
           checked={showMinutes}
           onChange={(event) => setShowMinutes(event.currentTarget.checked)}
         />
+
+        {fromStop && showMinutes && (
+          <Input.Wrapper
+            label="Minute računati"
+            description="Od ove stanice: koliko se vozi od nje do stanica iza nje, u svakom smjeru."
+          >
+            <SegmentedControl
+              fullWidth
+              value={minutesFrom}
+              onChange={(value) => setMinutesFrom(value as 'start' | 'stop')}
+              data={[
+                { value: 'start', label: 'Od polazne stanice' },
+                { value: 'stop', label: 'Od ove stanice' },
+              ]}
+            />
+          </Input.Wrapper>
+        )}
 
         {pdf.isError && (
           <Alert color="red" variant="light" icon={<IconAlertCircle />} title="PDF nije izrađen">

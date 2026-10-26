@@ -81,9 +81,10 @@ internal static class RouteDiagramDocument
                 var line = $"#{LineColor(diagram.Route.Color)}";
                 var layout = new Layout(diagram, pageSize.Width - 2 * margin, options.ShowMinutes);
                 var here = diagram.Stops.Select(s => highlightedKeys.Contains(RouteDiagramBuilder.Key(s.Name))).ToArray();
+                var times = options.ShowMinutes ? Times(diagram, here, options.MinutesFromStop, texts) : null;
                 var pageNumbers = diagrams.Count > 1;
                 document.Page(page => Page(page, diagram, options, texts, timetableTexts, displayName, primary, logo,
-                    pageSize, margin, line, layout, here, pageNumbers));
+                    pageSize, margin, line, layout, here, times, pageNumbers));
             }
         }).GeneratePdf();
     }
@@ -102,6 +103,7 @@ internal static class RouteDiagramDocument
         string line,
         Layout layout,
         bool[] here,
+        MinuteRows? times,
         bool pageNumbers)
     {
         page.Size(pageSize);
@@ -115,12 +117,12 @@ internal static class RouteDiagramDocument
 
             // Shema u sredini preostalog mjesta; preduga se smanji da stane na stranicu.
             content.Item().Extend().AlignMiddle().ScaleToFit()
-                .Element(c => Diagram(c, diagram, layout, line, here, options.ShowMinutes));
+                .Element(c => Diagram(c, diagram, layout, line, here, times));
         });
 
         page.Footer().PaddingTop(6).Column(footer =>
         {
-            footer.Item().PaddingBottom(8).Element(c => Legend(c, diagram, texts, line, here, options.ShowMinutes));
+            footer.Item().PaddingBottom(8).Element(c => Legend(c, diagram, texts, line, here, times));
             footer.Item().Element(c => FooterNote(c, diagram, options, texts, timetableTexts, displayName, pageNumbers));
         });
     }
@@ -203,7 +205,7 @@ internal static class RouteDiagramDocument
     }
 
     /// <summary>Crta sa stanicama (jedan SVG) i nazivi i minute postavljeni preko njega.</summary>
-    private static void Diagram(IContainer container, RouteDiagram diagram, Layout layout, string line, bool[] here, bool showMinutes)
+    private static void Diagram(IContainer container, RouteDiagram diagram, Layout layout, string line, bool[] here, MinuteRows? times)
     {
         container.Width(layout.Width).Height(layout.Height).Layers(layers =>
         {
@@ -216,18 +218,65 @@ internal static class RouteDiagramDocument
                 var label = new StopLabel(stop.Name, stop.Terminus, stop.VariantTerminus, here[i] ? Blend(line, 0.18) : null);
                 layers.Layer().Element(c => Label(c, label, x + 1, above ? y - LabelOffset : y + LabelOffset, above));
 
-                if (showMinutes)
+                if (times is not null)
                 {
                     var approximate = diagram.Route.TimeMode == TimeMode.Approximate && !stop.Terminus;
                     var top = above ? y + DotPad : y - DotPad - layout.MinutesArea;
-                    layers.Layer().Element(c => MinutesText(c, Minutes(stop.ForwardMinutes, approximate), x, top, Ink));
+                    var forward = times.Forward[i];
+                    layers.Layer().Element(c => MinutesText(c, Minutes(forward, approximate), x, top, Ink));
                     if (diagram.Backward is not null)
                     {
-                        layers.Layer().Element(c => MinutesText(c, Minutes(stop.BackwardMinutes, approximate), x, top + MinutesLine, Muted));
+                        var backward = times.Backward[i];
+                        layers.Layer().Element(c => MinutesText(c, Minutes(backward, approximate), x, top + MinutesLine, Muted));
                     }
                 }
             }
         });
+    }
+
+    /// <summary>Minute uz stanice za oba smjera i njihov opis u legendi (null: bez stavke).</summary>
+    private sealed record MinuteRows(int?[] Forward, int?[] Backward, string? ForwardLabel, string? BackwardLabel);
+
+    /// <summary>Minute od polazne stanice svakog smjera ili, po izboru, od istaknute stanice.</summary>
+    private static MinuteRows Times(RouteDiagram diagram, bool[] here, bool fromStop, RouteDiagramTexts texts)
+    {
+        if (fromStop && here.Any(h => h))
+        {
+            var (forward, backward) = MinutesFromStop(diagram, here);
+            return new MinuteRows(
+                forward,
+                backward,
+                forward.Any(m => m is not null) ? texts.MinutesTowards(diagram.Forward.Headsign) : null,
+                diagram.Backward is { } b && backward.Any(m => m is not null) ? texts.MinutesTowards(b.Headsign) : null);
+        }
+
+        return new MinuteRows(
+            diagram.Stops.Select(s => s.ForwardMinutes).ToArray(),
+            diagram.Stops.Select(s => s.BackwardMinutes).ToArray(),
+            texts.MinutesFrom(diagram.Forward.From),
+            diagram.Backward is { } backwardDirection ? texts.MinutesFrom(backwardDirection.From) : null);
+    }
+
+    /// <summary>
+    /// Minute od istaknute stanice do stanica iza nje u svakom smjeru; stanice
+    /// prije nje (u tom smjeru) su bez minuta. Smjer 0 kreće s prvog istaknutog
+    /// retka gdje staje, smjer 1 ide obrnuto pa sa zadnjeg. Ako smjer na
+    /// istaknutoj stanici ne staje, nema minuta. Razlika zaokruženih minuta od
+    /// polazne stanice, pa može odstupati za minutu.
+    /// </summary>
+    internal static (int?[] Forward, int?[] Backward) MinutesFromStop(RouteDiagram diagram, bool[] here)
+    {
+        var stops = diagram.Stops;
+        var forwardStart = Enumerable.Range(0, stops.Count).FirstOrDefault(i => here[i] && stops[i].ForwardMinutes is not null, -1);
+        var backwardStart = Enumerable.Range(0, stops.Count).LastOrDefault(i => here[i] && stops[i].BackwardMinutes is not null, -1);
+
+        var forward = stops
+            .Select((s, i) => forwardStart >= 0 && i >= forwardStart ? s.ForwardMinutes - stops[forwardStart].ForwardMinutes : null)
+            .ToArray();
+        var backward = stops
+            .Select((s, i) => backwardStart >= 0 && i <= backwardStart ? s.BackwardMinutes - stops[backwardStart].BackwardMinutes : null)
+            .ToArray();
+        return (forward, backward);
     }
 
     /// <param name="Highlight">Pozadina naziva istaknute stanice; null bez nje.</param>
@@ -353,7 +402,7 @@ internal static class RouteDiagramDocument
     }
 
     /// <summary>Značenje oznaka, u jednom retku ispod sheme.</summary>
-    private static void Legend(IContainer container, RouteDiagram diagram, RouteDiagramTexts texts, string line, bool[] here, bool showMinutes)
+    private static void Legend(IContainer container, RouteDiagram diagram, RouteDiagramTexts texts, string line, bool[] here, MinuteRows? times)
     {
         var oneWay = diagram.Backward is not null && diagram.Stops.Any(s => !s.Terminus && !s.VariantTerminus && s.Forward != s.Backward);
 
@@ -378,13 +427,13 @@ internal static class RouteDiagramDocument
                 }), texts.OneDirection));
             }
 
-            if (showMinutes)
+            if (times?.ForwardLabel is { } forward)
             {
-                row.AutoItem().Element(c => MinutesLegend(c, Ink, texts.MinutesFrom(diagram.Forward.From)));
-                if (diagram.Backward is { } backward)
-                {
-                    row.AutoItem().Element(c => MinutesLegend(c, Muted, texts.MinutesFrom(backward.From)));
-                }
+                row.AutoItem().Element(c => MinutesLegend(c, Ink, forward));
+            }
+            if (times?.BackwardLabel is { } backward)
+            {
+                row.AutoItem().Element(c => MinutesLegend(c, Muted, backward));
             }
         });
     }

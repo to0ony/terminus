@@ -23,6 +23,9 @@ internal abstract class RouteDiagramTexts
     /// <summary>Opis minuta uz stanice, npr. "min, polazak: Kolodvor".</summary>
     public abstract string MinutesFrom(string from);
 
+    /// <summary>Opis minuta od istaknute stanice, npr. "min od ove stanice, smjer Retfala".</summary>
+    public abstract string MinutesTowards(string headsign);
+
     public abstract string StopCount(int count);
 }
 
@@ -39,6 +42,8 @@ internal sealed class CroatianDiagramTexts : RouteDiagramTexts
 
     // Naziv stanice ostaje u nominativu, pa "polazak:" umjesto "od Kolodvora".
     public override string MinutesFrom(string from) => $"min, polazak: {from}";
+
+    public override string MinutesTowards(string headsign) => $"min od ove stanice, smjer {headsign}";
 
     public override string StopCount(int count) => count % 10 is >= 2 and <= 4 && count % 100 is < 12 or > 14
         ? $"{count} stanice"
@@ -57,6 +62,8 @@ internal sealed class EnglishDiagramTexts : RouteDiagramTexts
     public override string ApproximateTimes => "Times at intermediate stops (~) are approximate.";
 
     public override string MinutesFrom(string from) => $"min from {from}";
+
+    public override string MinutesTowards(string headsign) => $"min from this stop towards {headsign}";
 
     public override string StopCount(int count) => count == 1 ? "1 stop" : $"{count} stops";
 }

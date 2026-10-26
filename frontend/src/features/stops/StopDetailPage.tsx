@@ -218,6 +218,7 @@ export function StopDetailPage() {
         title="PDF sheme linija"
         description={`Sheme svih linija koje staju na stanici ${stop.data.name}, svaka na svojoj stranici. Stanica je na svakoj shemi istaknuta.`}
         pdf={diagramPdf}
+        fromStop
         opened={routesPdfOpened}
         onClose={routesPdf.close}
       />
