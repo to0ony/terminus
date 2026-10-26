@@ -31,6 +31,8 @@ Sve osim `/api/public/*`, `/api/auth/login` i `/health` traži prijavu
 | Stanice | `/api/stops`, `/api/stops/area`, `/api/stops/extent` |
 | Stanica: linije i polasci | `/api/stops/{id}/routes`, `/api/stops/{id}/departures?date=` |
 | Stanica: PDF vozni red | `GET /api/stops/{id}/timetable.pdf?from=&to=&paper=&language=` |
+| Linija: PDF shema | `GET /api/routes/{id}/diagram.pdf?paper=&language=&showMinutes=` |
+| Stanica: PDF shema svih linija | `GET /api/stops/{id}/routes.pdf?paper=&language=&showMinutes=&minutesFromStop=` |
 | Linije | `/api/routes`, `/api/routes/{id}/patterns`, `/api/routes/{id}/timetable?date=&directionId=` |
 | Linija: karta uživo (vožnje dana) | `GET /api/routes/{id}/live?date=` |
 | Karta uživo: sva vozila | `GET /api/routes/live?date=` |

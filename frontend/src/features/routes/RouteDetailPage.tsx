@@ -18,6 +18,7 @@ import {
   IconCalendar,
   IconChartLine,
   IconDots,
+  IconFileTypePdf,
   IconPencil,
   IconTrash,
 } from '@tabler/icons-react'
@@ -27,11 +28,18 @@ import { QueryError } from '@/components/QueryError'
 import { useAgencies } from '@/features/agencies/queries'
 import { formatNumber } from '@/lib/format'
 import { directionOptions } from './directions'
-import { type TimetableParams, useRoute, useRoutePatterns, useRouteTimetable } from './queries'
+import {
+  type TimetableParams,
+  useRoute,
+  useRouteDiagramPdf,
+  useRoutePatterns,
+  useRouteTimetable,
+} from './queries'
 import { RouteBadge } from './RouteBadge'
 import { useRouteVariants } from '@/features/variants/queries'
 import { VariantsSection } from '@/features/variants/VariantsSection'
 import { DeleteRouteDialog } from './DeleteRouteDialog'
+import { RouteDiagramPdfDialog } from './RouteDiagramPdfDialog'
 import { RouteDialog } from './RouteDialog'
 import { routeTypeLabel } from './routeTypes'
 import { TimetableGrid } from './TimetableGrid'
@@ -47,6 +55,8 @@ export function RouteDetailPage() {
   const variants = useRouteVariants(routeId)
   const [editOpened, edit] = useDisclosure(false)
   const [deleteOpened, deleteDialog] = useDisclosure(false)
+  const [pdfOpened, pdf] = useDisclosure(false)
+  const diagramPdf = useRouteDiagramPdf(routeId)
 
   const directions = directionOptions(patterns.data ?? [])
   const direction =
@@ -131,6 +141,15 @@ export function RouteDetailPage() {
             </Menu.Target>
             <Menu.Dropdown>
               <Menu.Item
+                leftSection={<IconFileTypePdf size={14} />}
+                // Shema se crta iz varijanti, pa bez stanica nema što ispisati.
+                disabled={!variants.data?.some((v) => v.stops.length > 0)}
+                onClick={pdf.open}
+              >
+                PDF shema linije
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item
                 color="red"
                 leftSection={<IconTrash size={14} />}
                 // Broj varijanti i vožnji mora biti poznat prije potvrde.
@@ -144,6 +163,13 @@ export function RouteDetailPage() {
         </Group>
       </Group>
       <RouteDialog route={route.data} opened={editOpened} onClose={edit.close} />
+      <RouteDiagramPdfDialog
+        title="PDF shema linije"
+        description="Stanice svih varijanti oba smjera kao točke na vodoravnoj crti, redom kojim ih linija obilazi. Početne i završne stanice su podebljane, a duga linija se lomi u više crta."
+        pdf={diagramPdf}
+        opened={pdfOpened}
+        onClose={pdf.close}
+      />
       <DeleteRouteDialog
         route={route.data}
         opened={deleteOpened}
