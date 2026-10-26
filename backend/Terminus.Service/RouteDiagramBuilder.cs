@@ -49,7 +49,23 @@ internal static class RouteDiagramBuilder
             ? []
             : backward.Stops.Select(s => Key(Name(s.StopId))).Reverse().ToList();
 
+        var otherVariants = usable
+            .Where(v => v.Variant != forward.Variant && v.Variant != backward.Variant)
+            .ToList();
+
+        // Prvo glavne varijante, pa redom ostale: njihove stanice umeću se
+        // između najbližih zajedničkih stanica. Varijante smjera 1 se obrnu.
         var rows = StopSequenceMerger.Merge<string>([forwardKeys, backwardKeys]);
+        foreach (var other in otherVariants)
+        {
+            var keys = other.Stops.Select(s => Key(Name(s.StopId))).ToList();
+            if (backward.Variant is not null && other.Variant.DirectionId == backward.Variant.DirectionId)
+            {
+                keys.Reverse();
+            }
+            rows = StopSequenceMerger.Merge<string>([rows, keys]);
+        }
+
         var forwardRows = StopSequenceMerger.Map(rows, forwardKeys);
         var backwardRows = StopSequenceMerger.Map(rows, backwardKeys);
 
@@ -79,9 +95,16 @@ internal static class RouteDiagramBuilder
             terminus[backwardRows[0]] = terminus[backwardRows[^1]] = true;
         }
 
-        var otherVariants = usable
-            .Where(v => v.Variant != forward.Variant && v.Variant != backward.Variant)
-            .ToList();
+        // Stanice samo ostalih varijanti: naziv iz prve varijante koja ih ima.
+        foreach (var other in otherVariants)
+        {
+            foreach (var stop in other.Stops)
+            {
+                var name = Name(stop.StopId);
+                var row = rows.IndexOf(Key(name));
+                names[row] ??= name;
+            }
+        }
 
         // Gdje ostale varijante počinju i završavaju, ako to nije kraj glavne trase.
         var variantEnds = otherVariants

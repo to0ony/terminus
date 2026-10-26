@@ -342,7 +342,10 @@ GET /api/routes/{routeId}/diagram.pdf?paper=A4&language=hr&showMinutes=false
 
 - Crta se iz **glavnih varijanti** (prva po redoslijedu) smjera 0 i smjera 1.
   Smjer 1 se obrne i spoji sa smjerom 0 (najdulji zajednički podniz, kao
-  redci grafikona). Stanice koje imaju samo ostale varijante nisu na shemi.
+  redci grafikona). Zatim se redom umeću **stanice ostalih varijanti** (onih
+  smjera 1 obrnuto), između najbližih zajedničkih stanica; tako je na shemi
+  svaka stanica koju koristi barem jedna varijanta. Stanica izvan trase (npr.
+  garaža) završi uz stanicu s kojom se varijanta spaja.
 - Stanice se spajaju **po nazivu** (bez razlike u velikim slovima i
   razmacima), jer su stanice suprotnih smjerova obično zasebni zapisi s dvije
   strane ulice.

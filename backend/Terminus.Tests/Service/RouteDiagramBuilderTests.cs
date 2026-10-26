@@ -68,15 +68,19 @@ public class RouteDiagramBuilderTests
     }
 
     [Fact]
-    public void Build_DrawsOnlyTheMainVariant()
+    public void Build_ListsStopsOfAllVariants()
     {
         Variant(TripDirection.Outbound, 1, "Garaža", "Trg");
         Variant(TripDirection.Outbound, 0, "Kolodvor", "Trg", "Bolnica");
+        Variant(TripDirection.Inbound, 0, "Bolnica", "Trg", "Kolodvor");
+        // Skraćena u smjeru 1 vozi kroz Sjenjak umjesto preko Trga.
+        Variant(TripDirection.Inbound, 1, "Bolnica", "Sjenjak", "Kolodvor");
 
         var diagram = Build();
 
-        Assert.Null(diagram.Backward);
-        Assert.Equal(["Kolodvor", "Trg", "Bolnica"], diagram.Stops.Select(s => s.Name));
+        Assert.Equal(["Kolodvor", "Garaža", "Trg", "Sjenjak", "Bolnica"], diagram.Stops.Select(s => s.Name));
+        Assert.True(diagram.Stops[1] is { Forward: true, Backward: false, ForwardMinutes: null, VariantTerminus: true });
+        Assert.True(diagram.Stops[3] is { Forward: false, Backward: true, BackwardMinutes: null, VariantTerminus: false });
     }
 
     [Fact]
