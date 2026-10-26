@@ -34,6 +34,12 @@ export const router = createBrowserRouter([
             element: <RequireSetup />,
             children: [
               {
+                path: '/live/full',
+                lazy: async () => ({
+                  Component: (await import('@/features/live/LiveMapPage')).LiveMapStandalonePage,
+                }),
+              },
+              {
                 element: <AppLayout />,
                 children: [
                   {

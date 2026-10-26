@@ -1,6 +1,7 @@
 import {
   ActionIcon,
   Box,
+  Button,
   CloseButton,
   Group,
   Loader,
@@ -10,7 +11,7 @@ import {
   Title,
   UnstyledButton,
 } from '@mantine/core'
-import { IconArrowLeft, IconBus, IconClick } from '@tabler/icons-react'
+import { IconArrowLeft, IconBus, IconClick, IconExternalLink } from '@tabler/icons-react'
 import { useMediaQuery } from '@mantine/hooks'
 import { createElement, useMemo, useState } from 'react'
 import { RouteBadge } from '@/features/routes/RouteBadge'
@@ -41,6 +42,15 @@ import { useSimulationClock } from './useSimulationClock'
  * se biraju dan, vrijeme i brzina.
  */
 export function LiveMapPage() {
+  return <LiveMapView standalone={false} />
+}
+
+/** Karta uživo preko cijelog prozora, bez izbornika i zaglavlja dashboarda (zasebna kartica). */
+export function LiveMapStandalonePage() {
+  return <LiveMapView standalone />
+}
+
+function LiveMapView({ standalone }: { standalone: boolean }) {
   const extent = useStopsExtent()
   const [stop, setStop] = useState<MapStop | null>(null)
   const [selected, setSelected] = useState<Departure | null>(null)
@@ -98,105 +108,128 @@ export function LiveMapPage() {
     setSelectedVehicle(null)
   }
 
+  const map = (
+    <Box
+      pos="relative"
+      h={standalone ? '100dvh' : 'calc(100dvh - 150px)'}
+      mih={standalone ? undefined : 420}
+    >
+      {extent.isSuccess && (
+        <LiveMap
+          h="100%"
+          extent={extent.data}
+          selectedStopId={stop?.id ?? null}
+          onSelectStop={selectStop}
+          day={view?.day ?? null}
+          focusKey={view?.key ?? null}
+          vehicles={view?.vehicles ?? []}
+          timeRef={clock.timeRef}
+          selectedVehicle={selectedVehicle}
+          onSelectVehicle={setSelectedVehicle}
+          fitPadding={
+            mobile
+              ? { top: clock.mode === 'simulation' ? 150 : 70, bottom: 320, left: 30, right: 30 }
+              : { top: 60, bottom: 160, left: 400, right: 60 }
+          }
+          pickerBottom={mobile ? 84 : 10}
+        />
+      )}
+
+      <Paper
+        pos="absolute"
+        shadow="md"
+        withBorder
+        {...(mobile
+          ? {
+              left: 0,
+              right: 0,
+              bottom: 0,
+              style: { borderRadius: '16px 16px 0 0' },
+            }
+          : { top: 12, left: 12, w: 380, maw: 'calc(100% - 24px)', radius: 'md' })}
+      >
+        {mobile && (
+          <UnstyledButton
+            onClick={() => setSheetOpen(!sheetOpen)}
+            w="100%"
+            pt={8}
+            pb={2}
+            aria-label={sheetOpen ? 'Skupi' : 'Proširi'}
+            style={{ display: 'flex', justifyContent: 'center' }}
+          >
+            <Box w={40} h={4} bg="gray.4" style={{ borderRadius: 2 }} />
+          </UnstyledButton>
+        )}
+        {stop ? (
+          <StopPanel
+            stop={stop}
+            date={clock.date}
+            time={clock.time}
+            timeZone={timeZone}
+            selected={selected}
+            onSelect={selectDeparture}
+            onClose={() => selectStop(null)}
+            view={view}
+            loading={selected !== null && live.isPending}
+            selectedVehicle={selectedVehicle}
+            onSelectVehicle={setSelectedVehicle}
+            collapsed={mobile && !sheetOpen}
+            bodyMaxHeight={mobile ? '45dvh' : undefined}
+          />
+        ) : (
+          <Group gap="sm" wrap="nowrap" p="md">
+            <IconClick size={20} />
+            <Text size="sm">Klikni stanicu na karti za polaske s nje.</Text>
+          </Group>
+        )}
+      </Paper>
+
+      <Paper
+        pos="absolute"
+        shadow="md"
+        radius="md"
+        withBorder
+        p={mobile ? 'xs' : 'sm'}
+        {...(mobile
+          ? { top: 8, left: 8, right: 52 }
+          : {
+              bottom: 32,
+              left: '50%',
+              w: 560,
+              maw: 'calc(100% - 24px)',
+              style: { transform: 'translateX(-50%)' },
+            })}
+      >
+        <ClockPanel clock={clock} />
+      </Paper>
+    </Box>
+  )
+
+  if (standalone) {
+    return map
+  }
+
   return (
     <Stack gap="sm">
       <Group justify="space-between">
         <Title order={2}>Karta uživo</Title>
-        <Text size="sm" c="dimmed" visibleFrom="sm">
-          Vozila su prema voznom redu, ne prema GPS-u.
-        </Text>
+        <Group gap="md">
+          <Text size="sm" c="dimmed" visibleFrom="md">
+            Vozila su prema voznom redu, ne prema GPS-u.
+          </Text>
+          <Button
+            component="a"
+            href="/live/full"
+            target="_blank"
+            variant="default"
+            size="xs"
+            leftSection={<IconExternalLink size={14} />}
+          >
+            Otvori u novoj kartici
+          </Button>
+        </Group>
       </Group>
-
-      <Box pos="relative" h="calc(100dvh - 150px)" mih={420}>
-        {extent.isSuccess && (
-          <LiveMap
-            h="100%"
-            extent={extent.data}
-            selectedStopId={stop?.id ?? null}
-            onSelectStop={selectStop}
-            day={view?.day ?? null}
-            focusKey={view?.key ?? null}
-            vehicles={view?.vehicles ?? []}
-            timeRef={clock.timeRef}
-            selectedVehicle={selectedVehicle}
-            onSelectVehicle={setSelectedVehicle}
-            fitPadding={
-              mobile
-                ? { top: clock.mode === 'simulation' ? 150 : 70, bottom: 320, left: 30, right: 30 }
-                : { top: 60, bottom: 160, left: 400, right: 60 }
-            }
-            pickerBottom={mobile ? 84 : 10}
-          />
-        )}
-
-        <Paper
-          pos="absolute"
-          shadow="md"
-          withBorder
-          {...(mobile
-            ? {
-                left: 0,
-                right: 0,
-                bottom: 0,
-                style: { borderRadius: '16px 16px 0 0' },
-              }
-            : { top: 12, left: 12, w: 380, maw: 'calc(100% - 24px)', radius: 'md' })}
-        >
-          {mobile && (
-            <UnstyledButton
-              onClick={() => setSheetOpen(!sheetOpen)}
-              w="100%"
-              pt={8}
-              pb={2}
-              aria-label={sheetOpen ? 'Skupi' : 'Proširi'}
-              style={{ display: 'flex', justifyContent: 'center' }}
-            >
-              <Box w={40} h={4} bg="gray.4" style={{ borderRadius: 2 }} />
-            </UnstyledButton>
-          )}
-          {stop ? (
-            <StopPanel
-              stop={stop}
-              date={clock.date}
-              time={clock.time}
-              timeZone={timeZone}
-              selected={selected}
-              onSelect={selectDeparture}
-              onClose={() => selectStop(null)}
-              view={view}
-              loading={selected !== null && live.isPending}
-              selectedVehicle={selectedVehicle}
-              onSelectVehicle={setSelectedVehicle}
-              collapsed={mobile && !sheetOpen}
-              bodyMaxHeight={mobile ? '45dvh' : undefined}
-            />
-          ) : (
-            <Group gap="sm" wrap="nowrap" p="md">
-              <IconClick size={20} />
-              <Text size="sm">Klikni stanicu na karti za polaske s nje.</Text>
-            </Group>
-          )}
-        </Paper>
-
-        <Paper
-          pos="absolute"
-          shadow="md"
-          radius="md"
-          withBorder
-          p={mobile ? 'xs' : 'sm'}
-          {...(mobile
-            ? { top: 8, left: 8, right: 52 }
-            : {
-                bottom: 32,
-                left: '50%',
-                w: 560,
-                maw: 'calc(100% - 24px)',
-                style: { transform: 'translateX(-50%)' },
-              })}
-        >
-          <ClockPanel clock={clock} />
-        </Paper>
-      </Box>
+      {map}
     </Stack>
   )
 }
