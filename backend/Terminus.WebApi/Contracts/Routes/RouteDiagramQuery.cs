@@ -9,5 +9,8 @@ public class RouteDiagramQuery
 
     public TimetableLanguage Language { get; set; } = TimetableLanguage.Hr;
 
-    public RouteDiagramPdfOptions ToOptions() => new(Paper, Language);
+    /// <summary>Minute vožnje od polazne stanice uz svaku stanicu.</summary>
+    public bool ShowMinutes { get; set; }
+
+    public RouteDiagramPdfOptions ToOptions() => new(Paper, Language, ShowMinutes);
 }

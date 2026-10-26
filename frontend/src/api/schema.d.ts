@@ -1172,6 +1172,7 @@ export interface paths {
                 query?: {
                     Paper?: components["schemas"]["PaperSize"];
                     Language?: components["schemas"]["TimetableLanguage"];
+                    ShowMinutes?: boolean;
                 };
                 header?: never;
                 path: {

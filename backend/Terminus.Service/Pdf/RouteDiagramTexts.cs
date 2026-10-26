@@ -14,13 +14,11 @@ internal abstract class RouteDiagramTexts
     public abstract string FilePrefix { get; }
     public abstract string Route { get; }
     public abstract string Minutes { get; }
-    public abstract string BothDirections { get; }
+    public abstract string Terminus { get; }
     public abstract string OneDirection { get; }
     public abstract string ApproximateTimes { get; }
-    public abstract string OtherVariants { get; }
-    public abstract string VariantLane { get; }
 
-    /// <summary>Opis stupca minuta, npr. "↓ min od Kolodvora".</summary>
+    /// <summary>Opis minuta uz stanice, npr. "min, polazak: Kolodvor".</summary>
     public abstract string MinutesFrom(string from);
 
     public abstract string StopCount(int count);
@@ -31,11 +29,9 @@ internal sealed class CroatianDiagramTexts : RouteDiagramTexts
     public override string FilePrefix => "linija";
     public override string Route => "Linija";
     public override string Minutes => "min";
-    public override string BothDirections => "staje u oba smjera";
+    public override string Terminus => "početna ili završna stanica";
     public override string OneDirection => "staje samo u smjeru strelice";
-    public override string ApproximateTimes => "Vremena međustanica (~) su okvirna.";
-    public override string OtherVariants => "Ostale varijante";
-    public override string VariantLane => "ostala varijanta; oznaka je uz stanicu gdje počinje ili završava";
+    public override string ApproximateTimes => "Minute uz međustanice (~) su okvirne.";
 
     // Naziv stanice ostaje u nominativu, pa "polazak:" umjesto "od Kolodvora".
     public override string MinutesFrom(string from) => $"min, polazak: {from}";
@@ -50,11 +46,9 @@ internal sealed class EnglishDiagramTexts : RouteDiagramTexts
     public override string FilePrefix => "route";
     public override string Route => "Route";
     public override string Minutes => "min";
-    public override string BothDirections => "stops in both directions";
+    public override string Terminus => "first or last stop";
     public override string OneDirection => "stops only in the direction of the arrow";
     public override string ApproximateTimes => "Times at intermediate stops (~) are approximate.";
-    public override string OtherVariants => "Other variants";
-    public override string VariantLane => "other variant; labelled at the stop where it starts or ends";
 
     public override string MinutesFrom(string from) => $"min from {from}";
 

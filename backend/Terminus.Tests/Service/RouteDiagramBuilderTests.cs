@@ -54,33 +54,15 @@ public class RouteDiagramBuilderTests
     }
 
     [Fact]
-    public void Build_UsesTheMainVariantAndListsTheOthers()
+    public void Build_DrawsOnlyTheMainVariant()
     {
-        Variant(TripDirection.Outbound, 1, "Kolodvor", "Trg");
+        Variant(TripDirection.Outbound, 1, "Garaža", "Trg");
         Variant(TripDirection.Outbound, 0, "Kolodvor", "Trg", "Bolnica");
 
         var diagram = Build();
 
         Assert.Null(diagram.Backward);
-        Assert.Equal(3, diagram.Stops.Count);
-        var other = Assert.Single(diagram.OtherVariants);
-        Assert.Equal(("Kolodvor", "Trg", 2), (other.From, other.To, other.StopCount));
-    }
-
-    [Fact]
-    public void Build_GivesOtherVariantsTheRowsTheyRunThrough()
-    {
-        Variant(TripDirection.Outbound, 0, "Kolodvor", "Trg", "Bolnica", "Tvrđa");
-        Variant(TripDirection.Outbound, 1, "Trg", "Bolnica");
-        // Iz garaže: počinje izvan sheme, pa je gornji kraj otvoren.
-        Variant(TripDirection.Outbound, 2, "Garaža", "Bolnica", "Tvrđa");
-        Variant(TripDirection.Outbound, 3, "Garaža", "Spremište");
-
-        var diagram = Build();
-
-        Assert.Equal(new RouteDiagramRange(1, 2, true, true), diagram.OtherVariants[0].Range);
-        Assert.Equal(new RouteDiagramRange(2, 3, false, true), diagram.OtherVariants[1].Range);
-        Assert.Null(diagram.OtherVariants[2].Range);
+        Assert.Equal(["Kolodvor", "Trg", "Bolnica"], diagram.Stops.Select(s => s.Name));
     }
 
     [Fact]
@@ -105,15 +87,20 @@ public class RouteDiagramBuilderTests
         Assert.Null(RouteDiagramBuilder.Build(_route, "Prijevoznik", _variants, _stops));
     }
 
-    [Fact]
-    public void Generate_ProducesPdf()
+    [Theory]
+    [InlineData(4, false)]
+    [InlineData(4, true)]
+    [InlineData(70, true)]
+    [InlineData(200, false)]
+    public void Generate_ProducesPdf(int stopCount, bool showMinutes)
     {
-        Variant(TripDirection.Outbound, 0, "Kolodvor", "Ilica", "Trg", "Bolnica");
-        Variant(TripDirection.Inbound, 0, "Bolnica", "Trg", "Frankopanska", "Kolodvor");
-        Variant(TripDirection.Inbound, 1, "Trg", "Kolodvor");
+        var names = Enumerable.Range(1, stopCount).Select(i => $"Stanica {i}").ToArray();
+        Variant(TripDirection.Outbound, 0, names);
+        Variant(TripDirection.Inbound, 0, names.Reverse().Where((_, i) => i != 1).ToArray());
+        Variant(TripDirection.Inbound, 1, names[2], names[0]);
 
         var pdf = RouteDiagramDocument.Generate(
-            Build(), new RouteDiagramPdfOptions(PaperSize.A4, TimetableLanguage.Hr), "Prijevoznik", null, null);
+            Build(), new RouteDiagramPdfOptions(PaperSize.A4, TimetableLanguage.Hr, showMinutes), "Prijevoznik", null, null);
 
         Assert.Equal("%PDF"u8.ToArray(), pdf[..4]);
     }

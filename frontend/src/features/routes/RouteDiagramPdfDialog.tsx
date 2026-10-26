@@ -7,6 +7,7 @@ import {
   Modal,
   SegmentedControl,
   Stack,
+  Switch,
   Text,
 } from '@mantine/core'
 import { IconAlertCircle, IconDownload } from '@tabler/icons-react'
@@ -30,6 +31,7 @@ export function RouteDiagramPdfDialog({ route, opened, onClose }: RouteDiagramPd
 
   const [paper, setPaper] = useState<Paper>('A4')
   const [language, setLanguage] = useState<Language>('Hr')
+  const [showMinutes, setShowMinutes] = useState(false)
 
   const close = () => {
     pdf.reset()
@@ -38,7 +40,7 @@ export function RouteDiagramPdfDialog({ route, opened, onClose }: RouteDiagramPd
 
   const submit = () =>
     pdf.mutate(
-      { Paper: paper, Language: language },
+      { Paper: paper, Language: language, ShowMinutes: showMinutes },
       {
         onSuccess: (file) => {
           saveFile(file)
@@ -53,9 +55,9 @@ export function RouteDiagramPdfDialog({ route, opened, onClose }: RouteDiagramPd
     <Modal opened={opened} onClose={close} title="PDF shema linije" size="md">
       <Stack gap="md">
         <Text size="sm" c="dimmed">
-          Stanice glavnih varijanti oba smjera redom kojim ih linija obilazi, s minutama vožnje od
-          polazne stanice. Gdje smjerovi idu različitim stanicama, crta se razdvaja u dvije trake sa
-          strelicama.
+          Stanice glavnih varijanti oba smjera kao točke na vodoravnoj crti, redom kojim ih linija
+          obilazi. Početne i završne stanice (i ostalih varijanti) su podebljane, a duga linija se
+          lomi u više crta.
         </Text>
 
         <Input.Wrapper label="Format">
@@ -81,6 +83,13 @@ export function RouteDiagramPdfDialog({ route, opened, onClose }: RouteDiagramPd
             ]}
           />
         </Input.Wrapper>
+
+        <Switch
+          label="Minute vožnje uz stanice"
+          description="Uz svaku stanicu minute od polazne stanice, za oba smjera."
+          checked={showMinutes}
+          onChange={(event) => setShowMinutes(event.currentTarget.checked)}
+        />
 
         {pdf.isError && (
           <Alert color="red" variant="light" icon={<IconAlertCircle />} title="PDF nije izrađen">

@@ -334,40 +334,36 @@ U planu je i jedan PDF za sve stanice odjednom (vidi [roadmap](roadmap.md)).
 
 PDF s redoslijedom stanica linije, za ispis u vozilu ili na stanici. Na
 stranici linije u dashboardu: izbornik **⋯ → PDF shema linije** (A4/A3,
-hrvatski/engleski).
+hrvatski/engleski, minute po izboru).
 
 ```
-GET /api/routes/{routeId}/diagram.pdf?paper=A4&language=hr
+GET /api/routes/{routeId}/diagram.pdf?paper=A4&language=hr&showMinutes=false
 ```
 
 - Crta se iz **glavnih varijanti** (prva po redoslijedu) smjera 0 i smjera 1.
-  Smjer 0 ide odozgo prema dolje, smjer 1 se obrne i spoji s njim (najdulji
-  zajednički podniz, kao redci grafikona).
+  Smjer 1 se obrne i spoji sa smjerom 0 (najdulji zajednički podniz, kao
+  redci grafikona). Stanice koje imaju samo ostale varijante nisu na shemi.
 - Stanice se spajaju **po nazivu** (bez razlike u velikim slovima i
   razmacima), jer su stanice suprotnih smjerova obično zasebni zapisi s dvije
   strane ulice.
-- Gdje staju oba smjera, crta je jedna i deblja. Gdje smjerovi idu različitim
-  stanicama, razdvaja se u dvije tanje trake; traka koja u retku ne staje nosi
-  strelicu smjera.
-- Lijevo od crte su minute od polazne stanice za svaki smjer; kod linija s
-  okvirnim vremenima međustanice imaju `~`.
-- Naslov je naziv linije (`route_long_name`); ispod su krajevi glavne trase
-  i broj stanica.
-- Ostale varijante su **tanke crte uz glavnu** (svjetlija nijansa boje
-  linije), lijevo od nje. Gdje varijanta počinje ili završava, crta zaobljenim
-  kutom ulazi u kružić stanice, a uz naziv stanice je oznaka s nazivom
-  varijante. Kad varijanta nastavlja do stanica izvan sheme (npr. iz garaže),
-  crta se tu nastavlja isprekidano, a oznaka u zagradi kaže kamo
-  („Iz garaže (Garaža)”). Varijante koje se preklapaju dobivaju zasebne trake.
-- Stanice gdje ostale varijante počinju ili završavaju podebljane su na shemi.
-- Varijante koje ne prolaze nijednom stanicom sheme navedene su ispod nje.
-- Kratka linija dobiva više retke; duga se lomi u dva ili tri stupca.
+- Stranica je **položena**: stanice su točke na vodoravnoj crti u boji
+  linije, nazivi koso iznad nje. Naslov je naziv linije (`route_long_name`);
+  ispod su krajevi glavne trase i broj stanica.
+- **Podebljane** su početne i završne stanice glavnih varijanti (veća točka)
+  i stanice gdje ostale varijante počinju ili završavaju.
+- Stanica gdje staje samo jedan smjer ima strelicu smjera u točki.
+- Duga linija se **lomi u više crta** koje se nastavljaju kao zmija, sa
+  zaobljenim zaokretom: druga crta ide zdesna nalijevo, s nazivima ispod.
+  Shema je uvijek na jednoj stranici; ako ni tako ne stane, smanji se.
+- `showMinutes=true`: uz svaku stanicu minute od polazne stanice za oba
+  smjera (smjer 1 sivo); kod linija s okvirnim vremenima međustanice imaju
+  `~`. Bez minuta nema ni napomene o vremenima.
 - 422 ako linija nema varijantu sa stanicama.
 
 | Dio | Gdje |
 |---|---|
 | Spajanje smjerova i minute | `RouteDiagramBuilder`, testovi u `RouteDiagramBuilderTests` |
-| Izgled (crta kao SVG po retku) | `Pdf/RouteDiagramDocument`, tekstovi u `Pdf/RouteDiagramTexts` |
+| Izgled (crta kao SVG, nazivi preko nje) | `Pdf/RouteDiagramDocument`, tekstovi u `Pdf/RouteDiagramTexts` |
 
 ### 3.6 Licenca za QuestPDF
 
