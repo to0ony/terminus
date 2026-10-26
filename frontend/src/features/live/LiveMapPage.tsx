@@ -11,7 +11,13 @@ import {
   Title,
   UnstyledButton,
 } from '@mantine/core'
-import { IconArrowLeft, IconBus, IconClick, IconExternalLink } from '@tabler/icons-react'
+import {
+  IconArrowLeft,
+  IconBus,
+  IconClick,
+  IconCurrentLocation,
+  IconExternalLink,
+} from '@tabler/icons-react'
 import { useMediaQuery } from '@mantine/hooks'
 import { createElement, useMemo, useState } from 'react'
 import { RouteBadge } from '@/features/routes/RouteBadge'
@@ -94,10 +100,21 @@ function LiveMapView({ standalone }: { standalone: boolean }) {
   // Mobitel: panel je donja ploča koja se skuplja, a sat je gore.
   const mobile = useMediaQuery('(max-width: 48em)') ?? false
   const [sheetOpen, setSheetOpen] = useState(true)
+  const [following, setFollowing] = useState(false)
+
+  // Odabrano vozilo: karta ga prati, a na mobitelu se ploča spusti da se vidi.
+  const selectVehicle = (key: string) => {
+    setSelectedVehicle(key)
+    setFollowing(true)
+    if (mobile) {
+      setSheetOpen(false)
+    }
+  }
 
   const selectStop = (next: MapStop | null) => {
     setStop(next)
     setSheetOpen(true)
+    setFollowing(false)
     setSelected(null)
     setSelectedVehicle(null)
   }
@@ -105,6 +122,7 @@ function LiveMapView({ standalone }: { standalone: boolean }) {
   const selectDeparture = (departure: Departure | null) => {
     setSelected(departure)
     setSheetOpen(true)
+    setFollowing(false)
     setSelectedVehicle(null)
   }
 
@@ -125,7 +143,14 @@ function LiveMapView({ standalone }: { standalone: boolean }) {
           vehicles={view?.vehicles ?? []}
           timeRef={clock.timeRef}
           selectedVehicle={selectedVehicle}
-          onSelectVehicle={setSelectedVehicle}
+          onSelectVehicle={selectVehicle}
+          following={following}
+          onStopFollowing={() => setFollowing(false)}
+          followPadding={
+            mobile
+              ? { top: clock.mode === 'simulation' ? 150 : 70, bottom: 80, left: 20, right: 20 }
+              : { top: 20, bottom: 140, left: 400, right: 20 }
+          }
           fitPadding={
             mobile
               ? { top: clock.mode === 'simulation' ? 150 : 70, bottom: 320, left: 30, right: 30 }
@@ -172,7 +197,7 @@ function LiveMapView({ standalone }: { standalone: boolean }) {
             view={view}
             loading={selected !== null && live.isPending}
             selectedVehicle={selectedVehicle}
-            onSelectVehicle={setSelectedVehicle}
+            onSelectVehicle={selectVehicle}
             collapsed={mobile && !sheetOpen}
             bodyMaxHeight={mobile ? '45dvh' : undefined}
           />
@@ -207,6 +232,25 @@ function LiveMapView({ standalone }: { standalone: boolean }) {
       >
         <ClockPanel clock={clock} />
       </Paper>
+
+      {selectedVehicle && view?.vehicles.some((v) => v.key === selectedVehicle) && (
+        <Button
+          pos="absolute"
+          radius="xl"
+          size="xs"
+          variant={following ? 'filled' : 'white'}
+          leftSection={<IconCurrentLocation size={14} />}
+          onClick={() => setFollowing(!following)}
+          style={{
+            left: '50%',
+            transform: 'translateX(-50%)',
+            boxShadow: 'var(--mantine-shadow-md)',
+            ...(mobile ? { bottom: 76 } : { top: 12 }),
+          }}
+        >
+          {following ? 'Prati se vozilo · zaustavi' : 'Prati vozilo'}
+        </Button>
+      )}
     </Box>
   )
 

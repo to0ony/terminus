@@ -39,8 +39,13 @@ interface LiveMapProps extends BoxProps {
   timeRef: RefObject<number>
   selectedVehicle: string | null
   onSelectVehicle: (key: string) => void
+  /** Karta prati odabrano vozilo; povlačenje karte to prekida. */
+  following: boolean
+  onStopFollowing: () => void
   /** Rub karte koji pokrivaju paneli, za prilagodbu trasi. */
-  fitPadding: { top: number; bottom: number; left: number; right: number }
+  fitPadding: Padding
+  /** Rub karte koji pokrivaju paneli dok karta prati vozilo. */
+  followPadding: Padding
   pickerBottom?: number
 }
 
@@ -58,7 +63,10 @@ export function LiveMap({
   timeRef,
   selectedVehicle,
   onSelectVehicle,
+  following,
+  onStopFollowing,
   fitPadding,
+  followPadding,
   pickerBottom,
   ...boxProps
 }: LiveMapProps) {
@@ -66,9 +74,11 @@ export function LiveMap({
   const [area, setArea] = useState<StopAreaParams | null>(null)
   const stops = useStopsInArea(area)
   const byId = useRef(new globalThis.Map<string, MapStop>())
-  const handlers = useRef({ onSelectStop, onSelectVehicle })
+  const handlers = useRef({ onSelectStop, onSelectVehicle, onStopFollowing })
+  const follow = useRef({ key: selectedVehicle, on: following })
   useEffect(() => {
-    handlers.current = { onSelectStop, onSelectVehicle }
+    handlers.current = { onSelectStop, onSelectVehicle, onStopFollowing }
+    follow.current = { key: selectedVehicle, on: following }
   })
 
   const handleReady = (instance: Map) => {
@@ -239,6 +249,8 @@ export function LiveMap({
     const updateArea = () => setArea(visibleArea(instance))
     instance.on('moveend', updateArea)
     updateArea()
+    // Korisnik pomiče kartu sam: prestaje praćenje vozila.
+    instance.on('dragstart', () => handlers.current.onStopFollowing())
     setMap(instance)
   }
 
@@ -257,20 +269,26 @@ export function LiveMap({
     map?.setFilter('live-stop-selected', ['==', ['get', 'id'], selectedStopId ?? ''])
   }, [map, selectedStopId])
 
-  // Odabrano vozilo: istakne se i karta se jednom pomakne do njega.
+  // Odabrano vozilo: istakne se, a kad ga karta počne pratiti, približi mu se.
   const flownTo = useRef<string | null>(null)
   useEffect(() => {
     map?.setFilter('live-vehicle-selected', ['==', ['get', 'key'], selectedVehicle ?? ''])
-    if (flownTo.current === selectedVehicle) {
+    const target = following ? selectedVehicle : null
+    if (flownTo.current === target) {
       return
     }
-    flownTo.current = selectedVehicle
-    const vehicle = vehicles.find((v) => v.key === selectedVehicle)
+    flownTo.current = target
+    const vehicle = vehicles.find((v) => v.key === target)
     const state = vehicle && vehicleAt(vehicle.track, timeRef.current)
     if (map && state) {
-      map.easeTo({ center: state.position, zoom: Math.max(map.getZoom(), 15), duration: 600 })
+      map.easeTo({
+        center: state.position,
+        zoom: Math.max(map.getZoom(), 16),
+        padding: followPadding,
+        duration: 700,
+      })
     }
-  }, [map, selectedVehicle, vehicles, timeRef])
+  }, [map, selectedVehicle, following, vehicles, timeRef, followPadding])
 
   // Trasa i stanice linije; ostale stanice se utišaju.
   useEffect(() => {
@@ -334,6 +352,14 @@ export function LiveMap({
           : []
       })
       map.getSource<GeoJSONSource>(vehiclesSource)?.setData({ type: 'FeatureCollection', features })
+
+      // Praćenje: središte karte ide za vozilom (nakon približavanja).
+      const { key, on } = follow.current
+      const followed = on && !map.isMoving() && vehicles.find((v) => v.key === key)
+      const position = followed && vehicleAt(followed.track, time)?.position
+      if (position) {
+        map.setCenter(position)
+      }
       frame = requestAnimationFrame(draw)
     }
     frame = requestAnimationFrame(draw)
@@ -353,6 +379,13 @@ export function LiveMap({
       onReady={handleReady}
     />
   )
+}
+
+interface Padding {
+  top: number
+  bottom: number
+  left: number
+  right: number
 }
 
 const emptyPoints: FeatureCollection<Point> = { type: 'FeatureCollection', features: [] }

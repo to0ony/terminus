@@ -359,6 +359,9 @@ stanice. Vozila su **prema voznom redu** (simulacija), ne prema GPS-u.
 - **Simulacija**: odabrani dan, vrijeme (klizač) i brzina od 1× do 600×; služi
   za provjeru voznog reda.
 - Ispred svake linije je ikona vrste prijevoza (autobus, vlak, brod…).
+- Klik na vozilo (na karti ili u popisu): karta mu se približi i **prati
+  ga**; na mobitelu se ploča spusti. Povlačenje karte prekida praćenje, a gumb
+  **Prati vozilo** ga vraća.
 - **Otvori u novoj kartici** otvara `/live/full`: ista karta preko cijelog
   prozora, bez izbornika i zaglavlja dashboarda (traži prijavu kao i
   dashboard).
