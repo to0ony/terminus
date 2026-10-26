@@ -18,6 +18,12 @@ export const router = createBrowserRouter([
         lazy: async () => ({ Component: (await import('@/features/auth/LoginPage')).LoginPage }),
       },
       {
+        path: '/karta',
+        lazy: async () => ({
+          Component: (await import('@/features/live/PublicLiveMapPage')).PublicLiveMapPage,
+        }),
+      },
+      {
         path: '/board/:stopCode',
         lazy: async () => ({ Component: (await import('@/features/board/BoardPage')).BoardPage }),
       },

@@ -1,3 +1,4 @@
+using Terminus.Model.Common;
 using Terminus.Model.Common.Enums;
 using Terminus.Service.Common;
 using Terminus.WebApi.Contracts.Timetables;
@@ -20,10 +21,20 @@ public record LiveRouteDayResponse(
     IReadOnlyList<LiveShapeResponse> Shapes,
     IReadOnlyList<TimetableStopResponse> Stops);
 
+/// <summary>Sva vozila: vožnje svih linija dana.</summary>
+public record LiveNetworkDayResponse(
+    DateOnly Date,
+    string TimeZone,
+    IReadOnlyList<RouteResponse> Routes,
+    IReadOnlyList<LiveTripResponse> Trips,
+    IReadOnlyList<LiveShapeResponse> Shapes,
+    IReadOnlyList<TimetableStopResponse> Stops);
+
 /// <param name="ShapeId">Trasa iz Shapes; null ili nepoznata: ravno od stanice do stanice.</param>
 /// <param name="PreviousDay">Vožnja prethodnog dana koja traje iza ponoći.</param>
 public record LiveTripResponse(
     Guid Id,
+    Guid RouteId,
     string? ShortName,
     string Headsign,
     TripDirection? DirectionId,
@@ -44,20 +55,33 @@ public static class LiveMapMappings
         day.Route.ToResponse(),
         day.Date,
         day.TimeZone,
-        day.Trips
-            .Select(t => new LiveTripResponse(
-                t.Id,
-                t.ShortName,
-                t.Headsign,
-                t.DirectionId,
-                t.ShapeId,
-                t.PreviousDay,
-                t.StopTimes.Select(st => new LiveStopTimeResponse(st.StopId, st.ArrivalTime, st.DepartureTime)).ToList()))
-            .ToList(),
-        day.Shapes
-            .Select(s => new LiveShapeResponse(
-                s.Id,
-                s.Points.OrderBy(p => p.Sequence).Select(p => new[] { p.Longitude, p.Latitude }).ToList()))
-            .ToList(),
+        day.Trips.Select(ToResponse).ToList(),
+        day.Shapes.Select(ToResponse).ToList(),
         day.Stops.Select(s => s.ToTimetableResponse()).ToList());
+
+    public static LiveNetworkDayResponse ToResponse(this LiveNetworkDay day) => new(
+        day.Date,
+        day.TimeZone,
+        day.Routes.Select(r => r.ToResponse()).ToList(),
+        day.Trips.Select(ToResponse).ToList(),
+        day.Shapes.Select(ToResponse).ToList(),
+        day.Stops.Select(s => s.ToTimetableResponse()).ToList());
+
+    private static LiveTripResponse ToResponse(LiveTrip trip) => new(
+        trip.Id,
+        trip.RouteId,
+        trip.ShortName,
+        trip.Headsign,
+        trip.DirectionId,
+        trip.ShapeId,
+        trip.PreviousDay,
+        trip.StopTimes.Select(st => new LiveStopTimeResponse(st.StopId, st.ArrivalTime, st.DepartureTime)).ToList());
+
+    // Šest decimala je oko 10 cm; kraći odgovor za trase svih linija.
+    private static LiveShapeResponse ToResponse(IShapeModel shape) => new(
+        shape.Id,
+        shape.Points
+            .OrderBy(p => p.Sequence)
+            .Select(p => new[] { Math.Round(p.Longitude, 6), Math.Round(p.Latitude, 6) })
+            .ToList());
 }

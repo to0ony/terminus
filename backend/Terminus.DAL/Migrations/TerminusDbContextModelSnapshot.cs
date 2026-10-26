@@ -528,6 +528,12 @@ namespace Terminus.DAL.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("public_gtfs_enabled");
 
+                    b.Property<bool>("PublicMapEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("public_map_enabled");
+
                     b.Property<string>("PublicUrl")
                         .HasColumnType("text")
                         .HasColumnName("public_url");

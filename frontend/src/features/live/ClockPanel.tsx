@@ -2,9 +2,11 @@ import {
   ActionIcon,
   Badge,
   Group,
+  Loader,
   SegmentedControl,
   Slider,
   Stack,
+  Switch,
   Text,
   Tooltip,
 } from '@mantine/core'
@@ -16,23 +18,50 @@ import type { SimulationClock } from './useSimulationClock'
 /** Brzine simulacije: koliko puta brže od stvarnog vremena. */
 const speeds = [1, 5, 10, 30, 60, 120, 300, 600]
 
-/** Uživo ili simulacija: dan, vrijeme, pokretanje i brzina. */
-export function ClockPanel({ clock }: { clock: SimulationClock }) {
-  const simulation = clock.mode === 'simulation'
+interface ClockPanelProps {
+  clock: SimulationClock
+  /** Smije li se birati simulacija (javna karta je samo uživo). */
+  simulation: boolean
+  /** Na karti su sva vozila, ne samo odabranog smjera. */
+  showAll: boolean
+  onShowAllChange: (showAll: boolean) => void
+  loadingAll: boolean
+}
+
+/** Uživo ili simulacija (dan, vrijeme, pokretanje i brzina) i prikaz svih vozila. */
+export function ClockPanel({
+  clock,
+  simulation: canSimulate,
+  showAll,
+  onShowAllChange,
+  loadingAll,
+}: ClockPanelProps) {
+  const simulation = canSimulate && clock.mode === 'simulation'
   const speedIndex = Math.max(0, speeds.indexOf(clock.speed))
 
   return (
     <Stack gap="xs">
-      <Group justify="space-between" wrap="nowrap">
-        <SegmentedControl
-          size="xs"
-          value={clock.mode}
-          onChange={(value) => clock.setMode(value as SimulationClock['mode'])}
-          data={[
-            { value: 'live', label: 'Uživo' },
-            { value: 'simulation', label: 'Simulacija' },
-          ]}
-        />
+      <Group justify="space-between" wrap="nowrap" gap="xs">
+        <Group gap="sm" wrap="nowrap">
+          {canSimulate && (
+            <SegmentedControl
+              size="xs"
+              value={clock.mode}
+              onChange={(value) => clock.setMode(value as SimulationClock['mode'])}
+              data={[
+                { value: 'live', label: 'Uživo' },
+                { value: 'simulation', label: 'Simulacija' },
+              ]}
+            />
+          )}
+          <Switch
+            size="xs"
+            label="Sva vozila"
+            checked={showAll}
+            onChange={(event) => onShowAllChange(event.currentTarget.checked)}
+            thumbIcon={loadingAll ? <Loader size={8} /> : undefined}
+          />
+        </Group>
         <Group gap="xs" wrap="nowrap">
           {!simulation && (
             <Badge color="green" variant="dot" tt="none">

@@ -33,6 +33,8 @@ Sve osim `/api/public/*`, `/api/auth/login` i `/health` traži prijavu
 | Stanica: PDF vozni red | `GET /api/stops/{id}/timetable.pdf?from=&to=&paper=&language=` |
 | Linije | `/api/routes`, `/api/routes/{id}/patterns`, `/api/routes/{id}/timetable?date=&directionId=` |
 | Linija: karta uživo (vožnje dana) | `GET /api/routes/{id}/live?date=` |
+| Karta uživo: sva vozila | `GET /api/routes/live?date=` |
+| Javna karta (bez prijave, ako je uključena) | `/api/public/map/stops/area`, `/stops/extent`, `/stops/{id}/departures?date=`, `/stops/{id}/routes`, `/routes/{id}/live?date=`, `/live?date=` |
 | Varijante linija | `/api/routes/{id}/variants`, `POST /api/routes/{id}/variants/derive` (iz vožnji), `/api/variants/{id}` |
 | Linija: grafikon voznog reda | `GET`/`PUT /api/routes/{id}/schedule?directionId=&calendarId=` (vožnje s vremenima u sekundama; spremanje izmjena u jednoj transakciji, 409 kod sukoba; `dayTypes` vožnje su svi tipovi dana njezina polaska, a `detach` je izdvaja iz polaska) |
 | Kalendari i iznimke | `/api/calendars`, `/api/calendars/overview?date=`, `/api/calendars/{id}/dates` |

@@ -96,6 +96,21 @@ public class LiveMapServiceTests
         Assert.Equal(shape.Id, Assert.Single(day.Shapes).Id);
     }
 
+    [Fact]
+    public async Task GetNetworkDayAsync_ReturnsTripsOfAllRoutes()
+    {
+        var other = new RouteModel { Id = Guid.NewGuid(), Code = "5", ShortName = "5", Color = "1E88E5" };
+        _routes.Routes.Add(other);
+        AddTrip(_workdays, null, (_a, "06:00"), (_c, "06:20"));
+        var trip = AddTrip(_workdays, null, (_c, "07:00"), (_b, "07:15"));
+        trip.RouteId = other.Id;
+
+        var day = await Service.GetNetworkDayAsync(Wednesday, Now, Ct);
+
+        Assert.Equal([_route.Id, other.Id], day.Trips.Select(t => t.RouteId));
+        Assert.Equal(["12", "5"], day.Routes.Select(r => r.Code).Order());
+    }
+
     private StopModel AddStop(string code, bool coordinates = true)
     {
         var stop = new StopModel

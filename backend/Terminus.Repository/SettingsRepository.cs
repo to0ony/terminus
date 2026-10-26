@@ -27,6 +27,7 @@ public class SettingsRepository(TerminusDbContext context, TimeProvider timeProv
                 PrimaryTextColor = s.PrimaryTextColor,
                 PublicUrl = s.PublicUrl,
                 PublicGtfsEnabled = s.PublicGtfsEnabled,
+                PublicMapEnabled = s.PublicMapEnabled,
                 LogoUpdatedAt = s.LogoUpdatedAt,
                 SetupCompletedAt = s.SetupCompletedAt,
                 CreatedAt = s.CreatedAt,
@@ -46,6 +47,7 @@ public class SettingsRepository(TerminusDbContext context, TimeProvider timeProv
                 .SetProperty(s => s.PrimaryTextColor, settings.PrimaryTextColor)
                 .SetProperty(s => s.PublicUrl, settings.PublicUrl)
                 .SetProperty(s => s.PublicGtfsEnabled, settings.PublicGtfsEnabled)
+                .SetProperty(s => s.PublicMapEnabled, settings.PublicMapEnabled)
                 .SetProperty(s => s.UpdatedAt, now),
                 cancellationToken);
 
@@ -57,7 +59,8 @@ public class SettingsRepository(TerminusDbContext context, TimeProvider timeProv
                 PrimaryColor = settings.PrimaryColor,
                 PrimaryTextColor = settings.PrimaryTextColor,
                 PublicUrl = settings.PublicUrl,
-                PublicGtfsEnabled = settings.PublicGtfsEnabled
+                PublicGtfsEnabled = settings.PublicGtfsEnabled,
+                PublicMapEnabled = settings.PublicMapEnabled
             }, cancellationToken);
         }
 

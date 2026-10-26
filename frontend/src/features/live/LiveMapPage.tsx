@@ -19,15 +19,11 @@ import {
   IconExternalLink,
 } from '@tabler/icons-react'
 import { useMediaQuery } from '@mantine/hooks'
-import { createElement, useMemo, useState } from 'react'
+import { createElement, type ReactNode, useMemo, useState } from 'react'
 import { RouteBadge } from '@/features/routes/RouteBadge'
 import { routeTypeIcon } from '@/features/routes/routeTypes'
-import {
-  type MapStop,
-  useStopDepartures,
-  useStopRoutes,
-  useStopsExtent,
-} from '@/features/stops/queries'
+import type { MapStop } from '@/features/stops/queries'
+import { type LiveNetworkDay, useLiveApi } from './api'
 import { browserTimeZone, formatTime } from './clock'
 import { ClockPanel } from './ClockPanel'
 import { TripTimeline } from './TripTimeline'
@@ -35,7 +31,7 @@ import { DepartureStrip } from './DepartureStrip'
 import { type Departure, departuresFrom, minutesUntil, sameDirection } from './departures'
 import { LiveMap } from './LiveMap'
 import classes from './LiveMapPage.module.css'
-import { type LiveRouteDay, useLiveRouteDay } from './queries'
+import type { LiveRouteDay } from './queries'
 import { vehicleAt } from './simulation'
 import { buildVehicles, type Vehicle } from './tracks'
 import { useSimulationClock } from './useSimulationClock'
@@ -56,22 +52,44 @@ export function LiveMapStandalonePage() {
   return <LiveMapView standalone />
 }
 
-function LiveMapView({ standalone }: { standalone: boolean }) {
-  const extent = useStopsExtent()
+interface LiveMapViewProps {
+  /** Preko cijelog prozora, bez naslova stranice. */
+  standalone: boolean
+  /** Uz uputu na karti, npr. logo i naziv prijevoznika na javnoj karti. */
+  brand?: ReactNode
+}
+
+/** Karta s panelima; podatke uzima iz dashboarda ili javnog API-ja (LiveApiContext). */
+export function LiveMapView({ standalone, brand }: LiveMapViewProps) {
+  const liveApi = useLiveApi()
+  const extent = liveApi.useStopsExtent()
   const [stop, setStop] = useState<MapStop | null>(null)
   const [selected, setSelected] = useState<Departure | null>(null)
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null)
+  const [showAll, setShowAll] = useState(false)
   const [timeZone, setTimeZone] = useState(browserTimeZone)
   const clock = useSimulationClock(timeZone)
-  const live = useLiveRouteDay(selected?.routeId ?? null, clock.date)
+  const live = liveApi.useLiveRouteDay(selected?.routeId ?? null, clock.date)
   const day = live.data ?? null
+  const network = liveApi.useLiveNetwork(showAll, clock.date)
 
   // Vrijeme se računa u zoni prijevoznika čim se ona zna.
-  if (day && day.timeZone !== timeZone) {
-    setTimeZone(day.timeZone)
+  const knownZone = day?.timeZone ?? network.data?.timeZone
+  if (knownZone && knownZone !== timeZone) {
+    setTimeZone(knownZone)
   }
 
-  const allVehicles = useMemo(() => (day ? buildVehicles(day) : []), [day])
+  const routeVehicles = useMemo(() => (day ? buildVehicles(day, () => day.route.color) : []), [day])
+
+  // Sva vozila: vožnje svih linija, svaka u boji svoje linije.
+  const networkVehicles = useMemo(() => {
+    const data = network.data
+    if (!data) {
+      return []
+    }
+    const colors = new Map(data.routes.map((r) => [r.id, r.color]))
+    return buildVehicles(data, (trip) => colors.get(trip.routeId) ?? null)
+  }, [network.data])
 
   // Smjer odabranog polaska: vožnje linije s istim smjerom i natpisom.
   const view = useMemo(() => {
@@ -79,7 +97,7 @@ function LiveMapView({ standalone }: { standalone: boolean }) {
     if (!day || !trip) {
       return null
     }
-    const vehicles = allVehicles.filter(
+    const vehicles = routeVehicles.filter(
       (v) => v.trip.directionId === trip.directionId && v.trip.headsign === trip.headsign,
     )
     const shapeIds = new Set(vehicles.map((v) => v.trip.shapeId))
@@ -95,7 +113,16 @@ function LiveMapView({ standalone }: { standalone: boolean }) {
       vehicles,
       key: `${day.route.id}|${trip.directionId}|${trip.headsign}`,
     }
-  }, [day, allVehicles, selected?.tripId])
+  }, [day, routeVehicles, selected?.tripId])
+
+  // Na karti: sva vozila ili samo vozila odabranog smjera.
+  const shownVehicles = showAll ? networkVehicles : (view?.vehicles ?? [])
+
+  // Vozilo izvan odabranog smjera (sva vozila): panel prikazuje njegovu vožnju.
+  const otherVehicle =
+    showAll && selectedVehicle && !view?.vehicles.some((v) => v.key === selectedVehicle)
+      ? networkVehicles.find((v) => v.key === selectedVehicle)
+      : undefined
 
   // Mobitel: panel je donja ploča koja se skuplja, a sat je gore.
   const mobile = useMediaQuery('(max-width: 48em)') ?? false
@@ -126,6 +153,14 @@ function LiveMapView({ standalone }: { standalone: boolean }) {
     setSelectedVehicle(null)
   }
 
+  const closeVehicle = () => {
+    setSelectedVehicle(null)
+    setFollowing(false)
+  }
+
+  const collapsed = mobile && !sheetOpen
+  const bodyMaxHeight = mobile ? '45dvh' : undefined
+
   const map = (
     <Box
       pos="relative"
@@ -135,12 +170,12 @@ function LiveMapView({ standalone }: { standalone: boolean }) {
       {extent.isSuccess && (
         <LiveMap
           h="100%"
-          extent={extent.data}
+          extent={extent.data ?? null}
           selectedStopId={stop?.id ?? null}
           onSelectStop={selectStop}
           day={view?.day ?? null}
           focusKey={view?.key ?? null}
-          vehicles={view?.vehicles ?? []}
+          vehicles={shownVehicles}
           timeRef={clock.timeRef}
           selectedVehicle={selectedVehicle}
           onSelectVehicle={selectVehicle}
@@ -148,12 +183,12 @@ function LiveMapView({ standalone }: { standalone: boolean }) {
           onStopFollowing={() => setFollowing(false)}
           followPadding={
             mobile
-              ? { top: clock.mode === 'simulation' ? 150 : 70, bottom: 80, left: 20, right: 20 }
+              ? { top: clock.mode === 'simulation' ? 150 : 90, bottom: 80, left: 20, right: 20 }
               : { top: 20, bottom: 140, left: 400, right: 20 }
           }
           fitPadding={
             mobile
-              ? { top: clock.mode === 'simulation' ? 150 : 70, bottom: 320, left: 30, right: 30 }
+              ? { top: clock.mode === 'simulation' ? 150 : 90, bottom: 320, left: 30, right: 30 }
               : { top: 60, bottom: 160, left: 400, right: 60 }
           }
           pickerBottom={mobile ? 84 : 10}
@@ -185,7 +220,16 @@ function LiveMapView({ standalone }: { standalone: boolean }) {
             <Box w={40} h={4} bg="gray.4" style={{ borderRadius: 2 }} />
           </UnstyledButton>
         )}
-        {stop ? (
+        {otherVehicle && network.data ? (
+          <VehiclePanel
+            vehicle={otherVehicle}
+            network={network.data}
+            time={clock.time}
+            onClose={closeVehicle}
+            collapsed={collapsed}
+            bodyMaxHeight={bodyMaxHeight}
+          />
+        ) : stop ? (
           <StopPanel
             stop={stop}
             date={clock.date}
@@ -198,19 +242,25 @@ function LiveMapView({ standalone }: { standalone: boolean }) {
             loading={selected !== null && live.isPending}
             selectedVehicle={selectedVehicle}
             onSelectVehicle={selectVehicle}
-            collapsed={mobile && !sheetOpen}
-            bodyMaxHeight={mobile ? '45dvh' : undefined}
+            collapsed={collapsed}
+            bodyMaxHeight={bodyMaxHeight}
           />
         ) : (
-          <Group gap="sm" wrap="nowrap" p="md">
-            <IconClick size={20} />
-            <div>
-              <Text size="sm">Klikni stanicu na karti za polaske s nje.</Text>
-              <Text size="xs" c="dimmed">
-                Vozila su prema voznom redu, ne prema GPS-u.
-              </Text>
-            </div>
-          </Group>
+          <Stack gap="sm" p="md">
+            {brand}
+            <Group gap="sm" wrap="nowrap">
+              <IconClick size={20} />
+              <div>
+                <Text size="sm">
+                  Klikni stanicu na karti za polaske s nje
+                  {showAll ? ' ili vozilo za njegovu vožnju' : ''}.
+                </Text>
+                <Text size="xs" c="dimmed">
+                  Vozila su prema voznom redu, ne prema GPS-u.
+                </Text>
+              </div>
+            </Group>
+          </Stack>
         )}
       </Paper>
 
@@ -230,10 +280,21 @@ function LiveMapView({ standalone }: { standalone: boolean }) {
               style: { transform: 'translateX(-50%)' },
             })}
       >
-        <ClockPanel clock={clock} />
+        <ClockPanel
+          clock={clock}
+          simulation={!liveApi.isPublic}
+          showAll={showAll}
+          onShowAllChange={(next) => {
+            setShowAll(next)
+            if (!next && otherVehicle) {
+              closeVehicle()
+            }
+          }}
+          loadingAll={showAll && network.isPending}
+        />
       </Paper>
 
-      {selectedVehicle && view?.vehicles.some((v) => v.key === selectedVehicle) && (
+      {selectedVehicle && shownVehicles.some((v) => v.key === selectedVehicle) && (
         <Button
           pos="absolute"
           radius="xl"
@@ -283,6 +344,71 @@ function LiveMapView({ standalone }: { standalone: boolean }) {
   )
 }
 
+/** Vožnja vozila odabranog na karti (sva vozila): linija, smjer i sljedeće stanice. */
+function VehiclePanel({
+  vehicle,
+  network,
+  time,
+  onClose,
+  collapsed,
+  bodyMaxHeight,
+}: {
+  vehicle: Vehicle
+  network: LiveNetworkDay
+  time: number
+  onClose: () => void
+  collapsed: boolean
+  bodyMaxHeight?: string
+}) {
+  const route = network.routes.find((r) => r.id === vehicle.trip.routeId)
+  const stopNames = useMemo(() => new Map(network.stops.map((s) => [s.id, s.name])), [network])
+  const state = vehicleAt(vehicle.track, time)
+  const stopTimes = vehicle.track.stopTimes
+  const current = stopTimes[state?.stopIndex ?? 0]
+
+  return (
+    <Stack gap={0}>
+      <Group justify="space-between" wrap="nowrap" align="flex-start" p="md" pb="sm">
+        <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
+          {route && <RouteBadge route={route} />}
+          <div style={{ minWidth: 0 }}>
+            <Text fw={600} lh={1.3} lineClamp={1}>
+              {vehicle.trip.headsign}
+            </Text>
+            <Text size="xs" c="dimmed">
+              Polazak {formatTime(stopTimes[0].departureTime, false)}
+              {vehicle.trip.shortName ? ` · ${vehicle.trip.shortName}` : ''}
+            </Text>
+          </div>
+        </Group>
+        <CloseButton aria-label="Zatvori" onClick={onClose} />
+      </Group>
+      <Box
+        className={classes.panelBody}
+        display={collapsed ? 'none' : undefined}
+        mah={bodyMaxHeight}
+      >
+        <Box px="md" pb="md">
+          {state ? (
+            <TripTimeline
+              vehicle={vehicle}
+              stopNames={stopNames}
+              color={`#${vehicle.color}`}
+              fromStopId={current.stopId}
+              fromSeconds={current.departureTime}
+              time={time}
+            />
+          ) : (
+            <Text size="sm" c="dimmed">
+              Vozilo je završilo vožnju.
+            </Text>
+          )}
+        </Box>
+      </Box>
+    </Stack>
+  )
+}
+
 interface StopPanelProps {
   stop: MapStop
   date: string
@@ -316,8 +442,9 @@ function StopPanel({
   collapsed,
   bodyMaxHeight,
 }: StopPanelProps) {
-  const departures = useStopDepartures(stop.id, date)
-  const routes = useStopRoutes(stop.id)
+  const liveApi = useLiveApi()
+  const departures = liveApi.useStopDepartures(stop.id, date)
+  const routes = liveApi.useStopRoutes(stop.id)
   const routeTypes = useMemo(
     () => new Map(routes.data?.map((r) => [r.id, r.routeType]) ?? []),
     [routes.data],

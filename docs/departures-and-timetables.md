@@ -362,6 +362,16 @@ stanice. Vozila su **prema voznom redu** (simulacija), ne prema GPS-u.
 - Klik na vozilo (na karti ili u popisu): karta mu se približi i **prati
   ga**; na mobitelu se ploča spusti. Povlačenje karte prekida praćenje, a gumb
   **Prati vozilo** ga vraća.
+- **Sva vozila** (prekidač uz sat): na karti su vozila svih linija, svako u
+  boji svoje linije; klik na vozilo prikazuje njegovu vožnju (linija, smjer,
+  sljedeće stanice). Podaci: `GET /api/routes/live?date=`.
+- **Javna karta** `/karta`, bez prijave: ista karta, samo uživo (bez
+  simulacije), s nazivom i logom iz postavki. Uključuje se u **Postavkama →
+  Objavi kartu uživo** (`settings.public_map_enabled`); dok je isključena,
+  `/api/public/map/*` vraća 404. Javni API (`/api/public/map/stops/area`,
+  `stops/extent`, `stops/{id}/departures`, `stops/{id}/routes`,
+  `routes/{id}/live`, `live`) daje samo aktivne stanice, s ograničenjem
+  zahtjeva i cacheom od 5 minuta.
 - **Otvori u novoj kartici** otvara `/live/full`: ista karta preko cijelog
   prozora, bez izbornika i zaglavlja dashboarda (traži prijavu kao i
   dashboard).

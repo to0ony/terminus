@@ -23,6 +23,40 @@ public class LiveMapService(
     {
         var route = await routeRepository.GetAsync(routeId, cancellationToken)
             ?? throw new NotFoundException($"Linija {routeId} ne postoji.");
+
+        var day = await LoadAsync(routeId, date, now, cancellationToken);
+        return new LiveRouteDay(route, day.Date, day.TimeZone, day.Trips, day.Shapes, day.Stops);
+    }
+
+    public async Task<LiveNetworkDay> GetNetworkDayAsync(
+        DateOnly? date,
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default)
+    {
+        var day = await LoadAsync(null, date, now, cancellationToken);
+
+        var routes = new List<IRouteModel>();
+        foreach (var routeId in day.Trips.Select(t => t.RouteId).Distinct())
+        {
+            if (await routeRepository.GetAsync(routeId, cancellationToken) is { } route)
+            {
+                routes.Add(route);
+            }
+        }
+
+        return new LiveNetworkDay(day.Date, day.TimeZone, routes, day.Trips, day.Shapes, day.Stops);
+    }
+
+    private sealed record Loaded(
+        DateOnly Date,
+        string TimeZone,
+        List<LiveTrip> Trips,
+        List<IShapeModel> Shapes,
+        List<IStopModel> Stops);
+
+    /// <param name="routeId">Samo vožnje te linije; null za sve.</param>
+    private async Task<Loaded> LoadAsync(Guid? routeId, DateOnly? date, DateTimeOffset now, CancellationToken cancellationToken)
+    {
         var agency = await departureRepository.GetPrimaryAgencyAsync(cancellationToken)
             ?? throw new UnprocessableException("Karta se ne može prikazati.", ["Nije unesen nijedan prijevoznik."]);
 
@@ -35,9 +69,12 @@ public class LiveMapService(
         var today = ServiceCalendarRules.ActiveOn(calendars, exceptions, day);
         var yesterday = ServiceCalendarRules.ActiveOn(calendars, exceptions, previous);
 
-        var routeTrips = today.Count + yesterday.Count == 0
+        var calendarIds = today.Union(yesterday).ToList();
+        IReadOnlyList<TripStopTimes> routeTrips = calendarIds.Count == 0
             ? []
-            : await timetableRepository.GetRouteTripsAsync(routeId, null, today.Union(yesterday).ToList(), cancellationToken);
+            : routeId is { } id
+                ? await timetableRepository.GetRouteTripsAsync(id, null, calendarIds, cancellationToken)
+                : await timetableRepository.GetTripsAsync(calendarIds, cancellationToken);
 
         var stops = (await stopRepository.GetManyAsync(
                 routeTrips.SelectMany(t => t.StopTimes).Select(st => st.StopId).ToHashSet(), cancellationToken))
@@ -45,8 +82,14 @@ public class LiveMapService(
             .ToDictionary(s => s.Id);
 
         // Vožnja bez trase uzima trasu svoje varijante.
-        var variantShapes = (await variantRepository.ListByRouteAsync(routeId, cancellationToken))
-            .ToDictionary(v => v.Id, v => v.ShapeId);
+        var variantShapes = new Dictionary<Guid, Guid?>();
+        foreach (var lineId in routeTrips.Select(t => t.Trip.RouteId).Distinct())
+        {
+            foreach (var variant in await variantRepository.ListByRouteAsync(lineId, cancellationToken))
+            {
+                variantShapes[variant.Id] = variant.ShapeId;
+            }
+        }
 
         LiveTrip? Trip(TripStopTimes trip, bool previousDay)
         {
@@ -67,7 +110,8 @@ public class LiveMapService(
             var headsign = string.IsNullOrWhiteSpace(trip.Trip.Headsign)
                 ? stops[stopTimes[^1].StopId].Name
                 : trip.Trip.Headsign.Trim();
-            return new LiveTrip(trip.Trip.Id, trip.Trip.ShortName, headsign, trip.Trip.DirectionId, shapeId, previousDay, stopTimes);
+            return new LiveTrip(
+                trip.Trip.Id, trip.Trip.RouteId, trip.Trip.ShortName, headsign, trip.Trip.DirectionId, shapeId, previousDay, stopTimes);
         }
 
         var trips = routeTrips
@@ -90,8 +134,7 @@ public class LiveMapService(
         }
 
         var usedStops = trips.SelectMany(t => t.StopTimes).Select(st => st.StopId).ToHashSet();
-        return new LiveRouteDay(
-            route,
+        return new Loaded(
             day,
             agency.Timezone,
             trips,

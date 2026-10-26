@@ -135,6 +135,19 @@ public class RoutesController(
         return Ok(timetable.ToResponse());
     }
 
+    /// <summary>Karta uživo, sva vozila: vožnje svih linija jednog dana (bez datuma današnji).</summary>
+    [HttpGet("live")]
+    [ProducesResponseType<LiveNetworkDayResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<LiveNetworkDayResponse>> GetNetworkLive(
+        [FromQuery] LiveMapQuery query,
+        CancellationToken cancellationToken)
+    {
+        var day = await liveMapService.GetNetworkDayAsync(query.Date, timeProvider.GetUtcNow(), cancellationToken);
+        return Ok(day.ToResponse());
+    }
+
     /// <summary>
     /// Karta uživo: vožnje linije jednog dana (bez datuma današnji) s vremenima,
     /// trasama i stanicama; položaj vozila prema voznom redu računa preglednik.

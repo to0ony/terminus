@@ -15,6 +15,11 @@ public interface ITimetableRepository
         IReadOnlyCollection<Guid>? serviceCalendarIds,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Vožnje svih linija tih kalendara, s vremenima.</summary>
+    Task<IReadOnlyList<TripStopTimes>> GetTripsAsync(
+        IReadOnlyCollection<Guid> serviceCalendarIds,
+        CancellationToken cancellationToken = default);
+
     /// <returns>Linije čije vožnje staju na barem jednoj od stanica, poredane kao popis linija.</returns>
     Task<IReadOnlyList<IRouteModel>> GetRoutesServingAsync(
         IReadOnlyCollection<Guid> stopIds,

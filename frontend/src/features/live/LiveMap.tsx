@@ -5,7 +5,7 @@ import { type RefObject, useEffect, useRef, useState } from 'react'
 import { MapView } from '@/components/map/MapView'
 import type { MapStyleSetting } from '@/components/map/mapStyles'
 import type { GeoBounds, MapStop, StopAreaParams } from '@/features/stops/queries'
-import { useStopsInArea } from '@/features/stops/queries'
+import { useLiveApi } from './api'
 import { busIcon, stopColor } from './icons'
 import type { LiveRouteDay } from './queries'
 import { vehicleAt } from './simulation'
@@ -72,7 +72,7 @@ export function LiveMap({
 }: LiveMapProps) {
   const [map, setMap] = useState<Map | null>(null)
   const [area, setArea] = useState<StopAreaParams | null>(null)
-  const stops = useStopsInArea(area)
+  const stops = useLiveApi().useStopsInArea(area)
   const byId = useRef(new globalThis.Map<string, MapStop>())
   const handlers = useRef({ onSelectStop, onSelectVehicle, onStopFollowing })
   const follow = useRef({ key: selectedVehicle, on: following })
@@ -298,7 +298,7 @@ export function LiveMap({
     const color = `#${day?.route.color ?? '1a73e8'}`
     map
       .getSource<GeoJSONSource>(routeSource)
-      ?.setData(day ? lineFeatures(routeLines(day, vehicles), color) : emptyLines)
+      ?.setData(day ? lineFeatures(routeLines(day), color) : emptyLines)
     map
       .getSource<GeoJSONSource>(routeStopsSource)
       ?.setData(day ? stopFeatures(day.stops, color) : emptyPoints)
@@ -308,7 +308,7 @@ export function LiveMap({
     map.setPaintProperty('live-stops-dot', 'circle-opacity', day ? 0.35 : 1)
     map.setPaintProperty('live-stops-dot', 'circle-stroke-opacity', day ? 0.35 : 1)
     map.setPaintProperty('live-stops-icon', 'icon-opacity', day ? 0.35 : 1)
-  }, [map, day, vehicles])
+  }, [map, day])
 
   // Nova trasa: karta joj se prilagodi (ne i kad se promijeni samo dan).
   const fittedRoute = useRef<string | null>(null)
@@ -335,7 +335,6 @@ export function LiveMap({
     if (!map) {
       return
     }
-    const icon = `${vehicleIconPrefix}${day?.route.color ?? '1a73e8'}`
     let frame = 0
     const draw = () => {
       const time = timeRef.current
@@ -346,7 +345,7 @@ export function LiveMap({
               {
                 type: 'Feature' as const,
                 geometry: { type: 'Point' as const, coordinates: state.position },
-                properties: { key: vehicle.key, icon },
+                properties: { key: vehicle.key, icon: `${vehicleIconPrefix}${vehicle.color}` },
               },
             ]
           : []
@@ -364,7 +363,7 @@ export function LiveMap({
     }
     frame = requestAnimationFrame(draw)
     return () => cancelAnimationFrame(frame)
-  }, [map, day, vehicles, timeRef])
+  }, [map, vehicles, timeRef])
 
   return (
     <MapView

@@ -10,11 +10,23 @@ namespace Terminus.Repository;
 
 public class TimetableRepository(TerminusDbContext context) : ITimetableRepository
 {
-    public async Task<IReadOnlyList<TripStopTimes>> GetRouteTripsAsync(
+    public Task<IReadOnlyList<TripStopTimes>> GetRouteTripsAsync(
         Guid routeId,
         TripDirection? directionId,
         IReadOnlyCollection<Guid>? serviceCalendarIds,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        LoadAsync(routeId, directionId, serviceCalendarIds, cancellationToken);
+
+    public Task<IReadOnlyList<TripStopTimes>> GetTripsAsync(
+        IReadOnlyCollection<Guid> serviceCalendarIds,
+        CancellationToken cancellationToken = default) =>
+        LoadAsync(null, null, serviceCalendarIds, cancellationToken);
+
+    private async Task<IReadOnlyList<TripStopTimes>> LoadAsync(
+        Guid? routeId,
+        TripDirection? directionId,
+        IReadOnlyCollection<Guid>? serviceCalendarIds,
+        CancellationToken cancellationToken)
     {
         var trips = await RouteTrips(routeId, directionId, serviceCalendarIds)
             .ToListAsync(cancellationToken);
@@ -54,11 +66,14 @@ public class TimetableRepository(TerminusDbContext context) : ITimetableReposito
         return entities.Select(RouteMapper.ToModel).ToList();
     }
 
-    private IQueryable<Trip> RouteTrips(Guid routeId, TripDirection? directionId, IReadOnlyCollection<Guid>? serviceCalendarIds)
+    /// <param name="routeId">Samo vožnje te linije; null za sve linije.</param>
+    private IQueryable<Trip> RouteTrips(Guid? routeId, TripDirection? directionId, IReadOnlyCollection<Guid>? serviceCalendarIds)
     {
-        var query = context.Trips
-            .AsNoTracking()
-            .Where(t => t.RouteId == routeId);
+        var query = context.Trips.AsNoTracking();
+        if (routeId is { } route)
+        {
+            query = query.Where(t => t.RouteId == route);
+        }
 
         if (directionId is { } direction)
         {

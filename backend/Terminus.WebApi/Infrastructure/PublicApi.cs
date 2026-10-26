@@ -23,6 +23,7 @@ public static class PublicApi
     public const string DeparturesCachePolicy = "public-departures";
     public const string SettingsCachePolicy = "public-settings";
     public const string FeedCachePolicy = "public-feed";
+    public const string MapCachePolicy = "public-map";
 
     /// <summary>Oznaka odgovora koji ovise o voznom redu; briše se nakon uvoza GTFS-a.</summary>
     public const string TimetableTag = "timetable";
@@ -58,6 +59,12 @@ public static class PublicApi
             // Naziv bez postavki dolazi od prijevoznika, pa ovisi i o voznom redu.
             cache.AddPolicy(SettingsCachePolicy, policy => policy
                 .Expire(TimeSpan.FromMinutes(5))
+                .Tag(SettingsTag, TimetableTag));
+
+            // Karta: vozni red dana i stanice se rijetko mijenjaju; uključenost je u postavkama.
+            cache.AddPolicy(MapCachePolicy, policy => policy
+                .Expire(TimeSpan.FromMinutes(5))
+                .SetVaryByQuery("*")
                 .Tag(SettingsTag, TimetableTag));
 
             // Uključenost feeda je u postavkama.
