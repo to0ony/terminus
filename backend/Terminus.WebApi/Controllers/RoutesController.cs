@@ -15,6 +15,7 @@ public class RoutesController(
     IRouteService routeService,
     ITimetableService timetableService,
     IScheduleService scheduleService,
+    ILiveMapService liveMapService,
     IOutputCacheStore outputCache,
     TimeProvider timeProvider) : ControllerBase
 {
@@ -132,6 +133,24 @@ public class RoutesController(
     {
         var timetable = await timetableService.GetRouteTimetableAsync(id, query.ToQuery(), timeProvider.GetUtcNow(), cancellationToken);
         return Ok(timetable.ToResponse());
+    }
+
+    /// <summary>
+    /// Karta uživo: vožnje linije jednog dana (bez datuma današnji) s vremenima,
+    /// trasama i stanicama; položaj vozila prema voznom redu računa preglednik.
+    /// </summary>
+    [HttpGet("{id:guid}/live")]
+    [ProducesResponseType<LiveRouteDayResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<LiveRouteDayResponse>> GetLive(
+        Guid id,
+        [FromQuery] LiveMapQuery query,
+        CancellationToken cancellationToken)
+    {
+        var day = await liveMapService.GetRouteDayAsync(id, query.Date, timeProvider.GetUtcNow(), cancellationToken);
+        return Ok(day.ToResponse());
     }
 
     /// <summary>Briše liniju i (kaskadno) sve njezine vožnje.</summary>

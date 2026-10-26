@@ -1,0 +1,10 @@
+/* Redak panela (linija, vozilo): istakne se pod mišem i kad je odabran. */
+.row {
+  display: block;
+  width: 100%;
+}
+
+.row:hover,
+.row[data-active] {
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
+}

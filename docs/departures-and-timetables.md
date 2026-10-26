@@ -21,7 +21,8 @@ Sadržaj:
 1. [Izračun polazaka](#1-izračun-polazaka)
 2. [Zaslon na stanici](#2-zaslon-na-stanici)
 3. [PDF vozni red](#3-pdf-vozni-red)
-4. [Odluke](#4-odluke)
+4. [Karta uživo](#4-karta-uživo)
+5. [Odluke](#5-odluke)
 
 ---
 
@@ -343,7 +344,41 @@ MigraDoc, MIT licenca).
 
 ---
 
-## 4. Odluke
+## 4. Karta uživo
+
+Na **Pregledu** gumb **Karta uživo** (`/live`) otvara kartu u stilu Google
+karata: plave stanice s autobusom, a klik na stanicu pa na liniju prikazuje
+trasu linije u njezinoj boji i okrugla vozila koja upravo voze. Vozila su
+**prema voznom redu** (simulacija), ne prema GPS-u.
+
+- Podloga je zadano **detaljna (Liberty)**; može se promijeniti, a izbor se
+  pamti samo za ovu kartu.
+- **Uživo**: današnji dan i trenutno vrijeme u zoni prijevoznika.
+- **Simulacija**: odabrani dan, vrijeme (klizač) i brzina od 1× do 600×; služi
+  za provjeru voznog reda.
+- Panel linije prikazuje vozila u vožnji (smjer, sljedeća stanica) i
+  sljedeće polaske s odabrane stanice.
+
+```
+GET /api/routes/{routeId}/live?date=2026-10-26
+```
+
+Vraća vožnje linije koje voze taj dan (i vožnje prethodnog dana koje traju
+iza ponoći, s vremenima pomaknutim za dan), s vremenima u sekundama od
+ponoći, trasama i stanicama s koordinatama. Vožnja bez trase uzima trasu
+svoje varijante; bez obje vozilo ide ravno od stanice do stanice.
+
+Položaj računa preglednik: na stanici između dolaska i polaska, a između
+stanica jednoliko duž trase od polaska do dolaska. Stanice se postavljaju na
+trasu redom, pa i odvojak tamo i natrag ispravno ide.
+
+| Dio | Gdje |
+|---|---|
+| Vožnje dana | `LiveMapService`, testovi u `LiveMapServiceTests` |
+| Simulacija i sat | `features/live/simulation.ts`, `clock.ts`, `useSimulationClock.ts` |
+| Karta i paneli | `features/live/LiveMap.tsx`, `LiveMapPage.tsx` |
+
+## 5. Odluke
 
 | Tema | Odluka |
 |---|---|

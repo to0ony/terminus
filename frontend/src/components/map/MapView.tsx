@@ -10,7 +10,7 @@ import {
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import { useEffect, useRef, useState } from 'react'
 import { MapStylePicker } from './MapStylePicker'
-import { mapStyleUrl, useMapStyle } from './mapStyles'
+import { type MapStyleSetting, mapStyleUrl, sharedMapStyle, useMapStyle } from './mapStyles'
 
 // MapLibre traži worker pokraj svog modula, a Vite ga pakira drugamo; ovako
 // worker postaje zasebna datoteka i u razvoju i u buildu.
@@ -21,17 +21,24 @@ interface MapViewProps extends BoxProps {
   bounds?: LngLatBoundsLike
   /** Karta je spremna za dodavanje izvora i slojeva. */
   onReady?: (map: Map) => void
+  /** Vlastita zapamćena podloga; bez nje zajednička. */
+  styleSetting?: MapStyleSetting
 }
 
 /**
  * MapLibre karta s kontrolama zuma i izborom podloge (zadano prema temi:
  * svijetla ili tamna).
  */
-export function MapView({ bounds, onReady, ...boxProps }: MapViewProps) {
+export function MapView({
+  bounds,
+  onReady,
+  styleSetting = sharedMapStyle,
+  ...boxProps
+}: MapViewProps) {
   const container = useRef<HTMLDivElement>(null)
   const [map, setMap] = useState<Map | null>(null)
   const colorScheme = useComputedColorScheme('light')
-  const [style] = useMapStyle()
+  const [style] = useMapStyle(styleSetting)
   const styleUrl = mapStyleUrl(style, colorScheme)
 
   // Karta se stvara jednom; početno područje, podloga i onReady čitaju se tada.
@@ -69,7 +76,7 @@ export function MapView({ bounds, onReady, ...boxProps }: MapViewProps) {
     <Box pos="relative" {...boxProps}>
       <Box ref={container} pos="absolute" inset={0} />
       <Box pos="absolute" left={10} bottom={10}>
-        <MapStylePicker />
+        <MapStylePicker setting={styleSetting} />
       </Box>
     </Box>
   )

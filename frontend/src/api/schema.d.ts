@@ -1160,6 +1160,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/routes/{id}/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    Date?: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LiveRouteDayResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/routes/{id}/schedule": {
         parameters: {
             query?: never;
@@ -4489,6 +4555,39 @@ export interface components {
         };
         /** Format: binary */
         IFormFile: string;
+        LiveRouteDayResponse: {
+            route: components["schemas"]["RouteResponse"];
+            /** Format: date */
+            date: string;
+            timeZone: string;
+            trips: components["schemas"]["LiveTripResponse"][];
+            shapes: components["schemas"]["LiveShapeResponse"][];
+            stops: components["schemas"]["TimetableStopResponse"][];
+        };
+        LiveShapeResponse: {
+            /** Format: uuid */
+            id: string;
+            coordinates: number[][];
+        };
+        LiveStopTimeResponse: {
+            /** Format: uuid */
+            stopId: string;
+            /** Format: int32 */
+            arrivalTime: number;
+            /** Format: int32 */
+            departureTime: number;
+        };
+        LiveTripResponse: {
+            /** Format: uuid */
+            id: string;
+            shortName: null | string;
+            headsign: string;
+            directionId: null | components["schemas"]["TripDirection"];
+            /** Format: uuid */
+            shapeId: null | string;
+            previousDay: boolean;
+            stopTimes: components["schemas"]["LiveStopTimeResponse"][];
+        };
         LocationType: number;
         LoginRequest: {
             email: null | string;

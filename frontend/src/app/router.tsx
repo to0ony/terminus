@@ -43,6 +43,12 @@ export const router = createBrowserRouter([
                     }),
                   },
                   {
+                    path: 'live',
+                    lazy: async () => ({
+                      Component: (await import('@/features/live/LiveMapPage')).LiveMapPage,
+                    }),
+                  },
+                  {
                     path: 'routes',
                     lazy: async () => ({
                       Component: (await import('@/features/routes/RoutesPage')).RoutesPage,
