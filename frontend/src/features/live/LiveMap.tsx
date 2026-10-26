@@ -33,6 +33,8 @@ interface LiveMapProps extends BoxProps {
   onSelectStop: (stop: MapStop) => void
   /** Odabrana linija tog dana; null bez linije. */
   day: LiveRouteDay | null
+  /** Kad se promijeni, karta se prilagodi trasi (npr. drugi smjer); null bez toga. */
+  focusKey: string | null
   vehicles: Vehicle[]
   timeRef: RefObject<number>
   selectedVehicle: string | null
@@ -48,6 +50,7 @@ export function LiveMap({
   selectedStopId,
   onSelectStop,
   day,
+  focusKey,
   vehicles,
   timeRef,
   selectedVehicle,
@@ -284,13 +287,13 @@ export function LiveMap({
     map.setPaintProperty('live-stops-icon', 'icon-opacity', day ? 0.35 : 1)
   }, [map, day, vehicles])
 
-  // Nova linija: karta joj se prilagodi (ne i kad se promijeni samo dan).
+  // Nova trasa: karta joj se prilagodi (ne i kad se promijeni samo dan).
   const fittedRoute = useRef<string | null>(null)
   useEffect(() => {
-    if (!map || !day || day.stops.length === 0 || fittedRoute.current === day.route.id) {
+    if (!map || !day || day.stops.length === 0 || fittedRoute.current === focusKey) {
       return
     }
-    fittedRoute.current = day.route.id
+    fittedRoute.current = focusKey
     const bounds = new LngLatBounds()
     for (const stop of day.stops) {
       if (stop.latitude !== null && stop.longitude !== null) {
@@ -302,7 +305,7 @@ export function LiveMap({
       maxZoom: 15,
       duration: 800,
     })
-  }, [map, day])
+  }, [map, day, focusKey])
 
   // Vozila: svaki okvir iz točnog vremena sata.
   useEffect(() => {

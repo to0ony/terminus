@@ -347,17 +347,20 @@ MigraDoc, MIT licenca).
 ## 4. Karta uživo
 
 Na **Pregledu** gumb **Karta uživo** (`/live`) otvara kartu u stilu Google
-karata: plave stanice s autobusom, a klik na stanicu pa na liniju prikazuje
-trasu linije u njezinoj boji i okrugla vozila koja upravo voze. Vozila su
-**prema voznom redu** (simulacija), ne prema GPS-u.
+karata s plavim stanicama. Klik na stanicu prikazuje **polaske do kraja
+dana** redom (linija, smjer, vrijeme, „za X min”). Klik na polazak prikazuje
+**trasu tog smjera** (vožnje linije s istim smjerom i natpisom) u boji linije,
+okrugla **vozila koja upravo voze** i gore **ostala vremena** tog smjera sa
+stanice. Vozila su **prema voznom redu** (simulacija), ne prema GPS-u.
 
 - Podloga je zadano **detaljna (Liberty)**; može se promijeniti, a izbor se
   pamti samo za ovu kartu.
 - **Uživo**: današnji dan i trenutno vrijeme u zoni prijevoznika.
 - **Simulacija**: odabrani dan, vrijeme (klizač) i brzina od 1× do 600×; služi
   za provjeru voznog reda.
-- Panel linije prikazuje vozila u vožnji (smjer, sljedeća stanica) i
-  sljedeće polaske s odabrane stanice.
+- Polasci dolaze iz `GET /api/stops/{id}/departures?date=` (kao zaslon
+  stanice); noćne vožnje prethodnog dana nisu na popisu polazaka, ali se na
+  trasi vide kao vozila.
 
 ```
 GET /api/routes/{routeId}/live?date=2026-10-26

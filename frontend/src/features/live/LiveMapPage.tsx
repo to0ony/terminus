@@ -7,50 +7,40 @@ import {
   Loader,
   Paper,
   ScrollArea,
-  SegmentedControl,
-  Slider,
   Stack,
   Text,
   Title,
-  Tooltip,
   UnstyledButton,
 } from '@mantine/core'
-import { DatePickerInput } from '@mantine/dates'
-import {
-  IconArrowLeft,
-  IconBus,
-  IconCalendar,
-  IconClick,
-  IconPlayerPauseFilled,
-  IconPlayerPlayFilled,
-} from '@tabler/icons-react'
+import { IconArrowLeft, IconBus, IconClick } from '@tabler/icons-react'
 import { useMemo, useState } from 'react'
 import { RouteBadge } from '@/features/routes/RouteBadge'
-import { type MapStop, useStopRoutes, useStopsExtent } from '@/features/stops/queries'
-import { browserTimeZone, day as daySeconds, formatTime } from './clock'
+import { type MapStop, useStopDepartures, useStopsExtent } from '@/features/stops/queries'
+import { browserTimeZone, formatTime } from './clock'
+import { ClockPanel } from './ClockPanel'
+import { type Departure, departuresFrom, minutesUntil, sameDirection } from './departures'
 import { LiveMap } from './LiveMap'
 import classes from './LiveMapPage.module.css'
 import { type LiveRouteDay, useLiveRouteDay } from './queries'
 import { vehicleAt } from './simulation'
 import { buildVehicles, type Vehicle } from './tracks'
-import { type SimulationClock, useSimulationClock } from './useSimulationClock'
-
-/** Brzine simulacije: koliko puta brže od stvarnog vremena. */
-const speeds = [1, 5, 10, 30, 60, 120, 300, 600]
+import { useSimulationClock } from './useSimulationClock'
 
 /**
- * Karta uživo: klik na stanicu pa na liniju prikazuje trasu linije i vozila
- * koja upravo voze, prema voznom redu (simulacija, ne GPS). Uživo je današnji
- * dan i trenutno vrijeme; u simulaciji se biraju dan, vrijeme i brzina.
+ * Karta uživo, kao Google karte: klik na stanicu prikazuje polaske do kraja
+ * dana (linija, smjer, vrijeme), a klik na polazak trasu tog smjera, vozila
+ * koja upravo voze i ostala vremena smjera. Vozila su prema voznom redu
+ * (simulacija, ne GPS). Uživo je današnji dan i trenutno vrijeme; u simulaciji
+ * se biraju dan, vrijeme i brzina.
  */
 export function LiveMapPage() {
   const extent = useStopsExtent()
   const [stop, setStop] = useState<MapStop | null>(null)
-  const [routeId, setRouteId] = useState<string | null>(null)
+  const [selected, setSelected] = useState<Departure | null>(null)
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null)
   const [timeZone, setTimeZone] = useState(browserTimeZone)
   const clock = useSimulationClock(timeZone)
-  const live = useLiveRouteDay(routeId, clock.date)
+  const live = useLiveRouteDay(selected?.routeId ?? null, clock.date)
   const day = live.data ?? null
 
   // Vrijeme se računa u zoni prijevoznika čim se ona zna.
@@ -58,10 +48,40 @@ export function LiveMapPage() {
     setTimeZone(day.timeZone)
   }
 
-  const vehicles = useMemo(() => (day ? buildVehicles(day) : []), [day])
+  const allVehicles = useMemo(() => (day ? buildVehicles(day) : []), [day])
 
-  const selectRoute = (id: string | null) => {
-    setRouteId(id)
+  // Smjer odabranog polaska: vožnje linije s istim smjerom i natpisom.
+  const view = useMemo(() => {
+    const trip = day?.trips.find((t) => t.id === selected?.tripId)
+    if (!day || !trip) {
+      return null
+    }
+    const vehicles = allVehicles.filter(
+      (v) => v.trip.directionId === trip.directionId && v.trip.headsign === trip.headsign,
+    )
+    const shapeIds = new Set(vehicles.map((v) => v.trip.shapeId))
+    const stopIds = new Set(vehicles.flatMap((v) => v.trip.stopTimes.map((st) => st.stopId)))
+    const directionDay: LiveRouteDay = {
+      ...day,
+      trips: vehicles.map((v) => v.trip),
+      shapes: day.shapes.filter((s) => shapeIds.has(s.id)),
+      stops: day.stops.filter((s) => stopIds.has(s.id)),
+    }
+    return {
+      day: directionDay,
+      vehicles,
+      key: `${day.route.id}|${trip.directionId}|${trip.headsign}`,
+    }
+  }, [day, allVehicles, selected?.tripId])
+
+  const selectStop = (next: MapStop | null) => {
+    setStop(next)
+    setSelected(null)
+    setSelectedVehicle(null)
+  }
+
+  const selectDeparture = (departure: Departure | null) => {
+    setSelected(departure)
     setSelectedVehicle(null)
   }
 
@@ -80,9 +100,10 @@ export function LiveMapPage() {
             h="100%"
             extent={extent.data}
             selectedStopId={stop?.id ?? null}
-            onSelectStop={(next) => setStop(next)}
-            day={day}
-            vehicles={vehicles}
+            onSelectStop={selectStop}
+            day={view?.day ?? null}
+            focusKey={view?.key ?? null}
+            vehicles={view?.vehicles ?? []}
             timeRef={clock.timeRef}
             selectedVehicle={selectedVehicle}
             onSelectVehicle={setSelectedVehicle}
@@ -93,34 +114,32 @@ export function LiveMapPage() {
           pos="absolute"
           top={12}
           left={12}
-          w={340}
+          w={360}
           maw="calc(100% - 24px)"
           shadow="md"
           radius="md"
           withBorder
         >
-          <ScrollArea.Autosize mah="calc(100dvh - 380px)">
-            <Box p="md">
-              {routeId && (day || live.isPending) ? (
-                <RoutePanel
-                  day={day}
-                  vehicles={vehicles}
-                  time={clock.time}
-                  stop={stop}
-                  selectedVehicle={selectedVehicle}
-                  onSelectVehicle={setSelectedVehicle}
-                  onBack={() => selectRoute(null)}
-                />
-              ) : stop ? (
-                <StopPanel stop={stop} onSelectRoute={selectRoute} onClose={() => setStop(null)} />
-              ) : (
-                <Group gap="sm" wrap="nowrap">
-                  <IconClick size={20} />
-                  <Text size="sm">Klikni stanicu na karti, pa liniju koja na njoj staje.</Text>
-                </Group>
-              )}
-            </Box>
-          </ScrollArea.Autosize>
+          {stop ? (
+            <StopPanel
+              stop={stop}
+              date={clock.date}
+              time={clock.time}
+              timeZone={timeZone}
+              selected={selected}
+              onSelect={selectDeparture}
+              onClose={() => selectStop(null)}
+              view={view}
+              loading={selected !== null && live.isPending}
+              selectedVehicle={selectedVehicle}
+              onSelectVehicle={setSelectedVehicle}
+            />
+          ) : (
+            <Group gap="sm" wrap="nowrap" p="md">
+              <IconClick size={20} />
+              <Text size="sm">Klikni stanicu na karti za polaske s nje.</Text>
+            </Group>
+          )}
         </Paper>
 
         <Paper
@@ -142,160 +161,209 @@ export function LiveMapPage() {
   )
 }
 
+interface StopPanelProps {
+  stop: MapStop
+  date: string
+  time: number
+  timeZone: string
+  selected: Departure | null
+  onSelect: (departure: Departure | null) => void
+  onClose: () => void
+  view: { day: LiveRouteDay; vehicles: Vehicle[] } | null
+  loading: boolean
+  selectedVehicle: string | null
+  onSelectVehicle: (key: string) => void
+}
+
+/** Stanica: polasci do kraja dana, a nakon klika na polazak njegov smjer. */
 function StopPanel({
   stop,
-  onSelectRoute,
+  date,
+  time,
+  timeZone,
+  selected,
+  onSelect,
   onClose,
-}: {
-  stop: MapStop
-  onSelectRoute: (routeId: string) => void
-  onClose: () => void
-}) {
-  const routes = useStopRoutes(stop.id)
+  view,
+  loading,
+  selectedVehicle,
+  onSelectVehicle,
+}: StopPanelProps) {
+  const departures = useStopDepartures(stop.id, date)
+  // Polasci od sada; odabrani ostaje i kad prođe, da se vidi njegov smjer.
+  const upcoming = useMemo(
+    () =>
+      departures.data && departures.data.date === date
+        ? departuresFrom(departures.data.departures, date, timeZone, 0)
+        : [],
+    [departures.data, date, timeZone],
+  )
+  const remaining = upcoming.filter((d) => d.seconds >= Math.floor(time))
 
   return (
-    <Stack gap="sm">
-      <Group justify="space-between" wrap="nowrap" align="flex-start">
+    <Stack gap={0}>
+      <Group justify="space-between" wrap="nowrap" align="flex-start" p="md" pb="sm">
         <Group gap="sm" wrap="nowrap">
-          <Box
-            bg="#1a73e8"
-            c="white"
-            w={32}
-            h={32}
-            style={{ borderRadius: '50%', display: 'grid', placeItems: 'center', flexShrink: 0 }}
-          >
-            <IconBus size={18} />
-          </Box>
+          {selected ? (
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              onClick={() => onSelect(null)}
+              aria-label="Natrag"
+            >
+              <IconArrowLeft size={18} />
+            </ActionIcon>
+          ) : (
+            <BusDot color="#1a73e8" size={32} />
+          )}
           <div>
             <Text fw={600} lh={1.3}>
               {stop.name}
             </Text>
             <Text size="xs" c="dimmed">
-              Autobusna stanica{stop.platformCode ? ` · peron ${stop.platformCode}` : ''}
+              {selected
+                ? 'Polasci ovog smjera'
+                : `Polasci do kraja dana${remaining.length ? ` · ${remaining.length}` : ''}`}
             </Text>
           </div>
         </Group>
         <CloseButton aria-label="Zatvori" onClick={onClose} />
       </Group>
 
-      {routes.isPending ? (
-        <Loader size="sm" />
-      ) : routes.data?.length ? (
-        <Stack gap={4}>
-          <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
-            Linije
-          </Text>
-          {routes.data.map((route) => (
-            <UnstyledButton
-              key={route.id}
-              onClick={() => onSelectRoute(route.id)}
-              p={6}
-              style={{ borderRadius: 6 }}
-              className={classes.row}
-            >
-              <Group gap="sm" wrap="nowrap">
-                <RouteBadge route={route} />
-                <Text size="sm" lineClamp={1}>
-                  {route.longName ?? ''}
-                </Text>
-              </Group>
-            </UnstyledButton>
-          ))}
-        </Stack>
-      ) : (
-        <Text size="sm" c="dimmed">
-          Na stanici ne staje nijedna linija.
-        </Text>
-      )}
+      <ScrollArea.Autosize mah="calc(100dvh - 400px)">
+        <Box px="md" pb="md">
+          {departures.isPending ? (
+            <Loader size="sm" />
+          ) : selected ? (
+            <DirectionPanel
+              selected={selected}
+              departures={upcoming.filter((d) => sameDirection(d, selected))}
+              time={time}
+              onSelect={onSelect}
+              view={view}
+              loading={loading}
+              selectedVehicle={selectedVehicle}
+              onSelectVehicle={onSelectVehicle}
+            />
+          ) : remaining.length === 0 ? (
+            <Text size="sm" c="dimmed">
+              Do kraja dana sa stanice nema više polazaka.
+            </Text>
+          ) : (
+            <Stack gap={2}>
+              {remaining.map((departure) => (
+                <UnstyledButton
+                  key={`${departure.tripId}-${departure.seconds}`}
+                  onClick={() => onSelect(departure)}
+                  className={classes.row}
+                  p={6}
+                  style={{ borderRadius: 6 }}
+                >
+                  <Group gap="sm" wrap="nowrap" justify="space-between">
+                    <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
+                      <RouteBadge route={routeOf(departure)} size="sm" />
+                      <div style={{ minWidth: 0 }}>
+                        <Text size="sm" lineClamp={1}>
+                          {departure.headsign}
+                        </Text>
+                        {departure.platform && (
+                          <Text size="xs" c="dimmed">
+                            Peron {departure.platform}
+                          </Text>
+                        )}
+                      </div>
+                    </Group>
+                    <DepartureTime seconds={departure.seconds} time={time} />
+                  </Group>
+                </UnstyledButton>
+              ))}
+            </Stack>
+          )}
+        </Box>
+      </ScrollArea.Autosize>
     </Stack>
   )
 }
 
-function RoutePanel({
-  day,
-  vehicles,
+/** Smjer odabranog polaska: ostala vremena gore, pa vozila koja upravo voze. */
+function DirectionPanel({
+  selected,
+  departures,
   time,
-  stop,
+  onSelect,
+  view,
+  loading,
   selectedVehicle,
   onSelectVehicle,
-  onBack,
 }: {
-  day: LiveRouteDay | null
-  vehicles: Vehicle[]
+  selected: Departure
+  departures: Departure[]
   time: number
-  stop: MapStop | null
+  onSelect: (departure: Departure) => void
+  view: { day: LiveRouteDay; vehicles: Vehicle[] } | null
+  loading: boolean
   selectedVehicle: string | null
   onSelectVehicle: (key: string) => void
-  onBack: () => void
 }) {
-  const stopNames = useMemo(() => new Map(day?.stops.map((s) => [s.id, s.name]) ?? []), [day])
-
-  if (!day) {
-    return <Loader size="sm" />
-  }
-
-  const running = vehicles.flatMap((vehicle) => {
+  const stopNames = useMemo(() => new Map(view?.day.stops.map((s) => [s.id, s.name]) ?? []), [view])
+  const running = (view?.vehicles ?? []).flatMap((vehicle) => {
     const state = vehicleAt(vehicle.track, time)
     return state ? [{ vehicle, state }] : []
   })
 
-  // Sljedeći polasci linije s odabrane stanice.
-  const departures = stop
-    ? vehicles
-        .flatMap((vehicle) =>
-          vehicle.track.stopTimes
-            .slice(0, -1)
-            .filter((st) => st.stopId === stop.id && st.departureTime >= time)
-            .map((st) => ({ vehicle, departure: st.departureTime })),
-        )
-        .sort((a, b) => a.departure - b.departure)
-        .slice(0, 5)
-    : []
-
   return (
-    <Stack gap="sm">
-      <Group gap="xs" wrap="nowrap">
-        <ActionIcon variant="subtle" color="gray" onClick={onBack} aria-label="Natrag">
-          <IconArrowLeft size={18} />
-        </ActionIcon>
-        <RouteBadge route={day.route} />
-        <Text fw={600} size="sm" lineClamp={2}>
-          {day.route.longName ?? ''}
+    <Stack gap="md">
+      <Group gap="sm" wrap="nowrap">
+        <RouteBadge route={routeOf(selected)} />
+        <Text fw={600} lineClamp={2}>
+          {selected.headsign}
         </Text>
       </Group>
 
-      {stop && departures.length > 0 && (
-        <Stack gap={4}>
-          <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
-            Polasci · {stop.name}
+      <Stack gap={6}>
+        <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
+          Vremena polazaka
+        </Text>
+        <Group gap={6}>
+          {departures.map((departure) => {
+            const active =
+              departure.tripId === selected.tripId && departure.seconds === selected.seconds
+            const past = departure.seconds < time
+            return (
+              <Badge
+                key={`${departure.tripId}-${departure.seconds}`}
+                component="button"
+                onClick={() => onSelect(departure)}
+                variant={active ? 'filled' : 'light'}
+                color={past ? 'gray' : 'blue'}
+                tt="none"
+                size="lg"
+                radius="sm"
+                style={{ cursor: 'pointer' }}
+              >
+                {formatTime(departure.seconds, false)}
+              </Badge>
+            )
+          })}
+        </Group>
+        {selected.seconds >= time && (
+          <Text size="sm">
+            Odabrani polazak {formatTime(selected.seconds, false)}
+            {selected.seconds - time < 60 * 60
+              ? ` · za ${minutesUntil(selected.seconds, time)} min`
+              : ''}
           </Text>
-          {departures.map(({ vehicle, departure }) => (
-            <Group key={`${vehicle.key}-${departure}`} justify="space-between" wrap="nowrap">
-              <Text size="sm" lineClamp={1}>
-                {vehicle.trip.headsign}
-              </Text>
-              <Text size="sm" fw={600} c={departure - time < 15 * 60 ? 'green.7' : undefined}>
-                {departure - time < 60 * 60
-                  ? `${Math.max(0, Math.round((departure - time) / 60))} min`
-                  : formatTime(departure, false)}
-              </Text>
-            </Group>
-          ))}
-        </Stack>
-      )}
+        )}
+      </Stack>
 
       <Stack gap={4}>
         <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
-          U vožnji ({running.length})
+          Vozila na trasi ({running.length})
         </Text>
-        {day.trips.length === 0 && (
+        {loading && <Loader size="sm" />}
+        {!loading && running.length === 0 && (
           <Text size="sm" c="dimmed">
-            Linija taj dan ne vozi.
-          </Text>
-        )}
-        {day.trips.length > 0 && running.length === 0 && (
-          <Text size="sm" c="dimmed">
-            Trenutno nijedno vozilo nije na liniji.
+            Trenutno nijedno vozilo ovog smjera nije na trasi.
           </Text>
         )}
         {running.map(({ vehicle, state }) => {
@@ -311,24 +379,11 @@ function RoutePanel({
               data-active={vehicle.key === selectedVehicle || undefined}
             >
               <Group gap="sm" wrap="nowrap" align="flex-start">
-                <Box
-                  bg={`#${day.route.color ?? '1a73e8'}`}
-                  c="white"
-                  w={26}
-                  h={26}
-                  style={{
-                    borderRadius: '50%',
-                    display: 'grid',
-                    placeItems: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <IconBus size={15} />
-                </Box>
+                <BusDot color={`#${view?.day.route.color ?? '1a73e8'}`} size={26} />
                 <div style={{ minWidth: 0 }}>
                   <Text size="sm" fw={500} lineClamp={1}>
-                    {vehicle.trip.shortName ? `${vehicle.trip.shortName} · ` : ''}
-                    {vehicle.trip.headsign}
+                    Polazak {formatTime(stopTimes[0].departureTime, false)}
+                    {vehicle.trip.id === selected.tripId ? ' · odabrani' : ''}
                   </Text>
                   <Text size="xs" c="dimmed" lineClamp={1}>
                     {state.atStop
@@ -345,95 +400,42 @@ function RoutePanel({
   )
 }
 
-function ClockPanel({ clock }: { clock: SimulationClock }) {
-  const simulation = clock.mode === 'simulation'
-  const speedIndex = Math.max(0, speeds.indexOf(clock.speed))
-
+/** Vrijeme polaska; unutar sat vremena i koliko je još minuta. */
+function DepartureTime({ seconds, time }: { seconds: number; time: number }) {
+  const soon = seconds - time < 60 * 60
   return (
-    <Stack gap="xs">
-      <Group justify="space-between" wrap="nowrap">
-        <SegmentedControl
-          size="xs"
-          value={clock.mode}
-          onChange={(value) => clock.setMode(value as SimulationClock['mode'])}
-          data={[
-            { value: 'live', label: 'Uživo' },
-            { value: 'simulation', label: 'Simulacija' },
-          ]}
-        />
-        <Group gap="xs" wrap="nowrap">
-          {!simulation && (
-            <Badge color="green" variant="dot" tt="none">
-              Danas
-            </Badge>
-          )}
-          <Text ff="monospace" fw={700} fz="xl">
-            {formatTime(clock.time)}
-          </Text>
-        </Group>
-      </Group>
-
-      {simulation && (
-        <>
-          <Group gap="sm" wrap="nowrap">
-            <DatePickerInput
-              size="xs"
-              aria-label="Dan"
-              leftSection={<IconCalendar size={14} />}
-              value={clock.date}
-              onChange={(value) => value && clock.setDate(value)}
-              valueFormat="DD. MM. YYYY."
-              w={150}
-            />
-            <Tooltip label={clock.playing ? 'Zaustavi' : 'Pokreni'}>
-              <ActionIcon
-                variant="filled"
-                radius="xl"
-                onClick={() => {
-                  if (!clock.playing && clock.time >= daySeconds - 1) {
-                    clock.setTime(0)
-                  }
-                  clock.setPlaying(!clock.playing)
-                }}
-                aria-label={clock.playing ? 'Zaustavi' : 'Pokreni'}
-              >
-                {clock.playing ? (
-                  <IconPlayerPauseFilled size={14} />
-                ) : (
-                  <IconPlayerPlayFilled size={14} />
-                )}
-              </ActionIcon>
-            </Tooltip>
-            <Slider
-              style={{ flex: 1 }}
-              min={0}
-              max={daySeconds - 1}
-              step={60}
-              value={clock.time}
-              onChange={clock.setTime}
-              label={(value) => formatTime(value, false)}
-              aria-label="Vrijeme"
-            />
-          </Group>
-          <Group gap="sm" wrap="nowrap">
-            <Text size="xs" c="dimmed" w={60}>
-              Brzina
-            </Text>
-            <Slider
-              style={{ flex: 1 }}
-              min={0}
-              max={speeds.length - 1}
-              step={1}
-              value={speedIndex}
-              onChange={(index) => clock.setSpeed(speeds[index])}
-              label={(index) => `${speeds[index]}×`}
-              marks={speeds.map((speed, index) => ({ value: index, label: `${speed}×` }))}
-              mb="md"
-              aria-label="Brzina"
-            />
-          </Group>
-        </>
+    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+      <Text size="sm" fw={600}>
+        {formatTime(seconds, false)}
+      </Text>
+      {soon && (
+        <Text size="xs" c={seconds - time < 15 * 60 ? 'green.7' : 'dimmed'}>
+          za {minutesUntil(seconds, time)} min
+        </Text>
       )}
-    </Stack>
+    </div>
   )
+}
+
+function BusDot({ color, size }: { color: string; size: number }) {
+  return (
+    <Box
+      bg={color}
+      c="white"
+      w={size}
+      h={size}
+      style={{ borderRadius: '50%', display: 'grid', placeItems: 'center', flexShrink: 0 }}
+    >
+      <IconBus size={Math.round(size * 0.58)} />
+    </Box>
+  )
+}
+
+function routeOf(departure: Departure) {
+  return {
+    code: departure.routeName ?? '',
+    shortName: departure.routeName,
+    color: departure.routeColor,
+    textColor: departure.routeTextColor,
+  }
 }
