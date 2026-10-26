@@ -41,6 +41,20 @@ public class RouteDiagramBuilderTests
     }
 
     [Fact]
+    public void Build_NamesStopsAnOtherVariantVisitsTwice()
+    {
+        Variant(TripDirection.Outbound, 0, "Posavci", "Ražljevo", "Krbeti");
+        // Odvojak tamo i natrag: Ražljevo i Popovo polje R. dvaput.
+        Variant(TripDirection.Outbound, 1, "Posavci", "Ražljevo", "Popovo polje R.", "Popovo polje", "Popovo polje R.", "Ražljevo", "Krbeti");
+
+        var diagram = Build();
+
+        Assert.Equal(
+            ["Posavci", "Ražljevo", "Popovo polje R.", "Popovo polje", "Popovo polje R.", "Ražljevo", "Krbeti"],
+            diagram.Stops.Select(s => s.Name));
+    }
+
+    [Fact]
     public void Build_StopIsServedInADirectionByAnyVariant()
     {
         Variant(TripDirection.Outbound, 0, "Kolodvor", "Ilica", "Bolnica");

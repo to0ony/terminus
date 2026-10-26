@@ -95,15 +95,18 @@ internal static class RouteDiagramBuilder
             terminus[backwardRows[0]] = terminus[backwardRows[^1]] = true;
         }
 
-        // Stanice samo ostalih varijanti: naziv iz prve varijante koja ih ima.
-        foreach (var other in otherVariants)
+        // Stanice samo ostalih varijanti: naziv iz prve varijante koja ih ima. Po
+        // ključu, ne po retku, jer stanica koju varijanta obilazi dvaput (odvojak
+        // tamo i natrag) ima dva retka.
+        var otherNames = new Dictionary<string, string>();
+        foreach (var stop in otherVariants.SelectMany(v => v.Stops))
         {
-            foreach (var stop in other.Stops)
-            {
-                var name = Name(stop.StopId);
-                var row = rows.IndexOf(Key(name));
-                names[row] ??= name;
-            }
+            var name = Name(stop.StopId);
+            otherNames.TryAdd(Key(name), name);
+        }
+        for (var i = 0; i < rows.Count; i++)
+        {
+            names[i] ??= otherNames[rows[i]];
         }
 
         // Gdje ostale varijante počinju i završavaju, ako to nije kraj glavne trase.
