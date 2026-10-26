@@ -21,6 +21,9 @@ public interface ISettingsModel
     /// <summary>Je li GTFS feed javno dostupan na /api/public/gtfs.</summary>
     bool PublicGtfsEnabled { get; set; }
 
+    /// <summary>Je li karta uživo javno dostupna (/karta i /api/public/map).</summary>
+    bool PublicMapEnabled { get; set; }
+
     /// <summary>Vrijeme zadnje promjene loga ili null ako logo nije postavljen. Samo za čitanje.</summary>
     DateTime? LogoUpdatedAt { get; set; }
 

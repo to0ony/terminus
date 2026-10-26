@@ -21,6 +21,7 @@ public class InstanceSettingsConfiguration : IEntityTypeConfiguration<InstanceSe
         builder.Property(e => e.Id).ValueGeneratedNever();
 
         builder.Property(e => e.PublicGtfsEnabled).HasDefaultValue(false);
+        builder.Property(e => e.PublicMapEnabled).HasDefaultValue(false);
 
         builder.ConfigureAuditColumns();
     }

@@ -138,6 +138,7 @@ builder.Services.AddScoped<IFareService, FareService>();
 builder.Services.AddScoped<IFeedInfoService, FeedInfoService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<ITimetableService, TimetableService>();
+builder.Services.AddScoped<ILiveMapService, LiveMapService>();
 builder.Services.AddScoped<IStopTimetableService, StopTimetableService>();
 builder.Services.AddScoped<IRouteDiagramService, RouteDiagramService>();
 builder.Services.AddScoped<ISetupService, SetupService>();

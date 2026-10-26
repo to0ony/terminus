@@ -21,7 +21,8 @@ Sadržaj:
 1. [Izračun polazaka](#1-izračun-polazaka)
 2. [Zaslon na stanici](#2-zaslon-na-stanici)
 3. [PDF vozni red](#3-pdf-vozni-red)
-4. [Odluke](#4-odluke)
+4. [Karta uživo](#4-karta-uživo)
+5. [Odluke](#5-odluke)
 
 ---
 
@@ -399,7 +400,68 @@ MigraDoc, MIT licenca).
 
 ---
 
-## 4. Odluke
+## 4. Karta uživo
+
+Na **Pregledu** gumb **Karta uživo** (`/live`) otvara kartu u stilu Google
+karata s plavim stanicama. Klik na stanicu prikazuje **polaske do kraja
+dana** redom (linija, smjer, vrijeme, „za X min”). Klik na polazak prikazuje
+**trasu tog smjera** (vožnje linije s istim smjerom i natpisom) u boji linije,
+okrugla **vozila koja upravo voze** i gore **ostala vremena** tog smjera sa
+stanice. Vozila su **prema voznom redu** (simulacija), ne prema GPS-u.
+
+- Podloga je zadano **detaljna (Liberty)**; može se promijeniti, a izbor se
+  pamti samo za ovu kartu.
+- **Uživo**: današnji dan i trenutno vrijeme u zoni prijevoznika.
+- **Simulacija**: odabrani dan, vrijeme (klizač) i brzina od 1× do 600×; služi
+  za provjeru voznog reda.
+- Ispred svake linije je ikona vrste prijevoza (autobus, vlak, brod…).
+- Klik na vozilo (na karti ili u popisu): karta mu se približi i **prati
+  ga**; na mobitelu se ploča spusti. Povlačenje karte prekida praćenje, a gumb
+  **Prati vozilo** ga vraća.
+- **Sva vozila** (prekidač uz sat): na karti su vozila svih linija, svako u
+  boji svoje linije; klik na vozilo prikazuje njegovu vožnju (linija, smjer,
+  sljedeće stanice). Podaci: `GET /api/routes/live?date=`.
+- **Javna karta** `/karta`, bez prijave: ista karta, samo uživo (bez
+  simulacije), s nazivom i logom iz postavki. Uključuje se u **Postavkama →
+  Objavi kartu uživo** (`settings.public_map_enabled`); dok je isključena,
+  `/api/public/map/*` vraća 404. Javni API (`/api/public/map/stops/area`,
+  `stops/extent`, `stops/{id}/departures`, `stops/{id}/routes`,
+  `routes/{id}/live`, `live`) daje samo aktivne stanice, s ograničenjem
+  zahtjeva i cacheom od 5 minuta.
+- **Otvori u novoj kartici** otvara `/live/full`: ista karta preko cijelog
+  prozora, bez izbornika i zaglavlja dashboarda (traži prijavu kao i
+  dashboard).
+- Na mobitelu je panel **donja ploča** koja se skuplja i širi (ručka na
+  vrhu), sat i simulacija su gore, a karta se trasi prilagođava oko njih.
+- Kod odabranog polaska vremena smjera su u jednom redu (ranija blago siva,
+  bira se klikom ili strelicama), a ispod su **stanice tog polaska**: ova
+  stanica, tri sljedeće i zadnja, s vremenom dolaska i koliko se vozi od ove
+  stanice; ostale i ranije stanice otvaraju se na klik. Promjena vremena gore mijenja vremena stanica, a
+  vozilo tog polaska vidi se na crti stanica.
+- Polasci dolaze iz `GET /api/stops/{id}/departures?date=` (kao zaslon
+  stanice); noćne vožnje prethodnog dana nisu na popisu polazaka, ali se na
+  trasi vide kao vozila.
+
+```
+GET /api/routes/{routeId}/live?date=2026-10-26
+```
+
+Vraća vožnje linije koje voze taj dan (i vožnje prethodnog dana koje traju
+iza ponoći, s vremenima pomaknutim za dan), s vremenima u sekundama od
+ponoći, trasama i stanicama s koordinatama. Vožnja bez trase uzima trasu
+svoje varijante; bez obje vozilo ide ravno od stanice do stanice.
+
+Položaj računa preglednik: na stanici između dolaska i polaska, a između
+stanica jednoliko duž trase od polaska do dolaska. Stanice se postavljaju na
+trasu redom, pa i odvojak tamo i natrag ispravno ide.
+
+| Dio | Gdje |
+|---|---|
+| Vožnje dana | `LiveMapService`, testovi u `LiveMapServiceTests` |
+| Simulacija i sat | `features/live/simulation.ts`, `clock.ts`, `useSimulationClock.ts` |
+| Karta i paneli | `features/live/LiveMap.tsx`, `LiveMapPage.tsx` |
+
+## 5. Odluke
 
 | Tema | Odluka |
 |---|---|

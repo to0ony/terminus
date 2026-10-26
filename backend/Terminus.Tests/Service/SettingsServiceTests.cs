@@ -126,11 +126,12 @@ public class SettingsServiceTests
     [Fact]
     public async Task GetPublicAsync_DisplayNameWins()
     {
-        await Service.SaveAsync(new SettingsModel { DisplayName = "Vozni red", PublicGtfsEnabled = true }, Ct);
+        await Service.SaveAsync(new SettingsModel { DisplayName = "Vozni red", PublicGtfsEnabled = true, PublicMapEnabled = true }, Ct);
 
         var settings = await Service.GetPublicAsync(Ct);
 
         Assert.Equal("Vozni red", settings.DisplayName);
         Assert.True(settings.PublicGtfsEnabled);
+        Assert.True(settings.PublicMapEnabled);
     }
 }

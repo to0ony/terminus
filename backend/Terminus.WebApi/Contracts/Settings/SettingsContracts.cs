@@ -21,6 +21,9 @@ public class SettingsRequest
 
     /// <summary>Objavi GTFS feed bez prijave na /api/public/gtfs.</summary>
     public bool PublicGtfsEnabled { get; set; }
+
+    /// <summary>Objavi kartu uživo bez prijave na /karta.</summary>
+    public bool PublicMapEnabled { get; set; }
 }
 
 /// <param name="LogoUrl">Adresa loga ili null ako nije postavljen.</param>
@@ -31,6 +34,7 @@ public record SettingsResponse(
     string? PrimaryTextColor,
     string? PublicUrl,
     bool PublicGtfsEnabled,
+    bool PublicMapEnabled,
     string? LogoUrl,
     DateTime? CreatedAt,
     DateTime? UpdatedAt);
@@ -39,12 +43,14 @@ public record SettingsResponse(
 /// <param name="DisplayName">Naziv instance ili prvog prijevoznika.</param>
 /// <param name="LogoUrl">Adresa loga ili null ako nije postavljen.</param>
 /// <param name="GtfsUrl">Adresa javnog GTFS feeda ili null ako nije objavljen.</param>
+/// <param name="MapEnabled">Je li karta uživo javno objavljena.</param>
 public record PublicSettingsResponse(
     string? DisplayName,
     string? PrimaryColor,
     string? PrimaryTextColor,
     string? LogoUrl,
-    string? GtfsUrl);
+    string? GtfsUrl,
+    bool MapEnabled);
 
 public static class SettingsMappings
 {
@@ -57,7 +63,8 @@ public static class SettingsMappings
         PrimaryColor = request.PrimaryColor,
         PrimaryTextColor = request.PrimaryTextColor,
         PublicUrl = request.PublicUrl,
-        PublicGtfsEnabled = request.PublicGtfsEnabled
+        PublicGtfsEnabled = request.PublicGtfsEnabled,
+        PublicMapEnabled = request.PublicMapEnabled
     };
 
     public static SettingsResponse ToResponse(this ISettingsModel model) => new(
@@ -66,6 +73,7 @@ public static class SettingsMappings
         model.PrimaryTextColor,
         model.PublicUrl,
         model.PublicGtfsEnabled,
+        model.PublicMapEnabled,
         LogoUrl(model.LogoUpdatedAt),
         model.CreatedAt == default ? null : model.CreatedAt,
         model.UpdatedAt == default ? null : model.UpdatedAt);
@@ -75,7 +83,8 @@ public static class SettingsMappings
         settings.PrimaryColor,
         settings.PrimaryTextColor,
         LogoUrl(settings.LogoUpdatedAt),
-        settings.PublicGtfsEnabled ? PublicGtfsPath : null);
+        settings.PublicGtfsEnabled ? PublicGtfsPath : null,
+        settings.PublicMapEnabled);
 
     /// <summary>Verzija u adresi mijenja se s logom, pa ga preglednik smije dugo čuvati.</summary>
     private static string? LogoUrl(DateTime? updatedAt) =>

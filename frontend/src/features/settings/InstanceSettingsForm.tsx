@@ -18,7 +18,7 @@ import {
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { IconCheck, IconCopy } from '@tabler/icons-react'
+import { IconCheck, IconCopy, IconExternalLink } from '@tabler/icons-react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { ApiError, errorMessage } from '@/api/errors'
@@ -41,6 +41,7 @@ const schema = z.object({
     .trim()
     .refine((value) => value === '' || isHttpUrl(value), 'Upiši ispravnu adresu (https://…).'),
   publicGtfsEnabled: z.boolean(),
+  publicMapEnabled: z.boolean(),
 })
 
 type SettingsForm = z.infer<typeof schema>
@@ -50,6 +51,7 @@ const swatches = ['#1565C0', '#2E7D32', '#C62828', '#6A1B9A', '#EF6C00', '#00838
 const defaultPrimary = '1565C0'
 const defaultText = 'FFFFFF'
 const publicGtfsPath = '/api/public/gtfs'
+const publicMapPath = '/karta'
 
 /** Naziv i boje javnih stranica, javna adresa i objava GTFS-a; sprema se jednim PUT-om. */
 export function InstanceSettingsForm({ settings }: { settings: Settings }) {
@@ -78,6 +80,7 @@ export function InstanceSettingsForm({ settings }: { settings: Settings }) {
         primaryTextColor: toHex(form.primaryTextColor),
         publicUrl: form.publicUrl || null,
         publicGtfsEnabled: form.publicGtfsEnabled,
+        publicMapEnabled: form.publicMapEnabled,
       },
       {
         onSuccess: (saved) => {
@@ -109,6 +112,7 @@ export function InstanceSettingsForm({ settings }: { settings: Settings }) {
   const shownName = values.displayName?.trim() || fallbackName || 'Terminus'
   const baseUrl = (values.publicUrl?.trim() || window.location.origin).replace(/\/+$/, '')
   const gtfsUrl = `${baseUrl}${publicGtfsPath}`
+  const mapUrl = `${baseUrl}${publicMapPath}`
 
   return (
     <form onSubmit={onSubmit} noValidate>
@@ -236,6 +240,45 @@ export function InstanceSettingsForm({ settings }: { settings: Settings }) {
               </CopyButton>
             </Group>
           )}
+
+          <Controller
+            control={control}
+            name="publicMapEnabled"
+            render={({ field: { value, onChange, ...field } }) => (
+              <Switch
+                label="Objavi kartu uživo"
+                description="Karta sa stanicama, polascima i vozilima prema voznom redu, bez prijave (bez simulacije)."
+                checked={value}
+                onChange={(event) => onChange(event.currentTarget.checked)}
+                {...field}
+              />
+            )}
+          />
+          {values.publicMapEnabled && (
+            <Group gap="xs" wrap="nowrap">
+              <Code style={{ overflowWrap: 'anywhere' }}>{mapUrl}</Code>
+              <CopyButton value={mapUrl}>
+                {({ copied, copy }) => (
+                  <Tooltip label={copied ? 'Kopirano' : 'Kopiraj'}>
+                    <ActionIcon variant="subtle" onClick={copy} aria-label="Kopiraj adresu karte">
+                      {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+              </CopyButton>
+              <Tooltip label="Otvori">
+                <ActionIcon
+                  variant="subtle"
+                  component="a"
+                  href={publicMapPath}
+                  target="_blank"
+                  aria-label="Otvori javnu kartu"
+                >
+                  <IconExternalLink size={16} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+          )}
         </Stack>
 
         <Group justify="flex-end">
@@ -258,5 +301,6 @@ function toForm(settings: Settings): SettingsForm {
     primaryTextColor: settings.primaryTextColor ? `#${settings.primaryTextColor}` : '',
     publicUrl: settings.publicUrl ?? '',
     publicGtfsEnabled: settings.publicGtfsEnabled,
+    publicMapEnabled: settings.publicMapEnabled,
   }
 }

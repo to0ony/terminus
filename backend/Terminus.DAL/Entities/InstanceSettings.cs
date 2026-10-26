@@ -14,6 +14,7 @@ public class InstanceSettings : IAuditable
     public string? PrimaryTextColor { get; set; }
     public string? PublicUrl { get; set; }
     public bool PublicGtfsEnabled { get; set; }
+    public bool PublicMapEnabled { get; set; }
     public byte[]? Logo { get; set; }
     public string? LogoContentType { get; set; }
     public DateTime? LogoUpdatedAt { get; set; }

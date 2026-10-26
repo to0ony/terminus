@@ -34,4 +34,5 @@ public sealed record PublicSettings(
     string? PrimaryColor,
     string? PrimaryTextColor,
     DateTime? LogoUpdatedAt,
-    bool PublicGtfsEnabled);
+    bool PublicGtfsEnabled,
+    bool PublicMapEnabled);

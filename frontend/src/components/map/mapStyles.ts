@@ -21,17 +21,30 @@ export function mapStyleUrl(style: MapStyle, colorScheme: 'light' | 'dark'): str
   return `https://tiles.openfreemap.org/styles/${name}`
 }
 
-/** Odabrana podloga, zapamćena u pregledniku i ista na svim kartama. */
-export function useMapStyle() {
+/** Gdje se pamti odabrana podloga i koja je zadana. */
+export interface MapStyleSetting {
+  key: string
+  defaultValue: MapStyle
+}
+
+/** Zajednička podloga svih karata dashboarda. */
+export const sharedMapStyle: MapStyleSetting = { key: 'terminus-map-style', defaultValue: 'auto' }
+
+/**
+ * Odabrana podloga, zapamćena u pregledniku; zadano ista na svim kartama, a
+ * karta sa svojom postavkom (npr. karta uživo) pamti svoju.
+ */
+export function useMapStyle(setting: MapStyleSetting = sharedMapStyle) {
+  const { key, defaultValue } = setting
   return useLocalStorage<MapStyle>({
-    key: 'terminus-map-style',
-    defaultValue: 'auto',
+    key,
+    defaultValue,
     deserialize: (value) => {
       try {
-        const parsed: unknown = value === undefined ? 'auto' : JSON.parse(value)
-        return isMapStyle(parsed) ? parsed : 'auto'
+        const parsed: unknown = value === undefined ? defaultValue : JSON.parse(value)
+        return isMapStyle(parsed) ? parsed : defaultValue
       } catch {
-        return 'auto'
+        return defaultValue
       }
     },
   })

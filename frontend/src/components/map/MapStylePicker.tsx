@@ -1,10 +1,10 @@
 import { ActionIcon, Menu, Text, Tooltip } from '@mantine/core'
 import { IconCheck, IconStack2 } from '@tabler/icons-react'
-import { mapStyles, useMapStyle } from './mapStyles'
+import { type MapStyleSetting, mapStyles, sharedMapStyle, useMapStyle } from './mapStyles'
 
 /** Gumb na karti za izbor podloge. */
-export function MapStylePicker() {
-  const [style, setStyle] = useMapStyle()
+export function MapStylePicker({ setting = sharedMapStyle }: { setting?: MapStyleSetting }) {
+  const [style, setStyle] = useMapStyle(setting)
 
   return (
     <Menu position="top-start" width={230} withinPortal>

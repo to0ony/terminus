@@ -18,6 +18,12 @@ export const router = createBrowserRouter([
         lazy: async () => ({ Component: (await import('@/features/auth/LoginPage')).LoginPage }),
       },
       {
+        path: '/karta',
+        lazy: async () => ({
+          Component: (await import('@/features/live/PublicLiveMapPage')).PublicLiveMapPage,
+        }),
+      },
+      {
         path: '/board/:stopCode',
         lazy: async () => ({ Component: (await import('@/features/board/BoardPage')).BoardPage }),
       },
@@ -34,12 +40,24 @@ export const router = createBrowserRouter([
             element: <RequireSetup />,
             children: [
               {
+                path: '/live/full',
+                lazy: async () => ({
+                  Component: (await import('@/features/live/LiveMapPage')).LiveMapStandalonePage,
+                }),
+              },
+              {
                 element: <AppLayout />,
                 children: [
                   {
                     index: true,
                     lazy: async () => ({
                       Component: (await import('@/features/dashboard/DashboardPage')).DashboardPage,
+                    }),
+                  },
+                  {
+                    path: 'live',
+                    lazy: async () => ({
+                      Component: (await import('@/features/live/LiveMapPage')).LiveMapPage,
                     }),
                   },
                   {

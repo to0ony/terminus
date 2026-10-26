@@ -9,6 +9,7 @@ public class SettingsModel : ISettingsModel
     public string? PrimaryTextColor { get; set; }
     public string? PublicUrl { get; set; }
     public bool PublicGtfsEnabled { get; set; }
+    public bool PublicMapEnabled { get; set; }
     public DateTime? LogoUpdatedAt { get; set; }
     public DateTime? SetupCompletedAt { get; set; }
     public DateTime CreatedAt { get; set; }

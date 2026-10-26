@@ -79,7 +79,8 @@ public class SettingsService(
             settings.PrimaryColor,
             settings.PrimaryTextColor,
             settings.LogoUpdatedAt,
-            settings.PublicGtfsEnabled);
+            settings.PublicGtfsEnabled,
+            settings.PublicMapEnabled);
     }
 
     /// <returns>MIME vrsta slike prema potpisu na početku datoteke, ili null.</returns>

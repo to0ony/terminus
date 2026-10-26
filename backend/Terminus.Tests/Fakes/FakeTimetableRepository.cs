@@ -21,6 +21,13 @@ internal sealed class FakeTimetableRepository : ITimetableRepository
                 && (serviceCalendarIds is null || serviceCalendarIds.Contains(t.Trip.ServiceCalendarId)))
             .ToList());
 
+    public Task<IReadOnlyList<TripStopTimes>> GetTripsAsync(
+        IReadOnlyCollection<Guid> serviceCalendarIds,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<TripStopTimes>>(Trips
+            .Where(t => serviceCalendarIds.Contains(t.Trip.ServiceCalendarId))
+            .ToList());
+
     public Task<IReadOnlyList<IRouteModel>> GetRoutesServingAsync(
         IReadOnlyCollection<Guid> stopIds,
         CancellationToken cancellationToken = default) =>
