@@ -101,7 +101,8 @@ export function StopsPage() {
   })
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   // Postavljanje novih stanica klikom na kartu; ostaje uključeno za sljedeću.
-  const [placing, setPlacing] = useState(false)
+  // `?add=1` (npr. s Pregleda) otvara stranicu odmah u dodavanju.
+  const [placing, setPlacing] = useState(() => table.get('add') === '1')
   const [osm, setOsm] = useState(false)
   const [create, setCreate] = useState<NewStop | null>(null)
   const [lastCreated, setLastCreated] = useState<Stop | null>(null)
@@ -123,12 +124,8 @@ export function StopsPage() {
     setCreate({ ...position, name: near ? lastCreated.name : undefined })
   }
 
-  // Dodavanje stanica radi na karti, pa je prikazuje ako je skrivena.
-  const showMap = () => {
-    if (view === 'table') {
-      setView('split')
-    }
-  }
+  // Dodavanje stanica radi na karti, pa se ona tada vidi i u prikazu „Tablica”.
+  const shown: View = (placing || osm) && view === 'table' ? 'split' : view
 
   const applySearch = useDebouncedCallback(
     (value: string) => table.setFilter('q', value.trim()),
@@ -310,7 +307,7 @@ export function StopsPage() {
             onSortChange={table.setSort}
             stale={stops.isPlaceholderData}
             onRowHover={(row) => setHoveredId(row?.stop.id ?? null)}
-            maxHeight={view === 'split' ? 'calc(100dvh - 340px)' : undefined}
+            maxHeight={shown === 'split' ? 'calc(100dvh - 340px)' : undefined}
             onSearchKey={() => searchRef.current?.focus()}
             onPageKey={(step) => {
               const page = table.page + step
@@ -331,7 +328,7 @@ export function StopsPage() {
     </Stack>
   )
 
-  const mapHeight = view === 'map' ? 'calc(100dvh - 200px)' : 'calc(100dvh - 190px)'
+  const mapHeight = shown === 'map' ? 'calc(100dvh - 200px)' : 'calc(100dvh - 190px)'
   const mapPart = (
     <Paper withBorder style={{ overflow: 'hidden' }}>
       {extent.isPending ? (
@@ -366,8 +363,15 @@ export function StopsPage() {
         </Group>
         <Group gap="sm">
           <SegmentedControl
-            value={view}
-            onChange={(value) => setView(value as View)}
+            value={shown}
+            onChange={(value) => {
+              setView(value as View)
+              // Samo tablica: dodavanje na karti se završava.
+              if (value === 'table') {
+                setPlacing(false)
+                setOsm(false)
+              }
+            }}
             aria-label="Prikaz"
             data={views.map(({ value, label, icon: Icon }) => ({
               value,
@@ -385,9 +389,11 @@ export function StopsPage() {
             leftSection={<IconMapPinPlus size={16} />}
             variant={placing ? 'filled' : 'light'}
             onClick={() => {
+              if (placing) {
+                table.setFilter('add', null)
+              }
               setPlacing(!placing)
               setOsm(false)
-              showMap()
             }}
           >
             {placing ? 'Završi dodavanje' : 'Nova stanica'}
@@ -398,7 +404,6 @@ export function StopsPage() {
             onClick={() => {
               setOsm(!osm)
               setPlacing(false)
-              showMap()
             }}
           >
             Iz OpenStreetMapa
@@ -462,9 +467,9 @@ export function StopsPage() {
         onSaved={setLastCreated}
       />
 
-      {view === 'table' && tablePart}
-      {view === 'map' && mapPart}
-      {view === 'split' && (
+      {shown === 'table' && tablePart}
+      {shown === 'map' && mapPart}
+      {shown === 'split' && (
         <Grid gap="md">
           <Grid.Col span={{ base: 12, lg: 7 }}>{tablePart}</Grid.Col>
           <Grid.Col span={{ base: 12, lg: 5 }}>{mapPart}</Grid.Col>
