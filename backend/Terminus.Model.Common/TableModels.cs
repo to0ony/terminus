@@ -14,3 +14,16 @@ public sealed record StopTableRow(
     int PlatformCount,
     int TripCount,
     IReadOnlyList<RouteTag> Routes);
+
+/// <summary>Linija u tablici linija, s podacima o varijantama i vožnjama.</summary>
+/// <param name="StopCount">Različite stanice na kojima staju vožnje linije.</param>
+/// <param name="FirstDeparture">Najraniji polazak bilo koje vožnje, u sekundama od početka dana voznog reda.</param>
+/// <param name="LastArrival">Najkasniji dolazak bilo koje vožnje, u sekundama (može biti iza 24:00).</param>
+public sealed record RouteTableRow(
+    IRouteModel Route,
+    string AgencyName,
+    int VariantCount,
+    int TripCount,
+    int StopCount,
+    int? FirstDeparture,
+    int? LastArrival);

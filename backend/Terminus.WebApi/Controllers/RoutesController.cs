@@ -91,6 +91,22 @@ public class RoutesController(
         return Ok(result.Map(r => r.ToResponse()));
     }
 
+    /// <summary>
+    /// Linije za tablicu u dashboardu: popis s dodatnim filtrima i redoslijedom,
+    /// a uz svaku liniju prijevoznik, broj varijanti, vožnji i stanica te
+    /// najraniji polazak i najkasniji dolazak.
+    /// </summary>
+    [HttpGet("table")]
+    [ProducesResponseType<PagedResult<RouteTableRowResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PagedResult<RouteTableRowResponse>>> FindTable(
+        [FromQuery] RouteTableQuery query,
+        CancellationToken cancellationToken)
+    {
+        var result = await routeService.FindTableAsync(query.ToFilter(), cancellationToken);
+        return Ok(result.Map(r => r.ToResponse()));
+    }
+
     [HttpGet("{id:guid}")]
     [ProducesResponseType<RouteResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

@@ -21,6 +21,15 @@ public class RouteService(IRouteRepository repository, IAgencyRepository agencyR
         return repository.FindAsync(filter, cancellationToken);
     }
 
+    public Task<PagedResult<RouteTableRow>> FindTableAsync(RouteFilter filter, CancellationToken cancellationToken = default)
+    {
+        var errors = new ValidationErrors();
+        errors.AddPagingErrors(filter.Page, filter.PageSize);
+        errors.ThrowIfAny();
+
+        return repository.FindTableAsync(filter, cancellationToken);
+    }
+
     public async Task<IRouteModel> CreateAsync(IRouteModel route, CancellationToken cancellationToken = default)
     {
         route.Id = Guid.Empty;

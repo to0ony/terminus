@@ -10,4 +10,11 @@ internal static class QueryOrdering
         Expression<Func<T, TKey>> key,
         bool descending) =>
         descending ? query.OrderByDescending(key) : query.OrderBy(key);
+
+    /// <summary>ThenBy ili ThenByDescending, prema smjeru iz filtra.</summary>
+    public static IOrderedQueryable<T> ThenByDirection<T, TKey>(
+        this IOrderedQueryable<T> query,
+        Expression<Func<T, TKey>> key,
+        bool descending) =>
+        descending ? query.ThenByDescending(key) : query.ThenBy(key);
 }

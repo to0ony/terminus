@@ -35,6 +35,9 @@ internal sealed class FakeRouteRepository : IRouteRepository
     public Task<PagedResult<IRouteModel>> FindAsync(RouteFilter filter, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 
+    public Task<PagedResult<RouteTableRow>> FindTableAsync(RouteFilter filter, CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException();
+
     public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 }
