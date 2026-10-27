@@ -1,8 +1,9 @@
 # UI redesign i analize kvalitete prijevoza
 
 Prijedlozi iz brainstorminga: promjene sučelja dashboarda i editora te
-analize GTFS podataka koje bi Terminus mogao nuditi kao alat. Ništa od ovoga
-još nije napravljeno; redoslijed je na kraju svakog dijela.
+analize GTFS podataka koje bi Terminus mogao nuditi kao alat. Gotovo je
+označeno ✅ (branch `feat/ui-redesign`), a ono što je već postojalo prije
+prijedloga 〰️; redoslijed je na kraju svakog dijela.
 
 ## Trenutno stanje sučelja
 
@@ -34,20 +35,29 @@ Mantine nema rješenje.
 
 ### Navigacija i orijentacija
 
-- **Breadcrumbs** na dubokim stranicama (Linije → 4A → Varijanta → Vozni red).
+- ✅ **Breadcrumbs** na dubokim stranicama (Linije → 4A → Varijanta → Vozni red).
+  Zamijenili su poveznice „← Natrag” (`components/PageBreadcrumbs.tsx`).
 - **Command palette (Ctrl+K)** preko `@mantine/spotlight` – skok na liniju ili
   stanicu po broju/imenu i akcije ("Nova stanica", "Izvoz GTFS-a").
-- **Karta uživo u izborniku** – sada se do nje dolazi samo gumbom s pregleda.
-- **Prečaci u editorima** (spremi, poništi, sljedeća vožnja) s `Kbd`
-  oznakama u tooltipima.
+- ✅ **Karta uživo u izborniku** – stavka odmah ispod Pregleda; gumb s
+  pregleda je uklonjen.
+- ✅ **Prečaci u editorima** – grafikon: Ctrl+S, ↑↓ vožnja, Ctrl+A, N crtanje,
+  + − 0 zum; editor varijante: Ctrl+S, ↑↓ odabir, Alt+↑↓ premještanje, Del,
+  `/` traži, F na karti, Esc. Popis u uputama grafikona i ispod stanica
+  (`lib/keyboard.ts`).
 
 ### Učitavanje, prazna stanja i greške
 
-- **Skeletoni** umjesto `PageLoader` spinnera, da stranica manje skače.
+- ✅ **Skeletoni** umjesto `PageLoader` spinnera, da stranica manje skače
+  (`components/Skeletons.tsx`); spinner ostaje za prijavu, provjeru
+  postavljanja, javnu kartu i dijaloge.
 - **Prazna stanja** s porukom i akcijom ("Nema linija – uvezi GTFS ili dodaj
   prvu liniju").
-- **Optimistična ažuriranja i poništavanje** iz obavijesti ("Stanica obrisana
-  · Poništi") umjesto modala za potvrdu svake sitnice.
+- ✅ **Optimistična ažuriranja i poništavanje** iz obavijesti – brisanje
+  varijante i razdoblja sezone: potvrda, pa stavka odmah nestaje i 6 s se može
+  poništiti, a server briše tek tada (`lib/undo.tsx`). Izmjena dana sezone
+  odmah se vidi i može se poništiti. Stanica, linija, sezona i prijevoznik
+  imaju samo potvrdu (server često odbija ili briše više toga).
 
 ### Pregled (dashboard)
 
@@ -71,9 +81,10 @@ Pretvoriti ga u radnu ploču:
 
 `VariantEditorPage` i `SchedulePage` s grafikonom su srce aplikacije:
 
-- **Undo / redo** povijest izmjena.
-- **Nespremljene promjene** – vidljiv pokazatelj i upozorenje pri izlasku sa
-  stranice.
+- 〰️ **Undo / redo** povijest izmjena – već postoji u grafikonu (Ctrl+Z /
+  Ctrl+Y); u editoru varijante još ne.
+- 〰️ **Nespremljene promjene** – upozorenje pri izlasku već postoji u oba
+  editora; vidljiv pokazatelj samo u grafikonu (broj izmjena na „Spremi”).
 - **Bočni panel umjesto modala** kad se uređuje vožnja, da grafikon ostane
   vidljiv.
 - **Tablični unos voznog reda** kao u proračunskoj tablici – Tab/Enter za
@@ -97,9 +108,9 @@ Pretvoriti ga u radnu ploču:
 ### Redoslijed
 
 1. Vlastita tema i boje instance – mijenja dojam cijele aplikacije.
-2. Breadcrumbs, Ctrl+K i karta uživo u izborniku.
+2. ✅ Breadcrumbs i karta uživo u izborniku; Ctrl+K još nije.
 3. Pregled kao radna ploča s upozorenjima.
-4. Skeletoni, prazna stanja, poništavanje iz obavijesti.
+4. ✅ Skeletoni i poništavanje iz obavijesti; prazna stanja još nisu.
 5. Undo i tablični unos u editoru voznog reda – najveći posao, najveća
    vrijednost.
 
