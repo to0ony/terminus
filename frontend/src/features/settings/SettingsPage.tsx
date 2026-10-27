@@ -1,5 +1,5 @@
 import { Paper, Stack, Title } from '@mantine/core'
-import { PageLoader } from '@/components/PageLoader'
+import { FormSkeleton } from '@/components/Skeletons'
 import { QueryError } from '@/components/QueryError'
 import { AppearanceSettings } from '@/features/appearance/AppearanceSettings'
 import { InstanceSettingsForm } from './InstanceSettingsForm'
@@ -16,7 +16,7 @@ export function SettingsPage() {
       <Title order={2}>Postavke</Title>
 
       {settings.isPending ? (
-        <PageLoader />
+        <FormSkeleton />
       ) : settings.isError ? (
         <QueryError error={settings.error} onRetry={() => void settings.refetch()} />
       ) : (

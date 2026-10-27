@@ -1,12 +1,12 @@
 import {
   ActionIcon,
   Alert,
-  Anchor,
   Badge,
   Box,
   Button,
   Grid,
   Group,
+  Kbd,
   Modal,
   NumberInput,
   Paper,
@@ -22,7 +22,6 @@ import {
 import { notifications } from '@mantine/notifications'
 import {
   IconArrowDown,
-  IconArrowLeft,
   IconArrowUp,
   IconDeviceFloppy,
   IconGripVertical,
@@ -32,9 +31,10 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useBlocker, useNavigate, useParams, useSearchParams } from 'react-router'
+import { useBlocker, useNavigate, useParams, useSearchParams } from 'react-router'
 import { ApiError, errorMessage } from '@/api/errors'
-import { PageLoader } from '@/components/PageLoader'
+import { PageBreadcrumbs } from '@/components/PageBreadcrumbs'
+import { EditorSkeleton } from '@/components/Skeletons'
 import { QueryError } from '@/components/QueryError'
 import { useRoute } from '@/features/routes/queries'
 import { useRetimeTrips } from '@/features/schedule/queries'
@@ -62,6 +62,8 @@ import { useVariantShape } from './useVariantShape'
 import { formatKm } from './variantMath'
 import { stopDistances } from './variantShape'
 import { distance, duration, suggestTravelTime } from './variantMath'
+import { routeLabel } from '@/features/routes/routeLabel'
+import { isCtrl, isTyping } from '@/lib/keyboard'
 
 /** Stanica varijante u editoru; key razlikuje istu stanicu dvaput na kružnoj liniji. */
 interface EditorStop {
@@ -196,7 +198,7 @@ export function VariantEditorPage() {
     extent.isPending ||
     (shapeId !== null && shape.isPending)
   ) {
-    return <PageLoader />
+    return <EditorSkeleton />
   }
 
   return (
@@ -207,6 +209,7 @@ export function VariantEditorPage() {
       routeCode={route.data.code}
       approximate={route.data.timeMode === 'Approximate'}
       routeBadge={<RouteBadge route={route.data} />}
+      routeLabel={routeLabel(route.data)}
       // Kopija i povratni smjer postaju nova varijanta; izmjena zadržava Id.
       variant={isNew ? null : (source.data ?? null)}
       template={template}
@@ -236,6 +239,8 @@ interface VariantEditorProps {
    */
   approximate: boolean
   routeBadge: React.ReactNode
+  /** Naziv linije u putokazu. */
+  routeLabel: string
   variant: Variant | null
   template: Template | null
   /** Povratni smjer druge varijante: naziv se ne preuzima. */
@@ -260,6 +265,7 @@ function VariantEditor({
   routeCode,
   approximate,
   routeBadge,
+  routeLabel,
   variant,
   template,
   reversed,
@@ -539,27 +545,94 @@ function VariantEditor({
     }
   }
 
+  const canSave = stops.length >= 2 && (dirty || variant === null) && !shape.computing
+  const startSave = () => (timesChanged ? setAskRetime(true) : void submit(false))
+
+  /** Odabire stanicu i pomiče popis do nje. */
+  const selectStop = (key: number) => {
+    setSelected(key)
+    document.querySelector(`[data-stop-key="${key}"]`)?.scrollIntoView({ block: 'nearest' })
+  }
+
+  // Tipkovnica: spremanje, odabir, premještanje i uklanjanje stanica.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      // Spremanje radi i iz polja za unos, i ne otvara spremanje stranice u pregledniku.
+      if (isCtrl(event, 's')) {
+        event.preventDefault()
+        if (canSave && !save.isPending && !savingShape && !retime.isPending) {
+          startSave()
+        }
+        return
+      }
+      if (isTyping(event.target) || mode !== 'stops' || event.ctrlKey || event.metaKey) {
+        return
+      }
+      const index = stops.findIndex((s) => s.key === selected)
+      if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+        const step = event.key === 'ArrowUp' ? -1 : 1
+        if (event.altKey) {
+          // Alt+strelica premješta odabranu stanicu.
+          if (locked || index === -1 || index + step < 0 || index + step >= stops.length) {
+            return
+          }
+          move(index, step)
+        } else if (stops.length > 0) {
+          const next =
+            index === -1
+              ? step === 1
+                ? 0
+                : stops.length - 1
+              : Math.min(Math.max(index + step, 0), stops.length - 1)
+          selectStop(stops[next].key)
+        }
+      } else if ((event.key === 'Delete' || event.key === 'Backspace') && index !== -1) {
+        if (locked) {
+          return
+        }
+        remove(index)
+        // Odabir prelazi na stanicu koja je došla na njeno mjesto (ili prethodnu).
+        const rest = stops.filter((_, i) => i !== index)
+        setSelected(rest[Math.min(index, rest.length - 1)]?.key ?? null)
+      } else if (event.key === 'f' && index !== -1) {
+        focusOn(stops[index])
+      } else if (event.key === '/' && !locked) {
+        setSearching(true)
+      } else if (event.key === 'Escape' && selected !== null) {
+        setSelected(null)
+      } else {
+        return
+      }
+      event.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
   return (
     <Stack gap="md">
-      <Anchor component={Link} to={`/routes/${routeId}`} size="sm">
-        <Group gap={4}>
-          <IconArrowLeft size={14} />
-          Linija
-        </Group>
-      </Anchor>
+      <PageBreadcrumbs
+        items={[
+          { label: 'Linije', to: '/routes' },
+          { label: routeLabel, to: `/routes/${routeId}` },
+          { label: variant ? variant.name || 'Varijanta' : 'Nova varijanta' },
+        ]}
+      />
       <Group justify="space-between" align="flex-end">
         <Group gap="sm">
           {routeBadge}
           <Title order={2}>{variant ? 'Uredi varijantu' : 'Nova varijanta'}</Title>
         </Group>
-        <Button
-          leftSection={<IconDeviceFloppy size={16} />}
-          onClick={() => (timesChanged ? setAskRetime(true) : void submit(false))}
-          loading={save.isPending || savingShape || retime.isPending}
-          disabled={stops.length < 2 || (!dirty && variant !== null) || shape.computing}
-        >
-          Spremi
-        </Button>
+        <Tooltip label="Ctrl+S">
+          <Button
+            leftSection={<IconDeviceFloppy size={16} />}
+            onClick={startSave}
+            loading={save.isPending || savingShape || retime.isPending}
+            disabled={!canSave}
+          >
+            Spremi
+          </Button>
+        </Tooltip>
       </Group>
 
       {messages.length > 0 && (
@@ -640,7 +713,7 @@ function VariantEditor({
                   </div>
                   <Group gap="xs">
                     {!locked && (
-                      <Tooltip label="Traži stanicu i dodaj je na kraj">
+                      <Tooltip label="Traži stanicu i dodaj je na kraj (/)">
                         <ActionIcon
                           variant={searching ? 'light' : 'default'}
                           size="input-xs"
@@ -727,6 +800,7 @@ function VariantEditor({
                         {stops.map((stop, i) => (
                           <Table.Tr
                             key={stop.key}
+                            data-stop-key={stop.key}
                             bg={
                               selected === stop.key
                                 ? 'var(--mantine-color-orange-light)'
@@ -892,6 +966,18 @@ function VariantEditor({
                     </Table>
                   </ScrollArea.Autosize>
                 )}
+                <Text size="xs" c="dimmed">
+                  <Kbd size="xs">↑ ↓</Kbd> odabir stanice
+                  {!locked && (
+                    <>
+                      {' · '}
+                      <Kbd size="xs">Alt+↑ ↓</Kbd> premještanje · <Kbd size="xs">Del</Kbd>{' '}
+                      uklanjanje · <Kbd size="xs">/</Kbd> traži stanicu
+                    </>
+                  )}
+                  {' · '}
+                  <Kbd size="xs">F</Kbd> stanica na karti
+                </Text>
               </Stack>
             </Paper>
           </Stack>

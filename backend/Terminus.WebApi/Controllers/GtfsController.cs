@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Terminus.Service.Common;
+using Terminus.WebApi.Contracts.Gtfs;
 
 namespace Terminus.WebApi.Controllers;
 
@@ -18,5 +19,17 @@ public class GtfsController(IGtfsExportService gtfsExportService) : ControllerBa
     {
         var feed = await gtfsExportService.ExportAsync(cancellationToken);
         return File(feed.Content, "application/zip", feed.FileName);
+    }
+
+    /// <summary>
+    /// Provjere prije izvoza bez izrade ZIP-a, npr. za pregled: problemi zbog
+    /// kojih bi izvoz vratio 422; prazan popis znači da je feed spreman.
+    /// </summary>
+    [HttpGet("check")]
+    [ProducesResponseType<GtfsCheckResponse>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<GtfsCheckResponse>> Check(CancellationToken cancellationToken)
+    {
+        var problems = await gtfsExportService.CheckAsync(cancellationToken);
+        return Ok(new GtfsCheckResponse(problems));
     }
 }

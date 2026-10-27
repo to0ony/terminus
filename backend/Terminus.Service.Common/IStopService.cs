@@ -10,6 +10,9 @@ public interface IStopService
 
     Task<PagedResult<IStopModel>> FindAsync(StopFilter filter, CancellationToken cancellationToken = default);
 
+    /// <summary>Popis stanica za tablicu: uz svaku kolodvor, broj perona i linije.</summary>
+    Task<PagedResult<StopTableRow>> FindTableAsync(StopFilter filter, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Stanice unutar područja karte, najviše <c>StopService.MaxAreaStops</c>.
     /// Ako ih ima više, rezultat je skraćen i karta treba približiti prikaz.
@@ -24,6 +27,13 @@ public interface IStopService
     Task<IStopModel> UpdateAsync(Guid id, IStopModel stop, CancellationToken cancellationToken = default);
 
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Aktivira ili deaktivira više stanica odjednom, uz ista pravila kao kod
+    /// izmjene jedne stanice; ako ijedna ne smije, ne mijenja se nijedna.
+    /// </summary>
+    /// <returns>Broj stanica kojima se stanje promijenilo.</returns>
+    Task<int> SetActiveAsync(IReadOnlyCollection<Guid> ids, bool isActive, CancellationToken cancellationToken = default);
 }
 
 /// <param name="Truncated">true ako u području ima više stanica od vraćenih.</param>

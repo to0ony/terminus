@@ -1,11 +1,11 @@
 import { Alert, Anchor, Box, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core'
 import { Calendar } from '@mantine/dates'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconArrowLeft } from '@tabler/icons-react'
 import dayjs from 'dayjs'
 import type { CSSProperties } from 'react'
 import { Link, useParams } from 'react-router'
-import { PageLoader } from '@/components/PageLoader'
+import { PageBreadcrumbs } from '@/components/PageBreadcrumbs'
+import { BlockSkeleton, DetailSkeleton } from '@/components/Skeletons'
 import { QueryError } from '@/components/QueryError'
 import { formatDate, formatNumber } from '@/lib/format'
 import { useCalendar, useCalendarDates } from './queries'
@@ -43,7 +43,7 @@ export function CalendarDetailPage() {
   const narrow = useMediaQuery('(max-width: 62em)')
 
   if (calendar.isPending) {
-    return <PageLoader />
+    return <DetailSkeleton />
   }
   if (calendar.isError) {
     return <QueryError error={calendar.error} onRetry={() => void calendar.refetch()} />
@@ -56,12 +56,9 @@ export function CalendarDetailPage() {
 
   return (
     <Stack gap="md">
-      <Anchor component={Link} to="/calendars" size="sm">
-        <Group gap={4}>
-          <IconArrowLeft size={14} />
-          Kalendari
-        </Group>
-      </Anchor>
+      <PageBreadcrumbs
+        items={[{ label: 'Kalendari', to: '/calendars' }, { label: calendar.data.name }]}
+      />
 
       <Stack gap={4}>
         <Title order={2}>{calendar.data.name}</Title>
@@ -110,7 +107,7 @@ export function CalendarDetailPage() {
       {dates.isError ? (
         <QueryError error={dates.error} onRetry={() => void dates.refetch()} />
       ) : dates.isPending ? (
-        <PageLoader />
+        <BlockSkeleton h={300} />
       ) : (
         <Paper withBorder p="md">
           <Stack gap="md">

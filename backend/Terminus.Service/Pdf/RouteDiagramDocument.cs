@@ -64,6 +64,16 @@ internal static class RouteDiagramDocument
         string displayName,
         string? primaryColor,
         (byte[] Content, bool IsSvg)? logo,
+        IReadOnlyCollection<string>? highlighted = null) =>
+        Compose(diagrams, options, displayName, primaryColor, logo, highlighted).GeneratePdf();
+
+    /// <summary>Dokument bez generiranja, npr. za spajanje s voznim redom stanice.</summary>
+    public static IDocument Compose(
+        IReadOnlyList<RouteDiagram> diagrams,
+        RouteDiagramPdfOptions options,
+        string displayName,
+        string? primaryColor,
+        (byte[] Content, bool IsSvg)? logo,
         IReadOnlyCollection<string>? highlighted = null)
     {
         var texts = RouteDiagramTexts.For(options.Language);
@@ -86,7 +96,7 @@ internal static class RouteDiagramDocument
                 document.Page(page => Page(page, diagram, options, texts, timetableTexts, displayName, primary, logo,
                     pageSize, margin, line, layout, here, times, pageNumbers));
             }
-        }).GeneratePdf();
+        });
     }
 
     private static void Page(

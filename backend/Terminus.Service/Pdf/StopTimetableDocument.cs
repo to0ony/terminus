@@ -44,6 +44,16 @@ internal static class StopTimetableDocument
         string displayName,
         string? primaryColor,
         (byte[] Content, bool IsSvg)? logo,
+        string? qrSvg) =>
+        Compose(timetable, options, displayName, primaryColor, logo, qrSvg).GeneratePdf();
+
+    /// <summary>Dokument bez generiranja, npr. za spajanje više stanica u jedan PDF.</summary>
+    public static IDocument Compose(
+        StopTimetable timetable,
+        TimetablePdfOptions options,
+        string displayName,
+        string? primaryColor,
+        (byte[] Content, bool IsSvg)? logo,
         string? qrSvg)
     {
         var texts = TimetableTexts.For(options.Language);
@@ -90,7 +100,7 @@ internal static class StopTimetableDocument
                     text.TotalPages();
                 });
             });
-        })).GeneratePdf();
+        }));
     }
 
     private static void Header(

@@ -1,8 +1,11 @@
 import { Alert, Button, Group, Modal, Radio, Stack, Text, TextInput } from '@mantine/core'
+import { notifications } from '@mantine/notifications'
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { errorMessage } from '@/api/errors'
 import { formatDate } from '@/lib/format'
-import { type Season, useResetSeasonDay, useSetSeasonDay } from './queries'
+import { showUndo } from '@/lib/undo'
+import { type Season, seasonKeys, useResetSeasonDay, useSetSeasonDay } from './queries'
 import { dayMap, dayState, weekdayOf, weekdays } from './seasonDays'
 
 interface DayDialogProps {
@@ -24,6 +27,7 @@ export function DayDialog({ season, date, onClose }: DayDialogProps) {
 
 function DayForm({ season, date, onClose }: { season: Season; date: string; onClose: () => void }) {
   const setDay = useSetSeasonDay(season.id)
+  const queryClient = useQueryClient()
   const resetDay = useResetSeasonDay(season.id)
 
   const days = dayMap(season)
@@ -44,19 +48,66 @@ function DayForm({ season, date, onClose }: { season: Season; date: string; onCl
     }
     // Odabir tipa koji inače vozi taj dan je "normalno"; tako praznik može voziti kao radni dan.
     const mode = choice === 'none' ? 'NoService' : choice === regular?.id ? 'Regular' : 'RunsAs'
-    setDay.mutate(
-      {
-        date,
-        mode,
-        calendarId: mode === 'RunsAs' ? choice : null,
-        note: note.trim() || null,
+    const request = {
+      date,
+      mode,
+      calendarId: mode === 'RunsAs' ? choice : null,
+      note: note.trim() || null,
+    } as const
+
+    // Kalendar se mijenja odmah; ako server odbije, vraća se kakav je bio.
+    const key = seasonKeys.detail(season.id)
+    queryClient.setQueryData<Season>(key, (current) =>
+      current
+        ? {
+            ...current,
+            days: [
+              ...current.days.filter((d) => d.date !== date),
+              { ...request, source: 'Manual' },
+            ],
+          }
+        : current,
+    )
+    onClose()
+
+    // Poništavanje vraća prijašnju ručnu iznimku ili pravilo (tjedan, praznik, razdoblje).
+    const previous = day?.source === 'Manual' ? day : null
+    const undo = () =>
+      (previous
+        ? setDay.mutateAsync({
+            date,
+            mode: previous.mode,
+            calendarId: previous.calendarId,
+            note: previous.note,
+          })
+        : resetDay.mutateAsync(date)
+      ).catch((error: unknown) =>
+        notifications.show({
+          color: 'red',
+          title: 'Poništavanje nije uspjelo',
+          message: errorMessage(error),
+        }),
+      )
+    const label =
+      choice === 'none'
+        ? 'ne vozi'
+        : `vozi kao ${season.dayTypes.find((t) => t.id === choice)?.name ?? 'drugi tip dana'}`
+
+    setDay.mutateAsync(request).then(
+      () => showUndo({ message: `${title(date)}: ${label}.`, onUndo: () => void undo() }),
+      (error: unknown) => {
+        queryClient.setQueryData(key, season)
+        notifications.show({
+          color: 'red',
+          title: 'Dan nije spremljen',
+          message: errorMessage(error),
+        })
       },
-      { onSuccess: onClose },
     )
   }
 
   const reset = () => resetDay.mutate(date, { onSuccess: onClose })
-  const error = setDay.error ?? resetDay.error
+  const error = resetDay.error
 
   return (
     <Stack gap="md">
@@ -112,9 +163,7 @@ function DayForm({ season, date, onClose }: { season: Season; date: string; onCl
           <Button variant="default" onClick={onClose}>
             Odustani
           </Button>
-          <Button onClick={save} loading={setDay.isPending}>
-            Spremi
-          </Button>
+          <Button onClick={save}>Spremi</Button>
         </Group>
       </Group>
     </Stack>

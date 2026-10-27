@@ -10,20 +10,20 @@ i MapLibre GL. Pokretanje i naredbe su u [lokalnom razvoju](development.md#front
 |---|---|
 | `/login` | prijava |
 | `/setup` | čarobnjak prvog pokretanja: uvoz GTFS-a ili početak od nule |
-| `/` | pregled: kalendari koji danas voze, do kada vrijedi vozni red, broj linija i stanica |
-| `/routes`, `/routes/:id` | linije (pretraga, filteri, nova linija); linija s izmjenom podataka, **varijantama** i voznim redom po danu i smjeru |
+| `/` | **pregled**: gore problemi (GTFS provjere iz `/api/gtfs/check`, istek voznog reda, linije kojima istječe), a bez njih jedan zeleni redak; zatim brze akcije (nova linija, nova stanica, izvoz GTFS-a, PDF stanica, karta uživo) i sažetak (linije, stanice, prijevoznici, kalendari koji danas voze) |
+| `/routes`, `/routes/:id` | **tablica linija** (opis niže) i nova linija; linija s izmjenom podataka, **varijantama** i voznim redom po danu i smjeru |
 | `/routes/:id/variants/:variantId` | **editor varijante** na karti (`new`, `new?from=` za kopiju, `new?reverse=` za povratni smjer) (opis niže) |
 | `/routes/:id/schedule` | **grafikon voznog reda** linije s uređivanjem vožnji (opis niže) |
-| `/stops`, `/stops/:id` | stanice s kartom, **nova stanica klikom** i **prijedlozi iz OpenStreetMapa**; stanica s izmjenom, brisanjem, peronima kolodvora, linijama, polascima za dan, premještanjem na karti, **PDF voznim redom** i poveznicom na zaslon |
+| `/stops`, `/stops/:id` | **tablica stanica** i karta (prikaz: tablica, oboje ili karta), **nova stanica klikom** i **prijedlozi iz OpenStreetMapa**; stanica s izmjenom, brisanjem, peronima kolodvora, linijama, polascima za dan, premještanjem na karti, **PDF-om** (vozni red, sheme linija ili oboje) i poveznicom na zaslon |
 | `/calendars` | sezone voznog reda (i nova sezona) te ostali kalendari, npr. uvezeni iz GTFS-a |
 | `/seasons/:id` | sezona: tipovi dana, pravilo za praznike i svi mjeseci; klik na dan mijenja kako vozi (kao drugi tip dana, ne vozi) uz napomenu; **razdoblja** (npr. školski raspust: radni dan vozi kao radni dan za vrijeme raspusta); **kopiranje sezone** za sljedeću godinu (zadano isti datumi godinu kasnije, godine u nazivu +1), po želji s vožnjama |
 | `/calendars/:id` | kalendar s danima u tjednu i iznimkama na mjesečnom prikazu |
 | `/agencies` | prijevoznici s brojem linija; **novi prijevoznik**, izmjena i brisanje (opis niže) |
-| `/gtfs` | GTFS izvoz (s popisom problema ako izvoz nije moguć) i ponovni uvoz |
+| `/gtfs` | GTFS izvoz (problemi iz `/api/gtfs/check` vide se odmah, a dok ih ima, izvoz je onemogućen) i ponovni uvoz |
 | `/settings` | naziv, boje i logo javnih stranica, javna adresa, objava GTFS feeda, tema i podloga karte, promjena lozinke |
 | `/board/:stopCode` | **javni zaslon stanice**, bez prijave ([opis](departures-and-timetables.md#2-zaslon-na-stanici)) |
 
-Filteri, odabrani datum i stranica popisa čuvaju se u adresi (`?q=&date=&page=`),
+Filteri, redoslijed, odabrani datum i stranica popisa čuvaju se u adresi (`?q=&sort=&desc=&date=&page=&size=`),
 pa se prikaz može podijeliti poveznicom i preživi osvježavanje.
 
 ## Struktura
@@ -32,7 +32,7 @@ pa se prikaz može podijeliti poveznicom i preživi osvježavanje.
 frontend/src/
   api/          generirani tipovi (schema.d.ts), klijent, ApiError, QueryClient
   app/          providers, router, layout s izbornikom, 404 i greške rute
-  components/   zajedničke komponente (učitavanje, greška upita, logo, karta)
+  components/   zajedničke komponente (skeletoni, putokaz, greška upita, logo, karta)
   features/     po području: auth, setup, dashboard, routes, stops, calendars,
                 seasons, agencies, gtfs, settings, appearance, board
   lib/          pomoćne funkcije (formati, boje, adrese, preuzimanje datoteka)
@@ -72,10 +72,22 @@ obavijest; komponenta koja ih prikazuje sama postavlja
 **Datoteke** (GTFS izvoz, PDF) preuzimaju se kao blob (`parseAs: 'blob'`), a
 naziv datoteke dolazi iz `Content-Disposition` (`lib/download.ts`).
 
+**Poništavanje.** Nakon potvrde brisanja varijante ili razdoblja sezone
+stavka odmah nestaje iz prikaza, a obavijest nudi „Poništi” šest sekundi.
+Server briše tek kad to vrijeme istekne (ili odmah pri zatvaranju stranice);
+ako odbije, stavka se vraća uz poruku (`lib/undo.tsx`, `deferDelete`). Izmjena
+dana sezone odmah se vidi u kalendaru i sprema u pozadini, a „Poništi” vraća
+prijašnju iznimku ili pravilo. Brisanja koja server često odbija ili koja
+brišu više toga (stanica, linija, sezona, prijevoznik) imaju samo potvrdu.
+
 ## Tema i karta
 
 Tema sučelja (prema sustavu, svijetla ili tamna) bira se u korisničkom
 izborniku ili na stranici Postavke; Mantine je pamti u pregledniku.
+Tamo se bira i **gustoća prikaza** tablica (`terminus-density`, `app/theme.ts`),
+s visinama redaka po Material Designu: udobno (zadano) 52 px, zbijeno 36 px.
+Vrijedi za popise (linije, stanice, kalendari, varijante, prijevoznici…), a
+tablice sa svojim razmakom (vozni red, editori) ga zadržavaju.
 
 `components/map/MapView` je MapLibre GL s podlogom
 [OpenFreeMap](https://openfreemap.org) (bez API ključa). Podloga se bira gumbom
@@ -84,6 +96,41 @@ Dark, Liberty, Bright ili Fiord. Izbor se pamti u pregledniku
 (`terminus-map-style`) i vrijedi za sve karte; pri promjeni podloge slojevi
 stranice (npr. stanice) ostaju. Stanice se učitavaju za vidljivi dio karte (`/api/stops/area`,
 najviše 2000), a početni prikaz je područje svih stanica (`/api/stops/extent`).
+
+## Tablice linija i stanica
+
+Popisi linija i stanica su `components/DataTable`; podatke, stranice i
+redoslijed daje server (`/api/routes/table`, `/api/stops/table`), a tablica
+prikazuje jednu stranicu.
+
+- **Stupci**: izbornik „Stupci” uključuje i isključuje stupce (npr. GTFS ID,
+  kolodvor, pristupačnost, koordinate, izmijenjeno); izbor se
+  pamti u pregledniku (`terminus-columns-routes`, `terminus-columns-stops`).
+  Stanice zadano imaju naziv, oznaku, peron i linije u boji, a
+  linije oznaku, naziv, vrstu (ikona prijevoza s nazivom u oblačiću), broj
+  varijanti, **„Vrijedi”** (razdoblje kalendara po kojima voze vožnje linije;
+  istekao ili onaj koji istječe za manje od 30 dana je označen) i status.
+- **Slaganje** klikom na zaglavlje: uzlazno, silazno, pa zadano (stanice po
+  nazivu, linije kao u GTFS-u). Može i po broju linija na stanici te po
+  kraju razdoblja linije.
+- **Filtri**: stanice po vrsti, statusu, vožnjama, liniji, pristupačnosti i
+  koordinatama, linije po prijevozniku, vrsti, statusu i vožnjama; „Očisti
+  filtre” ih briše. Ispod tablice su prikazani reci i veličina stranice (25,
+  50 ili 100).
+- **Odabir**: kvačice, Shift za raspon, kvačica u zaglavlju za cijelu
+  stranicu. Odabir ostaje pri promjeni stranice, a traka na dnu nudi grupne
+  akcije: stanice aktivirati, deaktivirati (uz potvrdu; ako ijedna ne smije,
+  popis razloga i bez izmjena) ili ispisati u jedan **PDF** (do 100 stanica:
+  za svaku vozni red, sheme linija ili oboje, svaki od nove stranice; stanice
+  bez ičega za ispis se preskaču), a
+  linije aktivirati, deaktivirati ili premjestiti drugom prijevozniku.
+- **Tipkovnica**: ↑ ↓ (ili J K) aktivni redak, Enter otvara, X ili razmak
+  odabire (Shift+↑ ↓ dodaje), Ctrl+A cijela stranica, Esc poništava odabir,
+  ← → stranica, `/` pretraga.
+- **Redak** otvara liniju ili stanicu klikom, a Ctrl+klik ili srednja tipka u
+  novoj kartici. Zaglavlje ostaje vidljivo dok se tablica pomiče.
+- **Mobitel**: umjesto tablice kartice (oznaka i naziv, ispod sitni podaci),
+  s kvačicom za odabir.
 
 ## Stanice
 
@@ -158,6 +205,9 @@ Editor varijante (`features/variants`):
 - Stupac **km** su kilometri od prve stanice, kao u registriranom voznom redu:
   po trasi, a gdje trase (još) nema zračnom crtom, uz oznaku ≈. Dionice trase
   imaju i svoju duljinu.
+- **Tipkovnica**: ↑ ↓ odabir stanice, Alt+↑ ↓ premještanje, Del uklanjanje,
+  `/` traži stanicu, F prikazuje odabranu stanicu na karti, Esc poništava
+  odabir, Ctrl+S sprema (i iz polja za unos).
 - Varijanta koju koriste vožnje zadržava stanice, a mijenjaju se samo vremena
   (za drugi redoslijed kopija).
   Kad su vremena promijenjena, spremanje pita „Samo varijanta” ili „Presnimi
@@ -230,6 +280,10 @@ Uređivanje:
 | „Nacrtaj vožnju” | klik polaska na prvoj stanici, po želji vremena na sljedećim, kraj klikom na zadnjoj stanici ili Enterom; stanice između po vremenima vožnje varijante; Backspace briše zadnju točku, Esc odustaje |
 | ← → (Shift: ±5) | pomak odabranih za minutu |
 | Del, Ctrl+Z, Ctrl+Y | brisanje, poništavanje, ponavljanje |
+| ↑ ↓, Ctrl+A | prethodna ili sljedeća vožnja po polasku, odabir svih vožnji |
+| N | „Nacrtaj vožnju” |
+| Ctrl+S | spremanje (i iz polja za unos) |
+| + − 0 | približi, udalji, cijeli dan |
 | Panel desno | točna vremena (dolazak i polazak), natpis smjera, tip dana, kopiranje s pomakom (npr. svakih 10 min, 5 puta), generator takta (od–do svakih N min, po odabranoj varijanti) |
 | „Polazak vozi u” | kvačice tipova dana za odabranu vožnju (ili više njih): polazak, npr. „svaki dan”, je jedna vožnja po tipu dana s istim vremenima. Pri spremanju server vožnje u označenim tipovima dana dodaje ili usklađuje (vremena, varijanta, trasa), a iz isključenih briše; izmjena vremena u bilo kojem tipu dana prenosi se na ostale. „Odvoji” izdvaja vožnju (npr. subotom kreće kasnije), a ostale ostaju |
 | „Preslikaj iz suprotnog smjera” | povratak za svaki polazak varijante suprotnog smjera, po odabranoj varijanti ovog smjera: okret na terminusu (dolazak + N min) ili pomak od polaska. Okret je zajednički, a pojedini polazak se može dotjerati, pa se zaključa 🔒 i promjena zajedničkog okreta ga ne dira (klik na lokot ga vraća). Polazak u više tipova dana daje jedan povratak u svima njima, s istim vozilom (BlockId). Povratak koji već postoji (±2 min) je isključen, a „Zamijeni postojeće” prvo briše vožnje odabrane varijante. Okret i zaključani polasci pamte se u pregledniku za taj par varijanti (`mirror.ts`, `MirrorDialog`) |

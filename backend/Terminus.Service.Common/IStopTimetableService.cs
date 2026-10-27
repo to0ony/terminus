@@ -28,6 +28,7 @@ public sealed record TimetablePdfOptions(DateOnly? From, DateOnly? To, PaperSize
 
 public sealed record TimetablePdf(byte[] Content, string FileName);
 
+
 // Kao tekst ("A4", "Hr"), i u OpenAPI opisu i u adresi.
 [JsonConverter(typeof(JsonStringEnumConverter<PaperSize>))]
 public enum PaperSize

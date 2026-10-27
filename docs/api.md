@@ -29,11 +29,16 @@ Sve osim `/api/public/*`, `/api/auth/login` i `/health` traži prijavu
 | Postavke instance | `GET`/`PUT /api/settings`, `PUT`/`DELETE /api/settings/logo` |
 | Prijevoznici | `/api/agencies`; `DELETE /api/agencies/{id}?moveRoutesTo=` linije i cijene prvo prebacuje na drugog prijevoznika |
 | Stanice | `/api/stops`, `/api/stops/area`, `/api/stops/extent` |
+| Tablica stanica | `GET /api/stops/table` – filtri popisa i `wheelchairBoarding`, `hasTrips`, `hasCoordinates`, `routeId`; redoslijed `sortBy` (`Name`, `Code`, `PublicCode`, `PlatformCode`, `LocationType`, `WheelchairBoarding`, `IsActive`, `RouteCount`, `UpdatedAt`) i `sortDescending`; uz svaku stanicu kolodvor, broj perona i linije |
+| Stanice: grupna izmjena | `POST /api/stops/bulk/active` `{ ids, isActive }` – najviše 500; pravila kao kod jedne stanice, a ako ijedna ne smije, ne mijenja se nijedna; vraća `{ changed }` |
 | Stanica: linije i polasci | `/api/stops/{id}/routes`, `/api/stops/{id}/departures?date=` |
 | Stanica: PDF vozni red | `GET /api/stops/{id}/timetable.pdf?from=&to=&paper=&language=` |
+| Stanice: PDF | `POST /api/stops/pdf` `{ ids, timetable, routes, from, to, paper, language, showMinutes, minutesFromStop }` – do 100 stanica u jednom PDF-u; za svaku vozni red, sheme linija sa stanice ili oboje, svaki od nove stranice; stanice bez ičega za ispis se preskaču (broj u zaglavlju `X-Skipped-Stops`), 422 ako ih nema nijedna |
 | Linija: PDF shema | `GET /api/routes/{id}/diagram.pdf?paper=&language=&showMinutes=` |
 | Stanica: PDF shema svih linija | `GET /api/stops/{id}/routes.pdf?paper=&language=&showMinutes=&minutesFromStop=` |
 | Linije | `/api/routes`, `/api/routes/{id}/patterns`, `/api/routes/{id}/timetable?date=&directionId=` |
+| Tablica linija | `GET /api/routes/table` – filtri popisa i `hasTrips`, `stopId`; redoslijed `sortBy` (`Default`, `Code`, `ShortName`, `LongName`, `RouteType`, `Agency`, `IsActive`, `VariantCount`, `ValidTo`, `UpdatedAt`) i `sortDescending`; uz svaku liniju prijevoznik, broj varijanti i razdoblje voznog reda (`validFrom`–`validTo`: najraniji početak i najkasniji kraj kalendara njezinih vožnji) |
+| Linije: grupna izmjena | `POST /api/routes/bulk/active` `{ ids, isActive }`, `POST /api/routes/bulk/agency` `{ ids, agencyId }` (vožnje i vozni red ostaju) – najviše 500; vraća `{ changed }` |
 | Linija: karta uživo (vožnje dana) | `GET /api/routes/{id}/live?date=` |
 | Karta uživo: sva vozila | `GET /api/routes/live?date=` |
 | Javna karta (bez prijave, ako je uključena) | `/api/public/map/stops/area`, `/stops/extent`, `/stops/{id}/departures?date=`, `/stops/{id}/routes`, `/routes/{id}/live?date=`, `/live?date=` |
@@ -46,7 +51,7 @@ Sve osim `/api/public/*`, `/api/auth/login` i `/health` traži prijavu
 | Cijene karata | `/api/fares` |
 | Izdavač feeda | `/api/feed-info` |
 | GTFS uvoz osnove | `POST /api/gtfs/import/preview`, `POST /api/gtfs/import` (polje `variants`) |
-| GTFS izvoz | `GET /api/gtfs` |
+| GTFS izvoz | `GET /api/gtfs`; provjere bez izvoza `GET /api/gtfs/check` (`{ problems }`, prazno ako je feed spreman) |
 
 Resursi bez navedene metode imaju uobičajeni CRUD: `GET` popis (straničen,
 `page` i `pageSize` ≤ 100), `GET /{id}`, `POST`, `PUT /{id}` (zamjenjuje cijeli

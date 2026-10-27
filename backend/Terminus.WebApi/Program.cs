@@ -139,8 +139,12 @@ builder.Services.AddScoped<IFeedInfoService, FeedInfoService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<ITimetableService, TimetableService>();
 builder.Services.AddScoped<ILiveMapService, LiveMapService>();
-builder.Services.AddScoped<IStopTimetableService, StopTimetableService>();
-builder.Services.AddScoped<IRouteDiagramService, RouteDiagramService>();
+// Ispis stanica spaja dokumente obaju servisa, pa ih traži kao konkretne tipove.
+builder.Services.AddScoped<StopTimetableService>();
+builder.Services.AddScoped<IStopTimetableService>(sp => sp.GetRequiredService<StopTimetableService>());
+builder.Services.AddScoped<RouteDiagramService>();
+builder.Services.AddScoped<IRouteDiagramService>(sp => sp.GetRequiredService<RouteDiagramService>());
+builder.Services.AddScoped<IStopPrintService, StopPrintService>();
 builder.Services.AddScoped<ISetupService, SetupService>();
 builder.Services.AddScoped<IGtfsImportService, GtfsImportService>();
 builder.Services.AddScoped<ISeasonService, SeasonService>();

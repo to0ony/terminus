@@ -40,6 +40,24 @@ public class GtfsExportServiceTests
     }
 
     [Fact]
+    public async Task CheckAsync_NoTrips_ReturnsTheSameProblemAsExport()
+    {
+        _repository.Agencies.Add(Agency("Prijevoznik"));
+
+        var problems = await _service.CheckAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(["Feed nema nijednu vožnju na aktivnoj liniji."], problems);
+    }
+
+    [Fact]
+    public async Task CheckAsync_NoAgency_ReturnsProblem()
+    {
+        var problems = await _service.CheckAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(["Nije unesen nijedan prijevoznik."], problems);
+    }
+
+    [Fact]
     public async Task ExportAsync_WritesOnlyAgenciesOfExportedRoutes()
     {
         var unused = Agency("Bez linija");

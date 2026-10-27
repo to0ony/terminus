@@ -1,6 +1,5 @@
 import {
   ActionIcon,
-  Anchor,
   Badge,
   Button,
   Group,
@@ -14,7 +13,6 @@ import {
 import { DatePickerInput } from '@mantine/dates'
 import { useDisclosure } from '@mantine/hooks'
 import {
-  IconArrowLeft,
   IconCalendar,
   IconChartLine,
   IconDots,
@@ -23,7 +21,8 @@ import {
   IconTrash,
 } from '@tabler/icons-react'
 import { Link, useParams, useSearchParams } from 'react-router'
-import { PageLoader } from '@/components/PageLoader'
+import { PageBreadcrumbs } from '@/components/PageBreadcrumbs'
+import { DetailSkeleton, TableSkeleton } from '@/components/Skeletons'
 import { QueryError } from '@/components/QueryError'
 import { useAgencies } from '@/features/agencies/queries'
 import { formatNumber } from '@/lib/format'
@@ -43,6 +42,7 @@ import { RouteDiagramPdfDialog } from './RouteDiagramPdfDialog'
 import { RouteDialog } from './RouteDialog'
 import { routeTypeLabel } from './routeTypes'
 import { TimetableGrid } from './TimetableGrid'
+import { routeLabel } from './routeLabel'
 
 /** Linija i njezin vozni red za odabrani dan i smjer (?date=YYYY-MM-DD&dir=0|1). */
 export function RouteDetailPage() {
@@ -84,7 +84,7 @@ export function RouteDetailPage() {
     )
 
   if (route.isPending) {
-    return <PageLoader />
+    return <DetailSkeleton />
   }
   if (route.isError) {
     return <QueryError error={route.error} onRetry={() => void route.refetch()} />
@@ -94,12 +94,9 @@ export function RouteDetailPage() {
 
   return (
     <Stack gap="md">
-      <Anchor component={Link} to="/routes" size="sm">
-        <Group gap={4}>
-          <IconArrowLeft size={14} />
-          Linije
-        </Group>
-      </Anchor>
+      <PageBreadcrumbs
+        items={[{ label: 'Linije', to: '/routes' }, { label: routeLabel(route.data) }]}
+      />
 
       <Group justify="space-between" align="flex-start">
         <Stack gap={4}>
@@ -205,7 +202,7 @@ export function RouteDetailPage() {
       ) : timetable.isError ? (
         <QueryError error={timetable.error} onRetry={() => void timetable.refetch()} />
       ) : !timetable.data ? (
-        <PageLoader />
+        <TableSkeleton />
       ) : timetable.data.trips.length === 0 ? (
         <Paper withBorder p="xl">
           <Text c="dimmed" ta="center">

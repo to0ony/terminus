@@ -807,6 +807,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/gtfs/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["GtfsCheckResponse"];
+                        "application/json": components["schemas"]["GtfsCheckResponse"];
+                        "text/json": components["schemas"]["GtfsCheckResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/gtfs/import/preview": {
         parameters: {
             query?: never;
@@ -1739,6 +1776,179 @@ export interface paths {
                 };
                 /** @description Conflict */
                 409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/routes/table": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    HasTrips?: boolean;
+                    StopId?: string;
+                    SortBy?: components["schemas"]["RouteSortField"];
+                    SortDescending?: boolean;
+                    Search?: string;
+                    AgencyId?: string;
+                    IsActive?: boolean;
+                    RouteType?: components["schemas"]["RouteType"];
+                    Page?: number;
+                    PageSize?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PagedResultOfRouteTableRowResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/routes/bulk/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BulkActiveRequest"];
+                    "text/json": components["schemas"]["BulkActiveRequest"];
+                    "application/*+json": components["schemas"]["BulkActiveRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BulkResultResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/routes/bulk/agency": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BulkAgencyRequest"];
+                    "text/json": components["schemas"]["BulkAgencyRequest"];
+                    "application/*+json": components["schemas"]["BulkAgencyRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BulkResultResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3959,6 +4169,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stops/table": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    WheelchairBoarding?: components["schemas"]["WheelchairBoarding"];
+                    HasTrips?: boolean;
+                    HasCoordinates?: boolean;
+                    RouteId?: string;
+                    SortBy?: components["schemas"]["StopSortField"];
+                    SortDescending?: boolean;
+                    Search?: string;
+                    IsActive?: boolean;
+                    LocationType?: components["schemas"]["LocationType"];
+                    ParentStationId?: string;
+                    Page?: number;
+                    PageSize?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PagedResultOfStopTableRowResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stops/area": {
         parameters: {
             query?: never;
@@ -4217,6 +4484,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stops/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StopPdfRequest"];
+                    "text/json": components["schemas"]["StopPdfRequest"];
+                    "application/*+json": components["schemas"]["StopPdfRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/pdf": components["schemas"]["FileContentResult"];
+                        "application/json": unknown;
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stops/{id}/routes.pdf": {
         parameters: {
             query?: never;
@@ -4281,6 +4617,65 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stops/bulk/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BulkActiveRequest"];
+                    "text/json": components["schemas"]["BulkActiveRequest"];
+                    "application/*+json": components["schemas"]["BulkActiveRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BulkResultResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -4781,6 +5176,19 @@ export interface components {
             updatedAt: string;
         };
         BikesAllowed: number;
+        BulkActiveRequest: {
+            ids: null | string[];
+            isActive?: boolean;
+        };
+        BulkAgencyRequest: {
+            ids: null | string[];
+            /** Format: uuid */
+            agencyId?: string;
+        };
+        BulkResultResponse: {
+            /** Format: int32 */
+            changed: number;
+        };
         CalendarDateRequest: {
             exceptionType: null | components["schemas"]["CalendarExceptionType"];
         };
@@ -4971,6 +5379,9 @@ export interface components {
             /** Format: double */
             maxLongitude: number;
         };
+        GtfsCheckResponse: {
+            problems: string[];
+        };
         GtfsImportChangesResponse: {
             /** Format: int32 */
             newAgencies: number;
@@ -5151,6 +5562,17 @@ export interface components {
             /** Format: int32 */
             totalPages?: number;
         };
+        PagedResultOfRouteTableRowResponse: {
+            items: components["schemas"]["RouteTableRowResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            totalCount: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
         PagedResultOfServiceCalendarResponse: {
             items: components["schemas"]["ServiceCalendarResponse"][];
             /** Format: int32 */
@@ -5175,6 +5597,17 @@ export interface components {
         };
         PagedResultOfStopResponse: {
             items: components["schemas"]["StopResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            totalCount: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        PagedResultOfStopTableRowResponse: {
+            items: components["schemas"]["StopTableRowResponse"][];
             /** Format: int32 */
             page: number;
             /** Format: int32 */
@@ -5269,6 +5702,26 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        /** @enum {unknown} */
+        RouteSortField: "Default" | "Code" | "ShortName" | "LongName" | "RouteType" | "Agency" | "IsActive" | "VariantCount" | "ValidTo" | "UpdatedAt";
+        RouteTableRowResponse: {
+            route: components["schemas"]["RouteResponse"];
+            agencyName: string;
+            /** Format: int32 */
+            variantCount: number;
+            /** Format: date */
+            validFrom: null | string;
+            /** Format: date */
+            validTo: null | string;
+        };
+        RouteTagResponse: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            shortName: null | string;
+            color: null | string;
+            textColor: null | string;
         };
         RouteTimetableResponse: {
             route: components["schemas"]["RouteResponse"];
@@ -5635,6 +6088,19 @@ export interface components {
             date: string;
             departures: components["schemas"]["StopDayDepartureResponse"][];
         };
+        StopPdfRequest: {
+            ids: null | string[];
+            timetable?: boolean;
+            routes?: boolean;
+            /** Format: date */
+            from?: null | string;
+            /** Format: date */
+            to?: null | string;
+            paper?: components["schemas"]["PaperSize"];
+            language?: components["schemas"]["TimetableLanguage"];
+            showMinutes?: boolean;
+            minutesFromStop?: boolean;
+        };
         StopRequest: {
             code: null | string;
             publicCode?: null | string;
@@ -5684,6 +6150,15 @@ export interface components {
         StopsInAreaResponse: {
             stops: components["schemas"]["TimetableStopResponse"][];
             truncated: boolean;
+        };
+        /** @enum {unknown} */
+        StopSortField: "Name" | "Code" | "PublicCode" | "PlatformCode" | "LocationType" | "WheelchairBoarding" | "IsActive" | "RouteCount" | "UpdatedAt";
+        StopTableRowResponse: {
+            stop: components["schemas"]["StopResponse"];
+            parentStationName: null | string;
+            /** Format: int32 */
+            platformCount: number;
+            routes: components["schemas"]["RouteTagResponse"][];
         };
         StopTimeRequest: {
             /** Format: uuid */

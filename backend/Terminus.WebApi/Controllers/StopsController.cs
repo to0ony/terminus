@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Terminus.Common;
 using Terminus.Service.Common;
+using Terminus.WebApi.Contracts;
 using Terminus.WebApi.Contracts.Routes;
 using Terminus.WebApi.Contracts.Stops;
 using Terminus.WebApi.Contracts.Timetables;
@@ -16,6 +17,7 @@ public class StopsController(
     IDepartureService departureService,
     IStopTimetableService stopTimetableService,
     IRouteDiagramService routeDiagramService,
+    IStopPrintService stopPrintService,
     TimeProvider timeProvider) : ControllerBase
 {
     [HttpGet]
@@ -27,6 +29,21 @@ public class StopsController(
     {
         var result = await stopService.FindAsync(query.ToFilter(), cancellationToken);
         return Ok(result.Map(s => s.ToResponse()));
+    }
+
+    /// <summary>
+    /// Stanice za tablicu u dashboardu: popis s dodatnim filtrima i redoslijedom,
+    /// a uz svaku stanicu kolodvor, broj perona i linije koje staju.
+    /// </summary>
+    [HttpGet("table")]
+    [ProducesResponseType<PagedResult<StopTableRowResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PagedResult<StopTableRowResponse>>> FindTable(
+        [FromQuery] StopTableQuery query,
+        CancellationToken cancellationToken)
+    {
+        var result = await stopService.FindTableAsync(query.ToFilter(), cancellationToken);
+        return Ok(result.Map(r => r.ToResponse()));
     }
 
     /// <summary>
@@ -105,6 +122,29 @@ public class StopsController(
     }
 
     /// <summary>
+    /// PDF odabranih stanica (najviše 100): za svaku vozni red, sheme linija
+    /// koje na njoj staju ili oboje, svaki od nove stranice. Stanice bez ičega
+    /// za ispis se preskaču; njihov broj je u zaglavlju X-Skipped-Stops. 422
+    /// ako ispisa nema ni za jednu.
+    /// </summary>
+    [HttpPost("pdf")]
+    [ProducesResponseType<FileContentResult>(StatusCodes.Status200OK, "application/pdf")]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> GetPdf(
+        StopPdfRequest request,
+        CancellationToken cancellationToken)
+    {
+        var pdf = await stopPrintService.GetPdfAsync(request.Ids!, request.ToOptions(), timeProvider.GetUtcNow(), cancellationToken);
+        Response.Headers[SkippedStopsHeader] = pdf.Skipped.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return File(pdf.Content, "application/pdf", pdf.FileName);
+    }
+
+    /// <summary>Broj preskočenih stanica (bez ičega za ispis) u PDF-u stanica.</summary>
+    public const string SkippedStopsHeader = "X-Skipped-Stops";
+
+    /// <summary>
     /// Sheme linija koje staju na stanici (PDF), svaka na svojoj stranici, sa
     /// stanicom istaknutom. 422 ako na stanici ne staje nijedna linija.
     /// </summary>
@@ -120,6 +160,22 @@ public class StopsController(
     {
         var pdf = await routeDiagramService.GetStopPdfAsync(id, query.ToOptions(), cancellationToken);
         return File(pdf.Content, "application/pdf", pdf.FileName);
+    }
+
+    /// <summary>
+    /// Aktivira ili deaktivira odabrane stanice (najviše 500). Pravila su ista
+    /// kao kod izmjene jedne stanice; ako ijedna ne smije, ne mijenja se nijedna.
+    /// </summary>
+    [HttpPost("bulk/active")]
+    [ProducesResponseType<BulkResultResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<BulkResultResponse>> SetActive(
+        BulkActiveRequest request,
+        CancellationToken cancellationToken)
+    {
+        var changed = await stopService.SetActiveAsync(request.Ids!, request.IsActive, cancellationToken);
+        return Ok(new BulkResultResponse(changed));
     }
 
     [HttpGet("{id:guid}")]

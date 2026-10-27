@@ -21,6 +21,61 @@ public class RouteService(IRouteRepository repository, IAgencyRepository agencyR
         return repository.FindAsync(filter, cancellationToken);
     }
 
+    public Task<PagedResult<RouteTableRow>> FindTableAsync(RouteFilter filter, CancellationToken cancellationToken = default)
+    {
+        var errors = new ValidationErrors();
+        errors.AddPagingErrors(filter.Page, filter.PageSize);
+        errors.ThrowIfAny();
+
+        return repository.FindTableAsync(filter, cancellationToken);
+    }
+
+    /// <summary>Najviše linija u jednoj grupnoj izmjeni.</summary>
+    public const int MaxBulkRoutes = 500;
+
+    public async Task<int> SetActiveAsync(IReadOnlyCollection<Guid> ids, bool isActive, CancellationToken cancellationToken = default)
+    {
+        var routes = await GetBulkAsync(ids, cancellationToken);
+        var changed = routes.Where(r => r.IsActive != isActive).Select(r => r.Id).ToList();
+
+        return changed.Count == 0 ? 0 : await repository.SetActiveAsync(changed, isActive, cancellationToken);
+    }
+
+    public async Task<int> SetAgencyAsync(IReadOnlyCollection<Guid> ids, Guid agencyId, CancellationToken cancellationToken = default)
+    {
+        var routes = await GetBulkAsync(ids, cancellationToken);
+        if (await agencyRepository.GetAsync(agencyId, cancellationToken) is null)
+        {
+            var errors = new ValidationErrors();
+            errors.Add("AgencyId", "Prijevoznik ne postoji.");
+            errors.ThrowIfAny();
+        }
+
+        var changed = routes.Where(r => r.AgencyId != agencyId).Select(r => r.Id).ToList();
+        return changed.Count == 0 ? 0 : await repository.SetAgencyAsync(changed, agencyId, cancellationToken);
+    }
+
+    /// <summary>Odabrane linije; sve moraju postojati.</summary>
+    private async Task<IReadOnlyList<IRouteModel>> GetBulkAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken)
+    {
+        var distinct = ids.Distinct().ToList();
+        var errors = new ValidationErrors();
+        if (distinct.Count == 0)
+        {
+            errors.Add("Ids", "Odaberi barem jednu liniju.");
+        }
+        else if (distinct.Count > MaxBulkRoutes)
+        {
+            errors.Add("Ids", $"Odjednom se može promijeniti najviše {MaxBulkRoutes} linija.");
+        }
+        errors.ThrowIfAny();
+
+        var routes = await repository.GetManyAsync(distinct, cancellationToken);
+        return routes.Count == distinct.Count
+            ? routes
+            : throw new NotFoundException("Neke od odabranih linija više ne postoje.");
+    }
+
     public async Task<IRouteModel> CreateAsync(IRouteModel route, CancellationToken cancellationToken = default)
     {
         route.Id = Guid.Empty;

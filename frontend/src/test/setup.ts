@@ -28,3 +28,6 @@ class ResizeObserverStub {
 }
 
 window.ResizeObserver = ResizeObserverStub
+
+// jsdom ne pomiče prikaz; tablica pomiče aktivni redak u vidljivi dio.
+Element.prototype.scrollIntoView = () => {}

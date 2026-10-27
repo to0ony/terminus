@@ -3,6 +3,7 @@ import {
   IconCalendarEvent,
   IconFileZip,
   IconLayoutDashboard,
+  IconMap2,
   IconMapPin,
   IconRoute,
   IconSettings,
@@ -18,6 +19,7 @@ export interface NavigationItem {
 /** Stavke izbornika dashboarda; rute su u router.tsx. */
 export const navigation: NavigationItem[] = [
   { to: '/', label: 'Pregled', icon: IconLayoutDashboard },
+  { to: '/live', label: 'Karta uživo', icon: IconMap2 },
   { to: '/routes', label: 'Linije', icon: IconRoute },
   { to: '/stops', label: 'Stanice', icon: IconMapPin },
   { to: '/calendars', label: 'Kalendari', icon: IconCalendarEvent },

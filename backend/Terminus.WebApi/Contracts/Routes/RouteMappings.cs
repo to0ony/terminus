@@ -46,6 +46,23 @@ public static class RouteMappings
         model.CreatedAt,
         model.UpdatedAt);
 
+    public static RouteTableRowResponse ToResponse(this RouteTableRow row) => new(
+        row.Route.ToResponse(),
+        row.AgencyName,
+        row.VariantCount,
+        row.ValidFrom,
+        row.ValidTo);
+
+    public static RouteFilter ToFilter(this RouteTableQuery query)
+    {
+        var filter = ((RouteListQuery)query).ToFilter();
+        filter.HasTrips = query.HasTrips;
+        filter.StopId = query.StopId;
+        filter.SortBy = query.SortBy;
+        filter.SortDescending = query.SortDescending;
+        return filter;
+    }
+
     public static RouteFilter ToFilter(this RouteListQuery query) => new()
     {
         Search = query.Search,

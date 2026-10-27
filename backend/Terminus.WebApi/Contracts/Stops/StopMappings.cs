@@ -1,6 +1,7 @@
 using Terminus.Model;
 using Terminus.Model.Common;
 using Terminus.Model.Common.Filters;
+using Terminus.WebApi.Contracts.Routes;
 
 namespace Terminus.WebApi.Contracts.Stops;
 
@@ -45,6 +46,24 @@ public static class StopMappings
         model.IsActive,
         model.CreatedAt,
         model.UpdatedAt);
+
+    public static StopTableRowResponse ToResponse(this StopTableRow row) => new(
+        row.Stop.ToResponse(),
+        row.ParentStationName,
+        row.PlatformCount,
+        row.Routes.Select(r => new RouteTagResponse(r.Id, r.Code, r.ShortName, r.Color, r.TextColor)).ToList());
+
+    public static StopFilter ToFilter(this StopTableQuery query)
+    {
+        var filter = ((StopListQuery)query).ToFilter();
+        filter.WheelchairBoarding = query.WheelchairBoarding;
+        filter.HasTrips = query.HasTrips;
+        filter.HasCoordinates = query.HasCoordinates;
+        filter.RouteId = query.RouteId;
+        filter.SortBy = query.SortBy;
+        filter.SortDescending = query.SortDescending;
+        return filter;
+    }
 
     public static StopFilter ToFilter(this StopListQuery query) => new()
     {

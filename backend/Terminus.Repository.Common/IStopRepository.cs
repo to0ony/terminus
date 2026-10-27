@@ -16,6 +16,9 @@ public interface IStopRepository
 
     Task<PagedResult<IStopModel>> FindAsync(StopFilter filter, CancellationToken cancellationToken = default);
 
+    /// <summary>Kao FindAsync, uz kolodvor, perone i linije svake stanice.</summary>
+    Task<PagedResult<StopTableRow>> FindTableAsync(StopFilter filter, CancellationToken cancellationToken = default);
+
     /// <summary>Stanice s koordinatama unutar područja, poredane po nazivu.</summary>
     /// <param name="isActive">Samo aktivne ili neaktivne; null za sve.</param>
     /// <returns>Najviše <paramref name="limit"/> stanica.</returns>
@@ -36,6 +39,10 @@ public interface IStopRepository
 
     /// <returns>Ažurirana stanica ili null ako ne postoji.</returns>
     Task<IStopModel?> UpdateAsync(IStopModel stop, CancellationToken cancellationToken = default);
+
+    /// <summary>Aktivira ili deaktivira stanice odjednom.</summary>
+    /// <returns>Broj izmijenjenih stanica.</returns>
+    Task<int> SetActiveAsync(IReadOnlyCollection<Guid> ids, bool isActive, CancellationToken cancellationToken = default);
 
     /// <returns>false ako stanica ne postoji.</returns>
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);

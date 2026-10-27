@@ -13,6 +13,9 @@ public class StopService(IStopRepository repository) : IStopService
 {
     public const int MaxAreaStops = 2000;
 
+    /// <summary>Najviše stanica u jednoj grupnoj izmjeni.</summary>
+    public const int MaxBulkStops = 500;
+
     public async Task<IStopModel> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
         await repository.GetAsync(id, cancellationToken) ?? throw StopNotFound(id);
 
@@ -23,6 +26,15 @@ public class StopService(IStopRepository repository) : IStopService
         errors.ThrowIfAny();
 
         return repository.FindAsync(filter, cancellationToken);
+    }
+
+    public Task<PagedResult<StopTableRow>> FindTableAsync(StopFilter filter, CancellationToken cancellationToken = default)
+    {
+        var errors = new ValidationErrors();
+        errors.AddPagingErrors(filter.Page, filter.PageSize);
+        errors.ThrowIfAny();
+
+        return repository.FindTableAsync(filter, cancellationToken);
     }
 
     public async Task<StopsInArea> FindInAreaAsync(GeoBounds bounds, bool? isActive, CancellationToken cancellationToken = default)
@@ -187,11 +199,65 @@ public class StopService(IStopRepository repository) : IStopService
         errors.ThrowIfAny();
     }
 
+    public async Task<int> SetActiveAsync(IReadOnlyCollection<Guid> ids, bool isActive, CancellationToken cancellationToken = default)
+    {
+        var distinct = ids.Distinct().ToList();
+        var errors = new ValidationErrors();
+        if (distinct.Count == 0)
+        {
+            errors.Add("Ids", "Odaberi barem jednu stanicu.");
+        }
+        else if (distinct.Count > MaxBulkStops)
+        {
+            errors.Add("Ids", $"Odjednom se može promijeniti najviše {MaxBulkStops} stanica.");
+        }
+        errors.ThrowIfAny();
+
+        var stops = await repository.GetManyAsync(distinct, cancellationToken);
+        if (stops.Count != distinct.Count)
+        {
+            throw new NotFoundException("Neke od odabranih stanica više ne postoje.");
+        }
+
+        var changed = stops.Where(s => s.IsActive != isActive).ToList();
+        if (!isActive)
+        {
+            // Pravila gledaju sve odabrane kao neaktivne, pa dvije susjedne ne prođu zasebno.
+            var deactivated = changed.Select(s => s.Id).ToHashSet();
+            foreach (var stop in changed)
+            {
+                if (stop.LocationType == LocationType.Station)
+                {
+                    errors.Add(nameof(IStopModel.IsActive), $"{Label(stop)}: kolodvor se ne može deaktivirati; deaktiviraj pojedine perone.");
+                }
+                else
+                {
+                    await ValidateDeactivationAsync(stop.Id, errors, cancellationToken, deactivated, $"{Label(stop)}: ");
+                }
+            }
+        }
+        errors.ThrowIfAny();
+
+        return changed.Count == 0
+            ? 0
+            : await repository.SetActiveAsync(changed.Select(s => s.Id).ToList(), isActive, cancellationToken);
+    }
+
+    private static string Label(IStopModel stop) =>
+        stop.PlatformCode is { } platform ? $"{stop.Name} ({platform})" : stop.Name;
+
     /// <summary>
     /// Varijante i vožnje preskaču neaktivnu stanicu, pa ona ne smije biti prva ni
     /// zadnja, a bez nje (i ostalih neaktivnih) mora ostati dovoljno stanica.
     /// </summary>
-    private async Task ValidateDeactivationAsync(Guid stopId, ValidationErrors errors, CancellationToken cancellationToken)
+    /// <param name="alsoInactive">Stanice koje se deaktiviraju zajedno s ovom.</param>
+    /// <param name="prefix">Ispred poruke, npr. naziv stanice kod grupne izmjene.</param>
+    private async Task ValidateDeactivationAsync(
+        Guid stopId,
+        ValidationErrors errors,
+        CancellationToken cancellationToken,
+        IReadOnlySet<Guid>? alsoInactive = null,
+        string prefix = "")
     {
         var sequences = await repository.GetSequencesThroughAsync(stopId, cancellationToken);
         if (sequences.Count == 0)
@@ -204,6 +270,10 @@ public class StopService(IStopRepository repository) : IStopService
             .Select(s => s.Id)
             .ToHashSet();
         inactive.Add(stopId);
+        if (alsoInactive is not null)
+        {
+            inactive.UnionWith(alsoInactive);
+        }
 
         var blocked = sequences
             .Select(s => (Use: s, Problem: SkippedStops.Check(s.StopIds.Select(id => !inactive.Contains(id)).ToList())))
@@ -218,7 +288,7 @@ public class StopService(IStopRepository repository) : IStopService
                 .ToList());
             var where = isVariant ? $"varijantama {names}" : $"vožnjama {names}";
 
-            errors.Add(nameof(IStopModel.IsActive), problem switch
+            errors.Add(nameof(IStopModel.IsActive), prefix + problem switch
             {
                 SkippedStops.Problem.FirstInactive => $"Stanica se ne može deaktivirati jer je prva u {where}.",
                 SkippedStops.Problem.LastInactive => $"Stanica se ne može deaktivirati jer je zadnja u {where}.",

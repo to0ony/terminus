@@ -126,6 +126,40 @@ public class RouteServiceTests
             () => _service.UpdateAsync(Guid.NewGuid(), ValidRoute(), TestContext.Current.CancellationToken));
     }
 
+    [Fact]
+    public async Task SetActiveAsync_CountsOnlyChangedRoutes()
+    {
+        var active = await _service.CreateAsync(ValidRoute(), TestContext.Current.CancellationToken);
+        var inactive = ValidRoute();
+        inactive.Code = "OS-VK";
+        inactive.IsActive = false;
+        inactive = (RouteModel)await _service.CreateAsync(inactive, TestContext.Current.CancellationToken);
+
+        var changed = await _service.SetActiveAsync([active.Id, inactive.Id], false, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, changed);
+        Assert.All(_routes.Routes, r => Assert.False(r.IsActive));
+    }
+
+    [Fact]
+    public async Task SetAgencyAsync_UnknownAgency_ThrowsValidationError()
+    {
+        var route = await _service.CreateAsync(ValidRoute(), TestContext.Current.CancellationToken);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            () => _service.SetAgencyAsync([route.Id], Guid.NewGuid(), TestContext.Current.CancellationToken));
+
+        Assert.Contains("AgencyId", ex.Errors.Keys);
+        Assert.Equal(Agency.Id, route.AgencyId);
+    }
+
+    [Fact]
+    public async Task SetActiveAsync_UnknownRoute_ThrowsNotFound()
+    {
+        await Assert.ThrowsAsync<NotFoundException>(
+            () => _service.SetActiveAsync([Guid.NewGuid()], true, TestContext.Current.CancellationToken));
+    }
+
     private static RouteModel ValidRoute() => new()
     {
         AgencyId = Agency.Id,

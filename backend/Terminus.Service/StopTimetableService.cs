@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using QRCoder;
+using QuestPDF.Fluent;
+using QuestPDF.Infrastructure;
 using Terminus.Common;
 using Terminus.Common.Exceptions;
 using Terminus.Model.Common.Enums;
@@ -82,6 +84,38 @@ public class StopTimetableService(
     public async Task<TimetablePdf> GetPdfAsync(Guid stopId, TimetablePdfOptions options, DateTimeOffset now, CancellationToken cancellationToken = default)
     {
         var timetable = await GetAsync(stopId, options.From, options.To, now, cancellationToken);
+        var look = await LookAsync(cancellationToken);
+        var content = Compose(timetable, options, look).GeneratePdf();
+
+        var texts = TimetableTexts.For(options.Language);
+        var code = Regex.Replace(timetable.Stop.Code, "[^A-Za-z0-9_-]", "_");
+        var fileName = $"{texts.FilePrefix}-{code}-{timetable.From.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}.pdf";
+
+        return new TimetablePdf(content, fileName);
+    }
+
+    /// <summary>
+    /// Vozni red stanice kao dokument za spajanje s drugima; null ako sa
+    /// stanice u razdoblju nema polazaka (ili se vozni red ne može izraditi).
+    /// </summary>
+    internal async Task<IDocument?> ComposeAsync(Guid stopId, TimetablePdfOptions options, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        StopTimetable timetable;
+        try
+        {
+            timetable = await GetAsync(stopId, options.From, options.To, now, cancellationToken);
+        }
+        catch (UnprocessableException)
+        {
+            return null;
+        }
+
+        return Compose(timetable, options, await LookAsync(cancellationToken));
+    }
+
+    /// <summary>Naziv, boja i logo iz postavki, isti za sve stanice ispisa.</summary>
+    private async Task<TimetableLook> LookAsync(CancellationToken cancellationToken)
+    {
         var settings = await settingsService.GetAsync(cancellationToken);
 
         (byte[], bool)? logo = null;
@@ -91,20 +125,19 @@ public class StopTimetableService(
             logo = (image.Content, image.ContentType == "image/svg+xml");
         }
 
-        var content = StopTimetableDocument.Generate(
+        return new TimetableLook(settings.DisplayName, settings.PrimaryColor, logo, settings.PublicUrl);
+    }
+
+    private static IDocument Compose(StopTimetable timetable, TimetablePdfOptions options, TimetableLook look) =>
+        StopTimetableDocument.Compose(
             timetable,
             options,
-            settings.DisplayName ?? timetable.AgencyName,
-            settings.PrimaryColor,
-            logo,
-            settings.PublicUrl is { } publicUrl ? BoardQrCode(publicUrl, timetable.Stop.Code) : null);
+            look.DisplayName ?? timetable.AgencyName,
+            look.PrimaryColor,
+            look.Logo,
+            look.PublicUrl is { } publicUrl ? BoardQrCode(publicUrl, timetable.Stop.Code) : null);
 
-        var texts = TimetableTexts.For(options.Language);
-        var code = Regex.Replace(timetable.Stop.Code, "[^A-Za-z0-9_-]", "_");
-        var fileName = $"{texts.FilePrefix}-{code}-{timetable.From.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}.pdf";
-
-        return new TimetablePdf(content, fileName);
-    }
+    private sealed record TimetableLook(string? DisplayName, string? PrimaryColor, (byte[] Content, bool IsSvg)? Logo, string? PublicUrl);
 
     /// <summary>QR kod koji vodi na zaslon polazaka stanice (/board/{kod}).</summary>
     private static string BoardQrCode(string publicUrl, string stopCode)

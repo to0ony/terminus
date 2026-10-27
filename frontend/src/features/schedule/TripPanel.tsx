@@ -126,9 +126,14 @@ function Overview(props: TripPanelProps) {
         )}
         <Help keys="Klik u retku prve stanice" text="nova vožnja" />
         <Help keys="Povuci po praznom" text="odabir okvirom" />
+        <Help keys="↑ ↓" text="prethodna / sljedeća vožnja" />
+        <Help keys="Ctrl+A" text="odabire sve vožnje" />
         <Help keys="← →" text="±1 min (Shift ±5)" />
         <Help keys="Del" text="briše odabrane" />
+        <Help keys="N" text="crtanje nove vožnje" />
         <Help keys="Ctrl+Z / Ctrl+Y" text="poništi / ponovi" />
+        <Help keys="Ctrl+S" text="spremi" />
+        <Help keys="+ / − / 0" text="približi, udalji, cijeli dan" />
         <Help keys="Kotačić" text="zum; Shift+kotačić pomak" />
       </Stack>
     </Stack>

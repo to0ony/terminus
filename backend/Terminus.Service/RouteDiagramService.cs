@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using QuestPDF.Fluent;
+using QuestPDF.Infrastructure;
 using Terminus.Common.Exceptions;
 using Terminus.Model.Common;
 using Terminus.Model.Common.Enums;
@@ -31,7 +33,7 @@ public class RouteDiagramService(
     public async Task<TimetablePdf> GetPdfAsync(Guid routeId, RouteDiagramPdfOptions options, CancellationToken cancellationToken = default)
     {
         var diagram = await GetAsync(routeId, cancellationToken);
-        var content = await GenerateAsync([diagram], options, [], diagram.AgencyName, cancellationToken);
+        var content = (await ComposeAsync([diagram], options, [], diagram.AgencyName, cancellationToken)).GeneratePdf();
 
         var texts = RouteDiagramTexts.For(options.Language);
         return new TimetablePdf(content, $"{texts.FilePrefix}-{FileCode(diagram.Route.ShortName ?? diagram.Route.Code)}.pdf");
@@ -41,7 +43,20 @@ public class RouteDiagramService(
     {
         var stop = await stopRepository.GetAsync(stopId, cancellationToken)
             ?? throw new NotFoundException($"Stanica {stopId} ne postoji.");
-        var routes = await timetableService.GetStopRoutesAsync(stopId, cancellationToken);
+        var document = await ComposeStopAsync(stop, options, cancellationToken)
+            ?? throw new UnprocessableException(CannotCreate, ["Na stanici ne staje nijedna linija sa stanicama."]);
+
+        var texts = RouteDiagramTexts.For(options.Language);
+        return new TimetablePdf(document.GeneratePdf(), $"{texts.StopFilePrefix}-{FileCode(stop.PublicCode ?? stop.Code)}.pdf");
+    }
+
+    /// <summary>
+    /// Sheme linija koje staju na stanici, sa stanicom istaknutom; null ako na
+    /// stanici ne staje nijedna linija sa stanicama.
+    /// </summary>
+    internal async Task<IDocument?> ComposeStopAsync(IStopModel stop, RouteDiagramPdfOptions options, CancellationToken cancellationToken)
+    {
+        var routes = await timetableService.GetStopRoutesAsync(stop.Id, cancellationToken);
         var agency = await AgencyNameAsync(cancellationToken);
 
         var diagrams = new List<RouteDiagram>();
@@ -54,17 +69,14 @@ public class RouteDiagramService(
         }
         if (diagrams.Count == 0)
         {
-            throw new UnprocessableException(CannotCreate, ["Na stanici ne staje nijedna linija sa stanicama."]);
+            return null;
         }
 
         // Na shemi se ističe stanica, a kod kolodvora i njegovi peroni (po nazivu).
         IEnumerable<IStopModel> highlighted = stop.LocationType == LocationType.Station
             ? [stop, .. await departureRepository.GetPlatformsAsync(stop.Id, cancellationToken)]
             : [stop];
-        var content = await GenerateAsync(diagrams, options, highlighted.Select(s => s.Name).ToList(), agency, cancellationToken);
-
-        var texts = RouteDiagramTexts.For(options.Language);
-        return new TimetablePdf(content, $"{texts.StopFilePrefix}-{FileCode(stop.PublicCode ?? stop.Code)}.pdf");
+        return await ComposeAsync(diagrams, options, highlighted.Select(s => s.Name).ToList(), agency, cancellationToken);
     }
 
     private async Task<string> AgencyNameAsync(CancellationToken cancellationToken) =>
@@ -80,7 +92,7 @@ public class RouteDiagramService(
     }
 
     /// <summary>PDF s nazivom, bojama i logom iz postavki.</summary>
-    private async Task<byte[]> GenerateAsync(
+    private async Task<IDocument> ComposeAsync(
         IReadOnlyList<RouteDiagram> diagrams,
         RouteDiagramPdfOptions options,
         IReadOnlyCollection<string> highlighted,
@@ -96,7 +108,7 @@ public class RouteDiagramService(
             logo = (image.Content, image.ContentType == "image/svg+xml");
         }
 
-        return RouteDiagramDocument.Generate(
+        return RouteDiagramDocument.Compose(
             diagrams,
             options,
             settings.DisplayName ?? agencyName,

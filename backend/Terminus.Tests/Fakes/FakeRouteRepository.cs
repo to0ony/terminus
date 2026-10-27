@@ -35,6 +35,26 @@ internal sealed class FakeRouteRepository : IRouteRepository
     public Task<PagedResult<IRouteModel>> FindAsync(RouteFilter filter, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 
+    public Task<PagedResult<RouteTableRow>> FindTableAsync(RouteFilter filter, CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException();
+
+    public Task<IReadOnlyList<IRouteModel>> GetManyAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<IRouteModel>>(Routes.Where(r => ids.Contains(r.Id)).ToList());
+
+    public Task<int> SetActiveAsync(IReadOnlyCollection<Guid> ids, bool isActive, CancellationToken cancellationToken = default)
+    {
+        var changed = Routes.Where(r => ids.Contains(r.Id)).ToList();
+        changed.ForEach(r => r.IsActive = isActive);
+        return Task.FromResult(changed.Count);
+    }
+
+    public Task<int> SetAgencyAsync(IReadOnlyCollection<Guid> ids, Guid agencyId, CancellationToken cancellationToken = default)
+    {
+        var changed = Routes.Where(r => ids.Contains(r.Id)).ToList();
+        changed.ForEach(r => r.AgencyId = agencyId);
+        return Task.FromResult(changed.Count);
+    }
+
     public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 }

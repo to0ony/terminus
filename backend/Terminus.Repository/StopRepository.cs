@@ -5,6 +5,7 @@ using Terminus.Common.Exceptions;
 using Terminus.DAL;
 using Terminus.DAL.Entities;
 using Terminus.Model.Common;
+using Terminus.Model.Common.Enums;
 using Terminus.Model.Common.Filters;
 using Terminus.Repository.Common;
 using Terminus.Repository.Mapping;
@@ -43,6 +44,84 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
 
     public async Task<PagedResult<IStopModel>> FindAsync(StopFilter filter, CancellationToken cancellationToken = default)
     {
+        var query = FilteredQuery(context, filter);
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var entities = await SortedQuery(context, query, filter)
+            .Skip((filter.Page - 1) * filter.PageSize)
+            .Take(filter.PageSize)
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<IStopModel>(
+            entities.Select(StopMapper.ToModel).ToList(),
+            filter.Page,
+            filter.PageSize,
+            totalCount);
+    }
+
+    public async Task<PagedResult<StopTableRow>> FindTableAsync(StopFilter filter, CancellationToken cancellationToken = default)
+    {
+        var page = await FindAsync(filter, cancellationToken);
+        var ids = page.Items.Select(s => s.Id).ToList();
+        if (ids.Count == 0)
+        {
+            return page.Map(s => new StopTableRow(s, null, 0, []));
+        }
+
+        var parentIds = page.Items.Where(s => s.ParentStationId is not null).Select(s => s.ParentStationId!.Value).ToHashSet();
+        var parentNames = await context.Stops
+            .AsNoTracking()
+            .Where(s => parentIds.Contains(s.Id))
+            .ToDictionaryAsync(s => s.Id, s => s.Name, cancellationToken);
+
+        // Vožnje staju na peronima, pa kolodvor zbraja svoje perone.
+        var platforms = await context.Stops
+            .AsNoTracking()
+            .Where(s => s.ParentStationId != null && ids.Contains(s.ParentStationId.Value))
+            .Select(s => new { s.Id, StationId = s.ParentStationId!.Value })
+            .ToListAsync(cancellationToken);
+        var stopIds = ids.Concat(platforms.Select(p => p.Id)).ToHashSet();
+
+        var routePairs = await RoutesAtQuery(context, stopIds).ToListAsync(cancellationToken);
+
+        var routeIds = routePairs.Select(p => p.RouteId).ToHashSet();
+        var routes = await context.Routes
+            .AsNoTracking()
+            .Where(r => routeIds.Contains(r.Id))
+            .OrderBy(r => r.SortOrder)
+            .ThenBy(r => r.ShortName!.Length)
+            .ThenBy(r => r.ShortName)
+            .ThenBy(r => r.LongName)
+            .ThenBy(r => r.Code)
+            .Select(r => new RouteTag(r.Id, r.Code, r.ShortName, r.Color, r.TextColor))
+            .ToListAsync(cancellationToken);
+
+        var platformsOf = platforms.ToLookup(p => p.StationId, p => p.Id);
+        var routesAt = routePairs.ToLookup(p => p.StopId, p => p.RouteId);
+
+        return page.Map(stop =>
+        {
+            IReadOnlyList<Guid> served = [stop.Id, .. platformsOf[stop.Id]];
+            var routeSet = served.SelectMany(id => routesAt[id]).ToHashSet();
+            return new StopTableRow(
+                stop,
+                stop.ParentStationId is { } parentId ? parentNames.GetValueOrDefault(parentId) : null,
+                platformsOf[stop.Id].Count(),
+                routes.Where(r => routeSet.Contains(r.Id)).ToList());
+        });
+    }
+
+    /// <summary>Parovi stanica – linija za vožnje koje staju na stanicama.</summary>
+    internal static IQueryable<StopRoute> RoutesAtQuery(TerminusDbContext context, IReadOnlyCollection<Guid> stopIds) =>
+        context.StopTimes
+            .AsNoTracking()
+            .Where(st => stopIds.Contains(st.StopId))
+            .Select(st => new StopRoute { StopId = st.StopId, RouteId = st.Trip.RouteId })
+            .Distinct();
+
+    /// <summary>Stanice prema filtru, bez redoslijeda i stranica.</summary>
+    internal static IQueryable<Stop> FilteredQuery(TerminusDbContext context, StopFilter filter)
+    {
         var query = context.Stops
             .AsNoTracking();
 
@@ -70,20 +149,68 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
             query = query.Where(s => s.ParentStationId == parentStationId);
         }
 
-        var totalCount = await query.CountAsync(cancellationToken);
+        if (filter.WheelchairBoarding is { } wheelchair)
+        {
+            var value = (short)wheelchair;
+            query = query.Where(s => s.WheelchairBoarding == value);
+        }
 
-        var entities = await query
-            .OrderBy(s => s.Name)
-            .ThenBy(s => s.Code)
-            .Skip((filter.Page - 1) * filter.PageSize)
-            .Take(filter.PageSize)
-            .ToListAsync(cancellationToken);
+        if (filter.HasCoordinates is bool hasCoordinates)
+        {
+            query = query.Where(s => (s.Latitude != null && s.Longitude != null) == hasCoordinates);
+        }
 
-        return new PagedResult<IStopModel>(
-            entities.Select(StopMapper.ToModel).ToList(),
-            filter.Page,
-            filter.PageSize,
-            totalCount);
+        // Kolodvor ima vožnje na peronima.
+        if (filter.HasTrips is bool hasTrips)
+        {
+            query = query.Where(s => context.StopTimes
+                .Any(st => st.StopId == s.Id || st.Stop.ParentStationId == s.Id) == hasTrips);
+        }
+
+        if (filter.RouteId is Guid routeId)
+        {
+            query = query.Where(s => context.StopTimes
+                .Any(st => (st.StopId == s.Id || st.Stop.ParentStationId == s.Id) && st.Trip.RouteId == routeId));
+        }
+
+        return query;
+    }
+
+    /// <summary>Redoslijed prema filtru; jednaki se slažu po nazivu i kodu.</summary>
+    internal static IQueryable<Stop> SortedQuery(TerminusDbContext context, IQueryable<Stop> query, StopFilter filter)
+    {
+        var descending = filter.SortDescending;
+        var sorted = filter.SortBy switch
+        {
+            StopSortField.Code => query.OrderByDirection(s => s.Code, descending),
+            StopSortField.PublicCode => query.OrderByDirection(s => s.PublicCode, descending),
+            StopSortField.PlatformCode => query.OrderByDirection(s => s.PlatformCode, descending),
+            StopSortField.LocationType => query.OrderByDirection(s => s.LocationType, descending),
+            StopSortField.WheelchairBoarding => query.OrderByDirection(s => s.WheelchairBoarding, descending),
+            StopSortField.IsActive => query.OrderByDirection(s => s.IsActive, descending),
+            StopSortField.UpdatedAt => query.OrderByDirection(s => s.UpdatedAt, descending),
+            StopSortField.RouteCount => query.OrderByDirection(
+                s => context.Routes.Count(r => r.Trips.Any(t => t.StopTimes.Any(st => st.StopId == s.Id || st.Stop.ParentStationId == s.Id))),
+                descending),
+            _ => query.OrderByDirection(s => s.Name, descending)
+        };
+
+        return sorted
+            .ThenBy(s => s.Name)
+            .ThenBy(s => s.Code);
+    }
+
+    public Task<int> SetActiveAsync(IReadOnlyCollection<Guid> ids, bool isActive, CancellationToken cancellationToken = default)
+    {
+        // ExecuteUpdate zaobilazi AuditableInterceptor, pa se UpdatedAt postavlja ovdje.
+        var now = DateTime.UtcNow;
+        return context.Stops
+            .Where(s => ids.Contains(s.Id))
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(s => s.IsActive, isActive)
+                    .SetProperty(s => s.UpdatedAt, now),
+                cancellationToken);
     }
 
     public async Task<IReadOnlyList<IStopModel>> FindInAreaAsync(GeoBounds bounds, bool? isActive, int limit, CancellationToken cancellationToken = default)
@@ -247,4 +374,10 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
             throw new ConflictException($"Stanica s kodom '{stop.Code}' već postoji.", ex);
         }
     }
+}
+
+internal sealed class StopRoute
+{
+    public Guid StopId { get; init; }
+    public Guid RouteId { get; init; }
 }

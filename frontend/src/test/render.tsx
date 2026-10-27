@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render as testingLibraryRender } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router'
-import { theme } from '@/app/theme'
+import { appTheme } from '@/app/theme'
 
 interface RenderOptions {
   /** Početna adresa routera. */
@@ -23,7 +23,7 @@ export function render(ui: ReactNode, { route = '/', queryData = [] }: RenderOpt
 
   return testingLibraryRender(ui, {
     wrapper: ({ children }) => (
-      <MantineProvider theme={theme}>
+      <MantineProvider theme={appTheme('comfortable')}>
         <QueryClientProvider client={queryClient}>
           <MemoryRouter initialEntries={[route]}>{children}</MemoryRouter>
         </QueryClientProvider>
