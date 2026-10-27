@@ -214,6 +214,19 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
             .ThenBy(s => s.Code);
     }
 
+    public Task<int> SetActiveAsync(IReadOnlyCollection<Guid> ids, bool isActive, CancellationToken cancellationToken = default)
+    {
+        // ExecuteUpdate zaobilazi AuditableInterceptor, pa se UpdatedAt postavlja ovdje.
+        var now = DateTime.UtcNow;
+        return context.Stops
+            .Where(s => ids.Contains(s.Id))
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(s => s.IsActive, isActive)
+                    .SetProperty(s => s.UpdatedAt, now),
+                cancellationToken);
+    }
+
     public async Task<IReadOnlyList<IStopModel>> FindInAreaAsync(GeoBounds bounds, bool? isActive, int limit, CancellationToken cancellationToken = default)
     {
         var query = context.Stops

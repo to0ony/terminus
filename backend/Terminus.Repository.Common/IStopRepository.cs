@@ -40,6 +40,10 @@ public interface IStopRepository
     /// <returns>Ažurirana stanica ili null ako ne postoji.</returns>
     Task<IStopModel?> UpdateAsync(IStopModel stop, CancellationToken cancellationToken = default);
 
+    /// <summary>Aktivira ili deaktivira stanice odjednom.</summary>
+    /// <returns>Broj izmijenjenih stanica.</returns>
+    Task<int> SetActiveAsync(IReadOnlyCollection<Guid> ids, bool isActive, CancellationToken cancellationToken = default);
+
     /// <returns>false ako stanica ne postoji.</returns>
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }

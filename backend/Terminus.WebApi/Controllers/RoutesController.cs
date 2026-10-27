@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using Terminus.Common;
 using Terminus.Service.Common;
+using Terminus.WebApi.Contracts;
 using Terminus.WebApi.Contracts.Routes;
 using Terminus.WebApi.Contracts.Timetables;
 using Terminus.WebApi.Infrastructure;
@@ -105,6 +106,32 @@ public class RoutesController(
     {
         var result = await routeService.FindTableAsync(query.ToFilter(), cancellationToken);
         return Ok(result.Map(r => r.ToResponse()));
+    }
+
+    /// <summary>Aktivira ili deaktivira odabrane linije (najviše 500).</summary>
+    [HttpPost("bulk/active")]
+    [ProducesResponseType<BulkResultResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<BulkResultResponse>> SetActive(
+        BulkActiveRequest request,
+        CancellationToken cancellationToken)
+    {
+        var changed = await routeService.SetActiveAsync(request.Ids!, request.IsActive, cancellationToken);
+        return Ok(new BulkResultResponse(changed));
+    }
+
+    /// <summary>Premješta odabrane linije drugom prijevozniku; vožnje i vozni red ostaju.</summary>
+    [HttpPost("bulk/agency")]
+    [ProducesResponseType<BulkResultResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<BulkResultResponse>> SetAgency(
+        BulkAgencyRequest request,
+        CancellationToken cancellationToken)
+    {
+        var changed = await routeService.SetAgencyAsync(request.Ids!, request.AgencyId, cancellationToken);
+        return Ok(new BulkResultResponse(changed));
     }
 
     [HttpGet("{id:guid}")]

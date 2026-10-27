@@ -230,6 +230,41 @@ public class RouteRepository(TerminusDbContext context) : IRouteRepository
         return RouteMapper.ToModel(entity);
     }
 
+    public async Task<IReadOnlyList<IRouteModel>> GetManyAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default)
+    {
+        var entities = await context.Routes
+            .AsNoTracking()
+            .Where(r => ids.Contains(r.Id))
+            .ToListAsync(cancellationToken);
+
+        return entities.Select(RouteMapper.ToModel).ToList();
+    }
+
+    // ExecuteUpdate zaobilazi AuditableInterceptor, pa se UpdatedAt postavlja ovdje.
+    public Task<int> SetActiveAsync(IReadOnlyCollection<Guid> ids, bool isActive, CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        return context.Routes
+            .Where(r => ids.Contains(r.Id))
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(r => r.IsActive, isActive)
+                    .SetProperty(r => r.UpdatedAt, now),
+                cancellationToken);
+    }
+
+    public Task<int> SetAgencyAsync(IReadOnlyCollection<Guid> ids, Guid agencyId, CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        return context.Routes
+            .Where(r => ids.Contains(r.Id))
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(r => r.AgencyId, agencyId)
+                    .SetProperty(r => r.UpdatedAt, now),
+                cancellationToken);
+    }
+
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         // ON DELETE CASCADE u bazi briše i sve vožnje linije (i njihova vremena).

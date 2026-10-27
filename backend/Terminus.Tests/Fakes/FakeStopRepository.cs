@@ -71,6 +71,13 @@ internal sealed class FakeStopRepository(IEnumerable<IStopModel> stops) : IStopR
         return Task.FromResult<IStopModel?>(stop);
     }
 
+    public Task<int> SetActiveAsync(IReadOnlyCollection<Guid> ids, bool isActive, CancellationToken cancellationToken = default)
+    {
+        var changed = _stops.Where(s => ids.Contains(s.Id)).ToList();
+        changed.ForEach(s => s.IsActive = isActive);
+        return Task.FromResult(changed.Count);
+    }
+
     public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 }

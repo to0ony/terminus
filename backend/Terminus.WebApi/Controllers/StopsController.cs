@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Terminus.Common;
 using Terminus.Service.Common;
+using Terminus.WebApi.Contracts;
 using Terminus.WebApi.Contracts.Routes;
 using Terminus.WebApi.Contracts.Stops;
 using Terminus.WebApi.Contracts.Timetables;
@@ -135,6 +136,22 @@ public class StopsController(
     {
         var pdf = await routeDiagramService.GetStopPdfAsync(id, query.ToOptions(), cancellationToken);
         return File(pdf.Content, "application/pdf", pdf.FileName);
+    }
+
+    /// <summary>
+    /// Aktivira ili deaktivira odabrane stanice (najviše 500). Pravila su ista
+    /// kao kod izmjene jedne stanice; ako ijedna ne smije, ne mijenja se nijedna.
+    /// </summary>
+    [HttpPost("bulk/active")]
+    [ProducesResponseType<BulkResultResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<BulkResultResponse>> SetActive(
+        BulkActiveRequest request,
+        CancellationToken cancellationToken)
+    {
+        var changed = await stopService.SetActiveAsync(request.Ids!, request.IsActive, cancellationToken);
+        return Ok(new BulkResultResponse(changed));
     }
 
     [HttpGet("{id:guid}")]

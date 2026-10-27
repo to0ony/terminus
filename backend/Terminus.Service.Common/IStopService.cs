@@ -27,6 +27,13 @@ public interface IStopService
     Task<IStopModel> UpdateAsync(Guid id, IStopModel stop, CancellationToken cancellationToken = default);
 
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Aktivira ili deaktivira više stanica odjednom, uz ista pravila kao kod
+    /// izmjene jedne stanice; ako ijedna ne smije, ne mijenja se nijedna.
+    /// </summary>
+    /// <returns>Broj stanica kojima se stanje promijenilo.</returns>
+    Task<int> SetActiveAsync(IReadOnlyCollection<Guid> ids, bool isActive, CancellationToken cancellationToken = default);
 }
 
 /// <param name="Truncated">true ako u području ima više stanica od vraćenih.</param>

@@ -256,6 +256,62 @@ public class StopServiceTests
         Assert.Contains(nameof(StopModel.IsActive), ex.Errors.Keys);
     }
 
+    [Fact]
+    public async Task SetActiveAsync_DeactivateMiddleStops_ChangesAll()
+    {
+        var stops = await AddStopsAsync(5);
+        _repository.Sequences.Add(new StopSequenceUse(true, "Glavna", "1", stops.Select(s => s.Id).ToList()));
+
+        var changed = await _service.SetActiveAsync([stops[1].Id, stops[2].Id], false, TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, changed);
+        Assert.False(stops[1].IsActive);
+        Assert.False(stops[2].IsActive);
+    }
+
+    [Fact]
+    public async Task SetActiveAsync_TogetherLeavingTooFewStops_ChangesNone()
+    {
+        // Svaka zasebno smije, ali zajedno ostavljaju samo dvije aktivne stanice.
+        var stops = await AddStopsAsync(4);
+        _repository.Sequences.Add(new StopSequenceUse(true, "Glavna", "1", stops.Select(s => s.Id).ToList()));
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            () => _service.SetActiveAsync([stops[1].Id, stops[2].Id], false, TestContext.Current.CancellationToken));
+
+        Assert.Contains(nameof(StopModel.IsActive), ex.Errors.Keys);
+        Assert.All(stops, s => Assert.True(s.IsActive));
+    }
+
+    [Fact]
+    public async Task SetActiveAsync_StationAmongStops_IsRejectedWithItsName()
+    {
+        var stops = await AddStopsAsync(1);
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            () => _service.SetActiveAsync([stops[0].Id, _station.Id], false, TestContext.Current.CancellationToken));
+
+        var message = Assert.Single(ex.Errors[nameof(StopModel.IsActive)]);
+        Assert.StartsWith(_station.Name, message);
+        Assert.True(stops[0].IsActive);
+    }
+
+    [Fact]
+    public async Task SetActiveAsync_UnknownStop_ThrowsNotFound()
+    {
+        await Assert.ThrowsAsync<NotFoundException>(
+            () => _service.SetActiveAsync([Guid.NewGuid()], true, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task SetActiveAsync_NoStops_IsRejected()
+    {
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            () => _service.SetActiveAsync([], true, TestContext.Current.CancellationToken));
+
+        Assert.Contains("Ids", ex.Errors.Keys);
+    }
+
     private async Task<List<IStopModel>> AddStopsAsync(int count)
     {
         var stops = new List<IStopModel>();

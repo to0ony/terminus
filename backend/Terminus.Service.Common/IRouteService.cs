@@ -18,4 +18,12 @@ public interface IRouteService
     Task<IRouteModel> UpdateAsync(Guid id, IRouteModel route, CancellationToken cancellationToken = default);
 
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Aktivira ili deaktivira više linija odjednom.</summary>
+    /// <returns>Broj linija kojima se stanje promijenilo.</returns>
+    Task<int> SetActiveAsync(IReadOnlyCollection<Guid> ids, bool isActive, CancellationToken cancellationToken = default);
+
+    /// <summary>Premješta više linija drugom prijevozniku; vožnje i vozni red ostaju.</summary>
+    /// <returns>Broj premještenih linija.</returns>
+    Task<int> SetAgencyAsync(IReadOnlyCollection<Guid> ids, Guid agencyId, CancellationToken cancellationToken = default);
 }

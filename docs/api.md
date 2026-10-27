@@ -30,12 +30,14 @@ Sve osim `/api/public/*`, `/api/auth/login` i `/health` traži prijavu
 | Prijevoznici | `/api/agencies`; `DELETE /api/agencies/{id}?moveRoutesTo=` linije i cijene prvo prebacuje na drugog prijevoznika |
 | Stanice | `/api/stops`, `/api/stops/area`, `/api/stops/extent` |
 | Tablica stanica | `GET /api/stops/table` – filtri popisa i `wheelchairBoarding`, `hasTrips`, `hasCoordinates`, `routeId`; redoslijed `sortBy` (`Name`, `Code`, `PublicCode`, `PlatformCode`, `LocationType`, `WheelchairBoarding`, `IsActive`, `RouteCount`, `TripCount`, `UpdatedAt`) i `sortDescending`; uz svaku stanicu kolodvor, broj perona i vožnji te linije |
+| Stanice: grupna izmjena | `POST /api/stops/bulk/active` `{ ids, isActive }` – najviše 500; pravila kao kod jedne stanice, a ako ijedna ne smije, ne mijenja se nijedna; vraća `{ changed }` |
 | Stanica: linije i polasci | `/api/stops/{id}/routes`, `/api/stops/{id}/departures?date=` |
 | Stanica: PDF vozni red | `GET /api/stops/{id}/timetable.pdf?from=&to=&paper=&language=` |
 | Linija: PDF shema | `GET /api/routes/{id}/diagram.pdf?paper=&language=&showMinutes=` |
 | Stanica: PDF shema svih linija | `GET /api/stops/{id}/routes.pdf?paper=&language=&showMinutes=&minutesFromStop=` |
 | Linije | `/api/routes`, `/api/routes/{id}/patterns`, `/api/routes/{id}/timetable?date=&directionId=` |
 | Tablica linija | `GET /api/routes/table` – filtri popisa i `hasTrips`, `stopId`; redoslijed `sortBy` (`Default`, `Code`, `ShortName`, `LongName`, `RouteType`, `Agency`, `IsActive`, `VariantCount`, `TripCount`, `UpdatedAt`) i `sortDescending`; uz svaku liniju prijevoznik, broj varijanti, vožnji i stanica, najraniji polazak i najkasniji dolazak |
+| Linije: grupna izmjena | `POST /api/routes/bulk/active` `{ ids, isActive }`, `POST /api/routes/bulk/agency` `{ ids, agencyId }` (vožnje i vozni red ostaju) – najviše 500; vraća `{ changed }` |
 | Linija: karta uživo (vožnje dana) | `GET /api/routes/{id}/live?date=` |
 | Karta uživo: sva vozila | `GET /api/routes/live?date=` |
 | Javna karta (bez prijave, ako je uključena) | `/api/public/map/stops/area`, `/stops/extent`, `/stops/{id}/departures?date=`, `/stops/{id}/routes`, `/routes/{id}/live?date=`, `/live?date=` |
