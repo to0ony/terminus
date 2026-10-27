@@ -807,6 +807,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/gtfs/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["GtfsCheckResponse"];
+                        "application/json": components["schemas"]["GtfsCheckResponse"];
+                        "text/json": components["schemas"]["GtfsCheckResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/gtfs/import/preview": {
         parameters: {
             query?: never;
@@ -5341,6 +5378,9 @@ export interface components {
             maxLatitude: number;
             /** Format: double */
             maxLongitude: number;
+        };
+        GtfsCheckResponse: {
+            problems: string[];
         };
         GtfsImportChangesResponse: {
             /** Format: int32 */
