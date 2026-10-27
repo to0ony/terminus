@@ -104,13 +104,15 @@ redoslijed daje server (`/api/routes/table`, `/api/stops/table`), a tablica
 prikazuje jednu stranicu.
 
 - **Stupci**: izbornik „Stupci” uključuje i isključuje stupce (npr. GTFS ID,
-  kolodvor, pristupačnost, koordinate, broj stanica, izmijenjeno); izbor se
+  kolodvor, pristupačnost, koordinate, izmijenjeno); izbor se
   pamti u pregledniku (`terminus-columns-routes`, `terminus-columns-stops`).
   Stanice zadano imaju naziv, oznaku, peron, linije u boji i broj vožnji, a
-  linije oznaku, naziv, vrstu (ikona prijevoza s nazivom u oblačiću), varijante, vožnje, „Vozi” (prvi polazak –
-  zadnji dolazak) i status.
+  linije oznaku, naziv, vrstu (ikona prijevoza s nazivom u oblačiću), broj
+  varijanti, **„Vrijedi”** (razdoblje kalendara po kojima voze vožnje linije;
+  istekao ili onaj koji istječe za manje od 30 dana je označen) i status.
 - **Slaganje** klikom na zaglavlje: uzlazno, silazno, pa zadano (stanice po
-  nazivu, linije kao u GTFS-u). Može i po broju linija ili vožnji.
+  nazivu, linije kao u GTFS-u). Može i po broju linija ili vožnji stanice te
+  po kraju razdoblja linije.
 - **Filtri**: stanice po vrsti, statusu, vožnjama, liniji, pristupačnosti i
   koordinatama, linije po prijevozniku, vrsti, statusu i vožnjama; „Očisti
   filtre” ih briše. Ispod tablice su prikazani reci i veličina stranice (25,

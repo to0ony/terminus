@@ -15,6 +15,8 @@ public enum RouteSortField
     Agency,
     IsActive,
     VariantCount,
-    TripCount,
+
+    /// <summary>Kraj razdoblja voznog reda (linije bez vožnji na kraju).</summary>
+    ValidTo,
     UpdatedAt
 }

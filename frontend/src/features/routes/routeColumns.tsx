@@ -1,11 +1,11 @@
 import { Anchor, Badge, Text } from '@mantine/core'
 import { Link } from 'react-router'
 import type { DataColumn } from '@/components/DataTable/tableModel'
-import { formatTime } from '@/features/live/clock'
 import { formatNumber } from '@/lib/format'
 import type { RouteTableRow } from './queries'
 import { RouteBadge } from './RouteBadge'
 import { RouteTypeIcon } from './RouteTypeIcon'
+import { Validity } from './Validity'
 
 const dateFormat = new Intl.DateTimeFormat('hr-HR', { dateStyle: 'short' })
 
@@ -19,7 +19,7 @@ const count = (value: number) => (value > 0 ? formatNumber(value) : dimmed('—'
 
 /**
  * Stupci tablice linija; prijevoznik je zadano vidljiv samo kad ih ima više.
- * Vremena su od početka dana voznog reda, a iza ponoći opet od 00.
+ * „Vrijedi” je razdoblje kalendara po kojima voze vožnje linije.
  */
 export function routeColumns(showAgency: boolean): DataColumn<RouteTableRow>[] {
   return [
@@ -75,31 +75,11 @@ export function routeColumns(showAgency: boolean): DataColumn<RouteTableRow>[] {
       cell: ({ variantCount }) => count(variantCount),
     },
     {
-      id: 'trips',
-      header: 'Vožnje',
-      sortKey: 'TripCount',
-      align: 'right',
-      width: 100,
+      id: 'validity',
+      header: 'Vrijedi',
+      sortKey: 'ValidTo',
       mobile: 'meta',
-      cell: ({ tripCount }) => count(tripCount),
-    },
-    {
-      id: 'stops',
-      header: 'Stanice',
-      align: 'right',
-      width: 100,
-      hiddenByDefault: true,
-      cell: ({ stopCount }) => count(stopCount),
-    },
-    {
-      id: 'hours',
-      header: 'Vozi',
-      width: 130,
-      mobile: 'meta',
-      cell: ({ firstDeparture, lastArrival }) =>
-        firstDeparture != null && lastArrival != null
-          ? `${formatTime(firstDeparture, false)} – ${formatTime(lastArrival, false)}`
-          : dimmed('—'),
+      cell: ({ validFrom, validTo }) => <Validity from={validFrom} to={validTo} />,
     },
     {
       id: 'status',

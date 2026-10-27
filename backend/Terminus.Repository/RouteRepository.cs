@@ -58,42 +58,32 @@ public class RouteRepository(TerminusDbContext context) : IRouteRepository
             .Select(g => new { RouteId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.RouteId, x => x.Count, cancellationToken);
 
-        var tripCounts = await context.Trips
-            .AsNoTracking()
-            .Where(t => ids.Contains(t.RouteId))
-            .GroupBy(t => t.RouteId)
-            .Select(g => new { RouteId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.RouteId, x => x.Count, cancellationToken);
-
-        var stopStats = await StopStatsQuery(context, ids)
+        var validity = await ValidityQuery(context, ids)
             .ToDictionaryAsync(x => x.RouteId, cancellationToken);
 
         return page.Map(route =>
         {
-            var stats = stopStats.GetValueOrDefault(route.Id);
+            var period = validity.GetValueOrDefault(route.Id);
             return new RouteTableRow(
                 route,
                 agencies.GetValueOrDefault(route.AgencyId) ?? "",
                 variantCounts.GetValueOrDefault(route.Id),
-                tripCounts.GetValueOrDefault(route.Id),
-                stats?.StopCount ?? 0,
-                stats?.FirstDeparture,
-                stats?.LastArrival);
+                period?.ValidFrom,
+                period?.ValidTo);
         });
     }
 
-    /// <summary>Po liniji: različite stanice, najraniji polazak i najkasniji dolazak njezinih vožnji.</summary>
-    internal static IQueryable<RouteStopStats> StopStatsQuery(TerminusDbContext context, IReadOnlyCollection<Guid> routeIds) =>
-        context.StopTimes
+    /// <summary>Po liniji: najraniji početak i najkasniji kraj kalendara njezinih vožnji.</summary>
+    internal static IQueryable<RouteValidity> ValidityQuery(TerminusDbContext context, IReadOnlyCollection<Guid> routeIds) =>
+        context.Trips
             .AsNoTracking()
-            .Where(st => routeIds.Contains(st.Trip.RouteId))
-            .GroupBy(st => st.Trip.RouteId)
-            .Select(g => new RouteStopStats
+            .Where(t => routeIds.Contains(t.RouteId))
+            .GroupBy(t => t.RouteId)
+            .Select(g => new RouteValidity
             {
                 RouteId = g.Key,
-                StopCount = g.Select(st => st.StopId).Distinct().Count(),
-                FirstDeparture = g.Min(st => st.DepartureTime),
-                LastArrival = g.Max(st => st.ArrivalTime)
+                ValidFrom = g.Min(t => t.ServiceCalendar.StartDate),
+                ValidTo = g.Max(t => t.ServiceCalendar.EndDate)
             });
 
     /// <summary>Linije prema filtru, bez redoslijeda i stranica.</summary>
@@ -161,7 +151,9 @@ public class RouteRepository(TerminusDbContext context) : IRouteRepository
             RouteSortField.IsActive => query.OrderByDirection(r => r.IsActive, descending),
             RouteSortField.VariantCount => query.OrderByDirection(
                 r => context.RouteVariants.Count(v => v.RouteId == r.Id), descending),
-            RouteSortField.TripCount => query.OrderByDirection(r => r.Trips.Count, descending),
+            RouteSortField.ValidTo => query
+                .OrderByDirection(r => !r.Trips.Any(), false)
+                .ThenByDirection(r => r.Trips.Max(t => (DateOnly?)t.ServiceCalendar.EndDate), descending),
             RouteSortField.UpdatedAt => query.OrderByDirection(r => r.UpdatedAt, descending),
             _ => query.OrderByDirection(r => r.SortOrder, descending)
         };
@@ -296,10 +288,9 @@ public class RouteRepository(TerminusDbContext context) : IRouteRepository
     }
 }
 
-internal sealed class RouteStopStats
+internal sealed class RouteValidity
 {
     public Guid RouteId { get; init; }
-    public int StopCount { get; init; }
-    public int? FirstDeparture { get; init; }
-    public int? LastArrival { get; init; }
+    public DateOnly ValidFrom { get; init; }
+    public DateOnly ValidTo { get; init; }
 }

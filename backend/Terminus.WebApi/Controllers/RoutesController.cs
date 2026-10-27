@@ -94,8 +94,8 @@ public class RoutesController(
 
     /// <summary>
     /// Linije za tablicu u dashboardu: popis s dodatnim filtrima i redoslijedom,
-    /// a uz svaku liniju prijevoznik, broj varijanti, vožnji i stanica te
-    /// najraniji polazak i najkasniji dolazak.
+    /// a uz svaku liniju prijevoznik, broj varijanti i razdoblje voznog reda
+    /// (kalendari njezinih vožnji).
     /// </summary>
     [HttpGet("table")]
     [ProducesResponseType<PagedResult<RouteTableRowResponse>>(StatusCodes.Status200OK)]

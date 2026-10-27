@@ -17,7 +17,7 @@ public class RouteRepositoryQueryTests
     [InlineData(RouteSortField.ShortName, true)]
     [InlineData(RouteSortField.Agency, false)]
     [InlineData(RouteSortField.VariantCount, true)]
-    [InlineData(RouteSortField.TripCount, false)]
+    [InlineData(RouteSortField.ValidTo, false)]
     public void TableQuery_WithAllFilters_TranslatesToSql(RouteSortField sortBy, bool descending)
     {
         using var context = CreateContext();
@@ -42,11 +42,11 @@ public class RouteRepositoryQueryTests
     }
 
     [Fact]
-    public void StopStatsQuery_TranslatesToSql()
+    public void ValidityQuery_TranslatesToSql()
     {
         using var context = CreateContext();
 
-        var sql = RouteRepository.StopStatsQuery(context, [Guid.NewGuid()]).ToQueryString();
+        var sql = RouteRepository.ValidityQuery(context, [Guid.NewGuid()]).ToQueryString();
 
         Assert.Contains("GROUP BY", sql);
     }

@@ -37,7 +37,7 @@ Sve osim `/api/public/*`, `/api/auth/login` i `/health` traži prijavu
 | Linija: PDF shema | `GET /api/routes/{id}/diagram.pdf?paper=&language=&showMinutes=` |
 | Stanica: PDF shema svih linija | `GET /api/stops/{id}/routes.pdf?paper=&language=&showMinutes=&minutesFromStop=` |
 | Linije | `/api/routes`, `/api/routes/{id}/patterns`, `/api/routes/{id}/timetable?date=&directionId=` |
-| Tablica linija | `GET /api/routes/table` – filtri popisa i `hasTrips`, `stopId`; redoslijed `sortBy` (`Default`, `Code`, `ShortName`, `LongName`, `RouteType`, `Agency`, `IsActive`, `VariantCount`, `TripCount`, `UpdatedAt`) i `sortDescending`; uz svaku liniju prijevoznik, broj varijanti, vožnji i stanica, najraniji polazak i najkasniji dolazak |
+| Tablica linija | `GET /api/routes/table` – filtri popisa i `hasTrips`, `stopId`; redoslijed `sortBy` (`Default`, `Code`, `ShortName`, `LongName`, `RouteType`, `Agency`, `IsActive`, `VariantCount`, `ValidTo`, `UpdatedAt`) i `sortDescending`; uz svaku liniju prijevoznik, broj varijanti i razdoblje voznog reda (`validFrom`–`validTo`: najraniji početak i najkasniji kraj kalendara njezinih vožnji) |
 | Linije: grupna izmjena | `POST /api/routes/bulk/active` `{ ids, isActive }`, `POST /api/routes/bulk/agency` `{ ids, agencyId }` (vožnje i vozni red ostaju) – najviše 500; vraća `{ changed }` |
 | Linija: karta uživo (vožnje dana) | `GET /api/routes/{id}/live?date=` |
 | Karta uživo: sva vozila | `GET /api/routes/live?date=` |

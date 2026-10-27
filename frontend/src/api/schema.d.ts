@@ -5664,20 +5664,16 @@ export interface components {
             updatedAt: string;
         };
         /** @enum {unknown} */
-        RouteSortField: "Default" | "Code" | "ShortName" | "LongName" | "RouteType" | "Agency" | "IsActive" | "VariantCount" | "TripCount" | "UpdatedAt";
+        RouteSortField: "Default" | "Code" | "ShortName" | "LongName" | "RouteType" | "Agency" | "IsActive" | "VariantCount" | "ValidTo" | "UpdatedAt";
         RouteTableRowResponse: {
             route: components["schemas"]["RouteResponse"];
             agencyName: string;
             /** Format: int32 */
             variantCount: number;
-            /** Format: int32 */
-            tripCount: number;
-            /** Format: int32 */
-            stopCount: number;
-            /** Format: int32 */
-            firstDeparture: null | number;
-            /** Format: int32 */
-            lastArrival: null | number;
+            /** Format: date */
+            validFrom: null | string;
+            /** Format: date */
+            validTo: null | string;
         };
         RouteTagResponse: {
             /** Format: uuid */

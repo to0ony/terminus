@@ -1,14 +1,11 @@
 namespace Terminus.WebApi.Contracts.Routes;
 
 /// <summary>Redak tablice linija.</summary>
-/// <param name="StopCount">Različite stanice na kojima staju vožnje linije.</param>
-/// <param name="FirstDeparture">Najraniji polazak, u sekundama od početka dana voznog reda.</param>
-/// <param name="LastArrival">Najkasniji dolazak, u sekundama (može biti iza 24:00).</param>
+/// <param name="ValidFrom">Najraniji početak kalendara po kojima voze vožnje linije; null bez vožnji.</param>
+/// <param name="ValidTo">Najkasniji kraj tih kalendara; null bez vožnji.</param>
 public record RouteTableRowResponse(
     RouteResponse Route,
     string AgencyName,
     int VariantCount,
-    int TripCount,
-    int StopCount,
-    int? FirstDeparture,
-    int? LastArrival);
+    DateOnly? ValidFrom,
+    DateOnly? ValidTo);

@@ -50,10 +50,8 @@ public static class RouteMappings
         row.Route.ToResponse(),
         row.AgencyName,
         row.VariantCount,
-        row.TripCount,
-        row.StopCount,
-        row.FirstDeparture,
-        row.LastArrival);
+        row.ValidFrom,
+        row.ValidTo);
 
     public static RouteFilter ToFilter(this RouteTableQuery query)
     {
