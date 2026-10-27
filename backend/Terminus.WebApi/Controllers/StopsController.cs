@@ -17,6 +17,7 @@ public class StopsController(
     IDepartureService departureService,
     IStopTimetableService stopTimetableService,
     IRouteDiagramService routeDiagramService,
+    IStopPrintService stopPrintService,
     TimeProvider timeProvider) : ControllerBase
 {
     [HttpGet]
@@ -121,25 +122,26 @@ public class StopsController(
     }
 
     /// <summary>
-    /// Vozni redovi odabranih stanica u jednom PDF-u (najviše 100), svaka od
-    /// nove stranice. Stanice bez polazaka se preskaču; njihov broj je u
-    /// zaglavlju X-Skipped-Stops. 422 ako polazaka nema nijedna.
+    /// PDF odabranih stanica (najviše 100): za svaku vozni red, sheme linija
+    /// koje na njoj staju ili oboje, svaki od nove stranice. Stanice bez ičega
+    /// za ispis se preskaču; njihov broj je u zaglavlju X-Skipped-Stops. 422
+    /// ako ispisa nema ni za jednu.
     /// </summary>
-    [HttpPost("timetables.pdf")]
+    [HttpPost("pdf")]
     [ProducesResponseType<FileContentResult>(StatusCodes.Status200OK, "application/pdf")]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> GetTimetablesPdf(
-        StopTimetablesRequest request,
+    public async Task<IActionResult> GetPdf(
+        StopPdfRequest request,
         CancellationToken cancellationToken)
     {
-        var pdf = await stopTimetableService.GetPdfManyAsync(request.Ids!, request.ToOptions(), timeProvider.GetUtcNow(), cancellationToken);
+        var pdf = await stopPrintService.GetPdfAsync(request.Ids!, request.ToOptions(), timeProvider.GetUtcNow(), cancellationToken);
         Response.Headers[SkippedStopsHeader] = pdf.Skipped.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
         return File(pdf.Content, "application/pdf", pdf.FileName);
     }
 
-    /// <summary>Broj preskočenih stanica (bez polazaka) u PDF-u više stanica.</summary>
+    /// <summary>Broj preskočenih stanica (bez ičega za ispis) u PDF-u stanica.</summary>
     public const string SkippedStopsHeader = "X-Skipped-Stops";
 
     /// <summary>

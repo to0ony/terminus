@@ -81,9 +81,6 @@ public class StopTimetableService(
         return new StopTimetable(stop, agency.Name, start, end, sections);
     }
 
-    /// <summary>Najviše stanica u jednom PDF-u.</summary>
-    public const int MaxPdfStops = 100;
-
     public async Task<TimetablePdf> GetPdfAsync(Guid stopId, TimetablePdfOptions options, DateTimeOffset now, CancellationToken cancellationToken = default)
     {
         var timetable = await GetAsync(stopId, options.From, options.To, now, cancellationToken);
@@ -97,54 +94,23 @@ public class StopTimetableService(
         return new TimetablePdf(content, fileName);
     }
 
-    public async Task<TimetablesPdf> GetPdfManyAsync(
-        IReadOnlyCollection<Guid> stopIds,
-        TimetablePdfOptions options,
-        DateTimeOffset now,
-        CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Vozni red stanice kao dokument za spajanje s drugima; null ako sa
+    /// stanice u razdoblju nema polazaka (ili se vozni red ne može izraditi).
+    /// </summary>
+    internal async Task<IDocument?> ComposeAsync(Guid stopId, TimetablePdfOptions options, DateTimeOffset now, CancellationToken cancellationToken)
     {
-        var ids = stopIds.Distinct().ToList();
-        var errors = new ValidationErrors();
-        if (ids.Count == 0)
+        StopTimetable timetable;
+        try
         {
-            errors.Add("Ids", "Odaberi barem jednu stanicu.");
+            timetable = await GetAsync(stopId, options.From, options.To, now, cancellationToken);
         }
-        else if (ids.Count > MaxPdfStops)
+        catch (UnprocessableException)
         {
-            errors.Add("Ids", $"U jedan PDF stane najviše {MaxPdfStops} stanica.");
-        }
-        errors.ThrowIfAny();
-
-        var look = await LookAsync(cancellationToken);
-        var documents = new List<IDocument>();
-        var skipped = new List<string>();
-        DateOnly? from = null;
-        foreach (var id in ids)
-        {
-            try
-            {
-                var timetable = await GetAsync(id, options.From, options.To, now, cancellationToken);
-                documents.Add(Compose(timetable, options, look));
-                from ??= timetable.From;
-            }
-            catch (UnprocessableException)
-            {
-                // Stanica bez polazaka ne ruši cijeli ispis (GetAsync je već provjerio da postoji).
-                var stop = await stopRepository.GetAsync(id, cancellationToken);
-                skipped.Add(stop?.Name ?? id.ToString());
-            }
+            return null;
         }
 
-        if (documents.Count == 0)
-        {
-            throw new UnprocessableException("Vozni red se ne može izraditi.", ["Nijedna odabrana stanica u tom razdoblju nema polazaka."]);
-        }
-
-        var texts = TimetableTexts.For(options.Language);
-        var content = Document.Merge(documents).UseOriginalPageNumbers().GeneratePdf();
-        var fileName = $"{texts.FilePrefix}-{documents.Count}-{from!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}.pdf";
-
-        return new TimetablesPdf(content, fileName, skipped);
+        return Compose(timetable, options, await LookAsync(cancellationToken));
     }
 
     /// <summary>Naziv, boja i logo iz postavki, isti za sve stanice ispisa.</summary>
