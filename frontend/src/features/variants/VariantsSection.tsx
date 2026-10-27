@@ -86,19 +86,28 @@ export function VariantsSection({ routeId, hasTrips }: VariantsSectionProps) {
     })
   }
 
-  /** Varijanta odmah nestaje s popisa; briše se kad istekne „Poništi”. */
+  /** Nakon potvrde varijanta odmah nestaje s popisa; briše se kad istekne „Poništi”. */
   const deleteVariant = (variant: Variant) => {
     const key = variantKeys.route(routeId)
-    deferDelete({
-      message: `Varijanta „${variant.name}” obrisana.`,
-      apply: () =>
-        queryClient.setQueryData<Variant[]>(key, (list) =>
-          list?.filter((v) => v.id !== variant.id),
-        ),
-      // Popis se slaže po smjeru i redoslijedu, pa je dovoljno vratiti varijantu.
-      revert: () => queryClient.setQueryData<Variant[]>(key, (list) => list && [...list, variant]),
-      commit: () => remove.mutateAsync(variant.id),
-      errorTitle: 'Varijanta nije obrisana',
+    const confirm = () =>
+      deferDelete({
+        message: `Varijanta „${variant.name}” obrisana.`,
+        apply: () =>
+          queryClient.setQueryData<Variant[]>(key, (list) =>
+            list?.filter((v) => v.id !== variant.id),
+          ),
+        // Popis se slaže po smjeru i redoslijedu, pa je dovoljno vratiti varijantu.
+        revert: () =>
+          queryClient.setQueryData<Variant[]>(key, (list) => list && [...list, variant]),
+        commit: () => remove.mutateAsync(variant.id),
+        errorTitle: 'Varijanta nije obrisana',
+      })
+    modals.openConfirmModal({
+      title: 'Obriši varijantu',
+      children: <Text size="sm">Varijanta „{variant.name}” bit će obrisana.</Text>,
+      labels: { confirm: 'Obriši', cancel: 'Odustani' },
+      confirmProps: { color: 'red' },
+      onConfirm: confirm,
     })
   }
 
