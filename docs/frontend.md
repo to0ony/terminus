@@ -84,9 +84,10 @@ brišu više toga (stanica, linija, sezona, prijevoznik) imaju samo potvrdu.
 
 Tema sučelja (prema sustavu, svijetla ili tamna) bira se u korisničkom
 izborniku ili na stranici Postavke; Mantine je pamti u pregledniku.
-Tamo se bira i **gustoća prikaza**: udobno (zadano) ili zbijeno, s manjim
-razmakom redaka tablica (`terminus-density`, zadani razmak tablica u
-`app/theme.ts`; tablice sa svojim razmakom, npr. vozni red, ga zadržavaju).
+Tamo se bira i **gustoća prikaza** tablica (`terminus-density`, `app/theme.ts`),
+s visinama redaka po Material Designu: udobno (zadano) 52 px, zbijeno 36 px.
+Vrijedi za popise (linije, stanice, kalendari, varijante, prijevoznici…), a
+tablice sa svojim razmakom (vozni red, editori) ga zadržavaju.
 
 `components/map/MapView` je MapLibre GL s podlogom
 [OpenFreeMap](https://openfreemap.org) (bez API ključa). Podloga se bira gumbom

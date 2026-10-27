@@ -172,11 +172,7 @@ export function StopsPage() {
             ) : (
               <>
                 <Paper withBorder style={{ overflow: 'hidden' }}>
-                  <Table
-                    highlightOnHover
-                    verticalSpacing={6}
-                    style={{ opacity: stops.isPlaceholderData ? 0.6 : 1 }}
-                  >
+                  <Table highlightOnHover style={{ opacity: stops.isPlaceholderData ? 0.6 : 1 }}>
                     <Table.Thead>
                       <Table.Tr>
                         <Table.Th>Naziv</Table.Th>

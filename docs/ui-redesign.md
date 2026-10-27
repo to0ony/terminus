@@ -76,7 +76,7 @@ Pretvoriti ga u radnu ploču:
   premjesti na drugog prijevoznika), ljepljivo zaglavlje i virtualizaciju
   umjesto straničenja.
 - ✅ Prekidač gustoće prikaza (zbijeno / udobno) – u korisničkom izborniku i
-  Postavkama, pamti se u pregledniku; mijenja zadani razmak redaka tablica.
+  Postavkama, pamti se u pregledniku; redovi popisa 52 px ili 36 px.
 
 ### Editori
 

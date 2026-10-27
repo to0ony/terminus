@@ -155,11 +155,7 @@ export function RoutesPage() {
         <>
           <Paper withBorder style={{ overflow: 'hidden' }}>
             <Table.ScrollContainer minWidth={560}>
-              <Table
-                highlightOnHover
-                verticalSpacing="xs"
-                style={{ opacity: routes.isPlaceholderData ? 0.6 : 1 }}
-              >
+              <Table highlightOnHover style={{ opacity: routes.isPlaceholderData ? 0.6 : 1 }}>
                 <Table.Thead>
                   <Table.Tr>
                     <Table.Th w={90}>Linija</Table.Th>

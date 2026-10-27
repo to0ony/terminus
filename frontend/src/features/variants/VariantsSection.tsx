@@ -155,7 +155,7 @@ export function VariantsSection({ routeId, hasTrips }: VariantsSectionProps) {
           </Alert>
         ) : (
           <Table.ScrollContainer minWidth={640}>
-            <Table verticalSpacing="xs">
+            <Table>
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>Varijanta</Table.Th>

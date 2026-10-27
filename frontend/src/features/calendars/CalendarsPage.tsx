@@ -160,11 +160,7 @@ function OtherCalendars() {
       ) : (
         <Paper withBorder style={{ overflow: 'hidden' }}>
           <Table.ScrollContainer minWidth={640}>
-            <Table
-              highlightOnHover
-              verticalSpacing="xs"
-              style={{ opacity: calendars.isPlaceholderData ? 0.6 : 1 }}
-            >
+            <Table highlightOnHover style={{ opacity: calendars.isPlaceholderData ? 0.6 : 1 }}>
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>Naziv</Table.Th>
