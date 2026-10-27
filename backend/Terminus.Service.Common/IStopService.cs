@@ -10,7 +10,7 @@ public interface IStopService
 
     Task<PagedResult<IStopModel>> FindAsync(StopFilter filter, CancellationToken cancellationToken = default);
 
-    /// <summary>Popis stanica za tablicu: uz svaku kolodvor, broj perona i vožnji te linije.</summary>
+    /// <summary>Popis stanica za tablicu: uz svaku kolodvor, broj perona i linije.</summary>
     Task<PagedResult<StopTableRow>> FindTableAsync(StopFilter filter, CancellationToken cancellationToken = default);
 
     /// <summary>

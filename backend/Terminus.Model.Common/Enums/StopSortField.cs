@@ -14,6 +14,5 @@ public enum StopSortField
     WheelchairBoarding,
     IsActive,
     RouteCount,
-    TripCount,
     UpdatedAt
 }

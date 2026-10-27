@@ -29,7 +29,7 @@ Sve osim `/api/public/*`, `/api/auth/login` i `/health` traži prijavu
 | Postavke instance | `GET`/`PUT /api/settings`, `PUT`/`DELETE /api/settings/logo` |
 | Prijevoznici | `/api/agencies`; `DELETE /api/agencies/{id}?moveRoutesTo=` linije i cijene prvo prebacuje na drugog prijevoznika |
 | Stanice | `/api/stops`, `/api/stops/area`, `/api/stops/extent` |
-| Tablica stanica | `GET /api/stops/table` – filtri popisa i `wheelchairBoarding`, `hasTrips`, `hasCoordinates`, `routeId`; redoslijed `sortBy` (`Name`, `Code`, `PublicCode`, `PlatformCode`, `LocationType`, `WheelchairBoarding`, `IsActive`, `RouteCount`, `TripCount`, `UpdatedAt`) i `sortDescending`; uz svaku stanicu kolodvor, broj perona i vožnji te linije |
+| Tablica stanica | `GET /api/stops/table` – filtri popisa i `wheelchairBoarding`, `hasTrips`, `hasCoordinates`, `routeId`; redoslijed `sortBy` (`Name`, `Code`, `PublicCode`, `PlatformCode`, `LocationType`, `WheelchairBoarding`, `IsActive`, `RouteCount`, `UpdatedAt`) i `sortDescending`; uz svaku stanicu kolodvor, broj perona i linije |
 | Stanice: grupna izmjena | `POST /api/stops/bulk/active` `{ ids, isActive }` – najviše 500; pravila kao kod jedne stanice, a ako ijedna ne smije, ne mijenja se nijedna; vraća `{ changed }` |
 | Stanica: linije i polasci | `/api/stops/{id}/routes`, `/api/stops/{id}/departures?date=` |
 | Stanica: PDF vozni red | `GET /api/stops/{id}/timetable.pdf?from=&to=&paper=&language=` |

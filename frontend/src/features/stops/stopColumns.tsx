@@ -15,7 +15,7 @@ const dimmed = (value: string) => (
   </Text>
 )
 
-/** Stupci tablice stanica; zadano su vidljivi naziv, oznaka, peron, linije i vožnje. */
+/** Stupci tablice stanica; zadano su vidljivi naziv, oznaka, peron i linije. */
 export const stopColumns: DataColumn<StopTableRow>[] = [
   {
     id: 'name',
@@ -90,15 +90,6 @@ export const stopColumns: DataColumn<StopTableRow>[] = [
     sortKey: 'RouteCount',
     mobile: 'meta',
     cell: ({ routes }) => <RouteTags routes={routes} />,
-  },
-  {
-    id: 'trips',
-    header: 'Vožnje',
-    sortKey: 'TripCount',
-    align: 'right',
-    width: 100,
-    mobile: 'meta',
-    cell: ({ tripCount }) => (tripCount > 0 ? formatNumber(tripCount) : dimmed('—')),
   },
   {
     id: 'platforms',

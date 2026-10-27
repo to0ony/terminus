@@ -32,7 +32,7 @@ public class StopsController(
 
     /// <summary>
     /// Stanice za tablicu u dashboardu: popis s dodatnim filtrima i redoslijedom,
-    /// a uz svaku stanicu kolodvor, broj perona i vožnji te linije koje staju.
+    /// a uz svaku stanicu kolodvor, broj perona i linije koje staju.
     /// </summary>
     [HttpGet("table")]
     [ProducesResponseType<PagedResult<StopTableRowResponse>>(StatusCodes.Status200OK)]

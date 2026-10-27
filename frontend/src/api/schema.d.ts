@@ -6099,14 +6099,12 @@ export interface components {
             truncated: boolean;
         };
         /** @enum {unknown} */
-        StopSortField: "Name" | "Code" | "PublicCode" | "PlatformCode" | "LocationType" | "WheelchairBoarding" | "IsActive" | "RouteCount" | "TripCount" | "UpdatedAt";
+        StopSortField: "Name" | "Code" | "PublicCode" | "PlatformCode" | "LocationType" | "WheelchairBoarding" | "IsActive" | "RouteCount" | "UpdatedAt";
         StopTableRowResponse: {
             stop: components["schemas"]["StopResponse"];
             parentStationName: null | string;
             /** Format: int32 */
             platformCount: number;
-            /** Format: int32 */
-            tripCount: number;
             routes: components["schemas"]["RouteTagResponse"][];
         };
         StopTimeRequest: {

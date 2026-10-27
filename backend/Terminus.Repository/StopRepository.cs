@@ -65,7 +65,7 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
         var ids = page.Items.Select(s => s.Id).ToList();
         if (ids.Count == 0)
         {
-            return page.Map(s => new StopTableRow(s, null, 0, 0, []));
+            return page.Map(s => new StopTableRow(s, null, 0, []));
         }
 
         var parentIds = page.Items.Where(s => s.ParentStationId is not null).Select(s => s.ParentStationId!.Value).ToHashSet();
@@ -82,8 +82,6 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
             .ToListAsync(cancellationToken);
         var stopIds = ids.Concat(platforms.Select(p => p.Id)).ToHashSet();
 
-        var tripCounts = await TripCountsQuery(context, stopIds)
-            .ToDictionaryAsync(x => x.StopId, x => x.Trips, cancellationToken);
         var routePairs = await RoutesAtQuery(context, stopIds).ToListAsync(cancellationToken);
 
         var routeIds = routePairs.Select(p => p.RouteId).ToHashSet();
@@ -109,18 +107,9 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
                 stop,
                 stop.ParentStationId is { } parentId ? parentNames.GetValueOrDefault(parentId) : null,
                 platformsOf[stop.Id].Count(),
-                served.Sum(id => tripCounts.GetValueOrDefault(id)),
                 routes.Where(r => routeSet.Contains(r.Id)).ToList());
         });
     }
-
-    /// <summary>Broj različitih vožnji po stanici.</summary>
-    internal static IQueryable<StopTripCount> TripCountsQuery(TerminusDbContext context, IReadOnlyCollection<Guid> stopIds) =>
-        context.StopTimes
-            .AsNoTracking()
-            .Where(st => stopIds.Contains(st.StopId))
-            .GroupBy(st => st.StopId)
-            .Select(g => new StopTripCount { StopId = g.Key, Trips = g.Select(st => st.TripId).Distinct().Count() });
 
     /// <summary>Parovi stanica – linija za vožnje koje staju na stanicama.</summary>
     internal static IQueryable<StopRoute> RoutesAtQuery(TerminusDbContext context, IReadOnlyCollection<Guid> stopIds) =>
@@ -200,9 +189,6 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
             StopSortField.WheelchairBoarding => query.OrderByDirection(s => s.WheelchairBoarding, descending),
             StopSortField.IsActive => query.OrderByDirection(s => s.IsActive, descending),
             StopSortField.UpdatedAt => query.OrderByDirection(s => s.UpdatedAt, descending),
-            StopSortField.TripCount => query.OrderByDirection(
-                s => context.Trips.Count(t => t.StopTimes.Any(st => st.StopId == s.Id || st.Stop.ParentStationId == s.Id)),
-                descending),
             StopSortField.RouteCount => query.OrderByDirection(
                 s => context.Routes.Count(r => r.Trips.Any(t => t.StopTimes.Any(st => st.StopId == s.Id || st.Stop.ParentStationId == s.Id))),
                 descending),
@@ -388,12 +374,6 @@ public class StopRepository(TerminusDbContext context) : IStopRepository
             throw new ConflictException($"Stanica s kodom '{stop.Code}' već postoji.", ex);
         }
     }
-}
-
-internal sealed class StopTripCount
-{
-    public Guid StopId { get; init; }
-    public int Trips { get; init; }
 }
 
 internal sealed class StopRoute

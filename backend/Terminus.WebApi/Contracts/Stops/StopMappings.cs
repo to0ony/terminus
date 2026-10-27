@@ -51,7 +51,6 @@ public static class StopMappings
         row.Stop.ToResponse(),
         row.ParentStationName,
         row.PlatformCount,
-        row.TripCount,
         row.Routes.Select(r => new RouteTagResponse(r.Id, r.Code, r.ShortName, r.Color, r.TextColor)).ToList());
 
     public static StopFilter ToFilter(this StopTableQuery query)

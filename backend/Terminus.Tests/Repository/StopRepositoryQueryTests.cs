@@ -35,7 +35,6 @@ public class StopRepositoryQueryTests
     [Theory]
     [InlineData(StopSortField.Name, false)]
     [InlineData(StopSortField.PublicCode, true)]
-    [InlineData(StopSortField.TripCount, true)]
     [InlineData(StopSortField.RouteCount, false)]
     public void TableQuery_WithAllFilters_TranslatesToSql(StopSortField sortBy, bool descending)
     {
@@ -58,16 +57,6 @@ public class StopRepositoryQueryTests
 
         Assert.Contains("FROM stops", sql);
         Assert.Contains("ORDER BY", sql);
-    }
-
-    [Fact]
-    public void TripCountsQuery_TranslatesToSql()
-    {
-        using var context = CreateContext();
-
-        var sql = StopRepository.TripCountsQuery(context, [Guid.NewGuid()]).ToQueryString();
-
-        Assert.Contains("GROUP BY", sql);
     }
 
     [Fact]
