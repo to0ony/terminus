@@ -12,7 +12,6 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { modals } from '@mantine/modals'
-import { notifications } from '@mantine/notifications'
 import {
   IconArrowsExchange,
   IconCopy,
@@ -21,8 +20,8 @@ import {
   IconTrash,
   IconWand,
 } from '@tabler/icons-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router'
-import { errorMessage } from '@/api/errors'
 import { TableSkeleton } from '@/components/Skeletons'
 import { QueryError } from '@/components/QueryError'
 import { formatNumber } from '@/lib/format'
@@ -31,9 +30,11 @@ import {
   useDeleteVariant,
   useDeriveVariants,
   useRouteVariants,
+  variantKeys,
   type Variant,
 } from './queries'
 import { duration } from './variantMath'
+import { deferDelete } from '@/lib/undo'
 
 function directionTitle(direction: number | null) {
   return direction === 0 ? 'Polazni smjer' : direction === 1 ? 'Povratni smjer' : 'Bez smjera'
@@ -53,6 +54,7 @@ export function VariantsSection({ routeId, hasTrips }: VariantsSectionProps) {
   const navigate = useNavigate()
   const variants = useRouteVariants(routeId)
   const remove = useDeleteVariant(routeId)
+  const queryClient = useQueryClient()
   const derive = useDeriveVariants(routeId)
 
   const reverseUrl = (variant: Variant, trips: boolean) =>
@@ -84,22 +86,21 @@ export function VariantsSection({ routeId, hasTrips }: VariantsSectionProps) {
     })
   }
 
-  const confirmDelete = (variant: Variant) =>
-    modals.openConfirmModal({
-      title: 'Obriši varijantu',
-      children: <Text size="sm">Varijanta „{variant.name}” bit će obrisana.</Text>,
-      labels: { confirm: 'Obriši', cancel: 'Odustani' },
-      confirmProps: { color: 'red' },
-      onConfirm: () =>
-        remove.mutate(variant.id, {
-          onError: (error) =>
-            notifications.show({
-              color: 'red',
-              title: 'Brisanje nije uspjelo',
-              message: errorMessage(error),
-            }),
-        }),
+  /** Varijanta odmah nestaje s popisa; briše se kad istekne „Poništi”. */
+  const deleteVariant = (variant: Variant) => {
+    const key = variantKeys.route(routeId)
+    deferDelete({
+      message: `Varijanta „${variant.name}” obrisana.`,
+      apply: () =>
+        queryClient.setQueryData<Variant[]>(key, (list) =>
+          list?.filter((v) => v.id !== variant.id),
+        ),
+      // Popis se slaže po smjeru i redoslijedu, pa je dovoljno vratiti varijantu.
+      revert: () => queryClient.setQueryData<Variant[]>(key, (list) => list && [...list, variant]),
+      commit: () => remove.mutateAsync(variant.id),
+      errorTitle: 'Varijanta nije obrisana',
     })
+  }
 
   return (
     <Paper withBorder p="md">
@@ -269,7 +270,7 @@ export function VariantsSection({ routeId, hasTrips }: VariantsSectionProps) {
                               variant="subtle"
                               color="red"
                               disabled={variant.tripCount > 0}
-                              onClick={() => confirmDelete(variant)}
+                              onClick={() => deleteVariant(variant)}
                               aria-label="Obriši varijantu"
                             >
                               <IconTrash size={16} />

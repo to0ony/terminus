@@ -72,6 +72,14 @@ obavijest; komponenta koja ih prikazuje sama postavlja
 **Datoteke** (GTFS izvoz, PDF) preuzimaju se kao blob (`parseAs: 'blob'`), a
 naziv datoteke dolazi iz `Content-Disposition` (`lib/download.ts`).
 
+**Poništavanje.** Brisanje varijante i razdoblja sezone ne traži potvrdu:
+stavka odmah nestaje iz prikaza, a obavijest nudi „Poništi” šest sekundi.
+Server briše tek kad to vrijeme istekne (ili odmah pri zatvaranju stranice);
+ako odbije, stavka se vraća uz poruku (`lib/undo.tsx`, `deferDelete`). Izmjena
+dana sezone odmah se vidi u kalendaru i sprema u pozadini, a „Poništi” vraća
+prijašnju iznimku ili pravilo. Brisanja koja server često odbija ili koja
+brišu više toga (stanica, linija, sezona, prijevoznik) i dalje traže potvrdu.
+
 ## Tema i karta
 
 Tema sučelja (prema sustavu, svijetla ili tamna) bira se u korisničkom

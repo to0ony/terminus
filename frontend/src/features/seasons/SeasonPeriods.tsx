@@ -13,13 +13,20 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { DatePickerInput, type DatesRangeValue } from '@mantine/dates'
-import { modals } from '@mantine/modals'
 import { IconCalendar, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { ApiError, errorMessage } from '@/api/errors'
 import { formatDate } from '@/lib/format'
-import { type Season, type SeasonPeriod, type SeasonPeriodRequest, useSavePeriods } from './queries'
+import {
+  type Season,
+  type SeasonPeriod,
+  type SeasonPeriodRequest,
+  seasonKeys,
+  useSavePeriods,
+} from './queries'
 import { weekdays } from './seasonDays'
+import { deferDelete } from '@/lib/undo'
 
 /** Razdoblje kao zahtjev, da se popis može poslati cijeli. */
 const toRequest = (p: SeasonPeriod): SeasonPeriodRequest => ({
@@ -39,21 +46,34 @@ const toRequest = (p: SeasonPeriod): SeasonPeriodRequest => ({
  */
 export function SeasonPeriods({ season }: { season: Season }) {
   const save = useSavePeriods(season.id)
+  const queryClient = useQueryClient()
   const [editing, setEditing] = useState<SeasonPeriod | 'new' | null>(null)
   const name = (id: string | null) => season.dayTypes.find((t) => t.id === id)?.name ?? '?'
 
-  const remove = (period: SeasonPeriod) =>
-    modals.openConfirmModal({
-      title: 'Obriši razdoblje',
-      children: (
-        <Text size="sm">
-          Razdoblje „{period.name}” bit će obrisano, a njegovi dani voze kao inače.
-        </Text>
-      ),
-      labels: { confirm: 'Obriši', cancel: 'Odustani' },
-      confirmProps: { color: 'red' },
-      onConfirm: () => save.mutate(season.periods.filter((p) => p.id !== period.id).map(toRequest)),
+  /** Razdoblje odmah nestaje; sprema se bez njega kad istekne „Poništi”. */
+  const remove = (period: SeasonPeriod) => {
+    const key = seasonKeys.detail(season.id)
+    const update = (change: (periods: SeasonPeriod[]) => SeasonPeriod[]) =>
+      queryClient.setQueryData<Season>(key, (current) =>
+        current ? { ...current, periods: change(current.periods) } : current,
+      )
+    deferDelete({
+      message: `Razdoblje „${period.name}” obrisano.`,
+      apply: () => update((periods) => periods.filter((p) => p.id !== period.id)),
+      revert: () =>
+        update((periods) =>
+          [...periods, period].sort((a, b) => a.startDate.localeCompare(b.startDate)),
+        ),
+      // Sprema razdoblja kakva su tada, pa se dva brisanja zaredom ne poništavaju.
+      commit: () =>
+        save.mutateAsync(
+          (queryClient.getQueryData<Season>(key)?.periods ?? [])
+            .filter((p) => p.id !== period.id)
+            .map(toRequest),
+        ),
+      errorTitle: 'Razdoblje nije obrisano',
     })
+  }
 
   return (
     <Paper withBorder p="md">
