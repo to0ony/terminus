@@ -16,7 +16,7 @@ import { useDebouncedValue, useDisclosure } from '@mantine/hooks'
 import { IconPlus, IconSearch } from '@tabler/icons-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { PageLoader } from '@/components/PageLoader'
+import { TableSkeleton } from '@/components/Skeletons'
 import { QueryError } from '@/components/QueryError'
 import { NewSeasonDialog } from '@/features/seasons/NewSeasonDialog'
 import { type Season, useSeasons } from '@/features/seasons/queries'
@@ -50,7 +50,7 @@ export function CalendarsPage() {
           </Text>
         </div>
         {seasons.isPending ? (
-          <PageLoader />
+          <TableSkeleton rows={2} />
         ) : seasons.isError ? (
           <QueryError error={seasons.error} onRetry={() => void seasons.refetch()} />
         ) : seasons.data.length === 0 ? (
@@ -148,7 +148,7 @@ function OtherCalendars() {
       </Group>
 
       {calendars.isPending ? (
-        <PageLoader />
+        <TableSkeleton />
       ) : calendars.isError ? (
         <QueryError error={calendars.error} onRetry={() => void calendars.refetch()} />
       ) : items.length === 0 ? (

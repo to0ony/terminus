@@ -23,7 +23,7 @@ import {
 } from '@tabler/icons-react'
 import { Link, useNavigate } from 'react-router'
 import { errorMessage } from '@/api/errors'
-import { PageLoader } from '@/components/PageLoader'
+import { TableSkeleton } from '@/components/Skeletons'
 import { QueryError } from '@/components/QueryError'
 import { formatNumber } from '@/lib/format'
 import {
@@ -120,7 +120,7 @@ export function VariantsSection({ routeId, hasTrips }: VariantsSectionProps) {
         </Group>
 
         {variants.isPending ? (
-          <PageLoader />
+          <TableSkeleton rows={3} />
         ) : variants.isError ? (
           <QueryError error={variants.error} onRetry={() => void variants.refetch()} />
         ) : variants.data.length === 0 ? (

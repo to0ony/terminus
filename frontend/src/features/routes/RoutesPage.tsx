@@ -16,7 +16,7 @@ import { useDebouncedCallback, useDisclosure } from '@mantine/hooks'
 import { IconPlus, IconSearch } from '@tabler/icons-react'
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
-import { PageLoader } from '@/components/PageLoader'
+import { TableSkeleton } from '@/components/Skeletons'
 import { QueryError } from '@/components/QueryError'
 import { useAgencies } from '@/features/agencies/queries'
 import { formatNumber } from '@/lib/format'
@@ -140,7 +140,7 @@ export function RoutesPage() {
       </Group>
 
       {routes.isPending ? (
-        <PageLoader />
+        <TableSkeleton rows={10} />
       ) : routes.isError ? (
         <QueryError error={routes.error} onRetry={() => void routes.refetch()} />
       ) : routes.data.items.length === 0 ? (

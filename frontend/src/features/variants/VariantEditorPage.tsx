@@ -34,7 +34,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useBlocker, useNavigate, useParams, useSearchParams } from 'react-router'
 import { ApiError, errorMessage } from '@/api/errors'
 import { PageBreadcrumbs } from '@/components/PageBreadcrumbs'
-import { PageLoader } from '@/components/PageLoader'
+import { EditorSkeleton } from '@/components/Skeletons'
 import { QueryError } from '@/components/QueryError'
 import { useRoute } from '@/features/routes/queries'
 import { useRetimeTrips } from '@/features/schedule/queries'
@@ -198,7 +198,7 @@ export function VariantEditorPage() {
     extent.isPending ||
     (shapeId !== null && shape.isPending)
   ) {
-    return <PageLoader />
+    return <EditorSkeleton />
   }
 
   return (

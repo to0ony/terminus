@@ -18,7 +18,7 @@ import { useDebouncedCallback } from '@mantine/hooks'
 import { IconMapPinPlus, IconSearch, IconWorldDownload } from '@tabler/icons-react'
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
-import { PageLoader } from '@/components/PageLoader'
+import { BlockSkeleton, TableSkeleton } from '@/components/Skeletons'
 import { QueryError } from '@/components/QueryError'
 import { distance } from '@/features/variants/variantMath'
 import { formatNumber } from '@/lib/format'
@@ -158,7 +158,7 @@ export function StopsPage() {
             </Group>
 
             {stops.isPending ? (
-              <PageLoader />
+              <TableSkeleton rows={10} />
             ) : stops.isError ? (
               <QueryError error={stops.error} onRetry={() => void stops.refetch()} />
             ) : stops.data.items.length === 0 ? (
@@ -251,7 +251,7 @@ export function StopsPage() {
         <Grid.Col span={{ base: 12, lg: 7 }}>
           <Paper withBorder style={{ overflow: 'hidden' }}>
             {extent.isPending ? (
-              <PageLoader />
+              <BlockSkeleton h={{ base: 400, lg: 'calc(100vh - 190px)' }} />
             ) : (
               <StopsMap
                 h={{ base: 400, lg: 'calc(100vh - 190px)' }}

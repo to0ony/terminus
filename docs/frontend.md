@@ -32,7 +32,7 @@ pa se prikaz može podijeliti poveznicom i preživi osvježavanje.
 frontend/src/
   api/          generirani tipovi (schema.d.ts), klijent, ApiError, QueryClient
   app/          providers, router, layout s izbornikom, 404 i greške rute
-  components/   zajedničke komponente (učitavanje, greška upita, logo, karta)
+  components/   zajedničke komponente (skeletoni, putokaz, greška upita, logo, karta)
   features/     po području: auth, setup, dashboard, routes, stops, calendars,
                 seasons, agencies, gtfs, settings, appearance, board
   lib/          pomoćne funkcije (formati, boje, adrese, preuzimanje datoteka)

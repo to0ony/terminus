@@ -22,7 +22,7 @@ import {
 } from '@tabler/icons-react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { PageBreadcrumbs } from '@/components/PageBreadcrumbs'
-import { PageLoader } from '@/components/PageLoader'
+import { DetailSkeleton, TableSkeleton } from '@/components/Skeletons'
 import { QueryError } from '@/components/QueryError'
 import { useAgencies } from '@/features/agencies/queries'
 import { formatNumber } from '@/lib/format'
@@ -84,7 +84,7 @@ export function RouteDetailPage() {
     )
 
   if (route.isPending) {
-    return <PageLoader />
+    return <DetailSkeleton />
   }
   if (route.isError) {
     return <QueryError error={route.error} onRetry={() => void route.refetch()} />
@@ -202,7 +202,7 @@ export function RouteDetailPage() {
       ) : timetable.isError ? (
         <QueryError error={timetable.error} onRetry={() => void timetable.refetch()} />
       ) : !timetable.data ? (
-        <PageLoader />
+        <TableSkeleton />
       ) : timetable.data.trips.length === 0 ? (
         <Paper withBorder p="xl">
           <Text c="dimmed" ta="center">

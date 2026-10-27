@@ -32,7 +32,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useBlocker, useParams, useSearchParams } from 'react-router'
 import { ApiError, errorMessage } from '@/api/errors'
 import { PageBreadcrumbs } from '@/components/PageBreadcrumbs'
-import { PageLoader } from '@/components/PageLoader'
+import { BlockSkeleton, ChartSkeleton } from '@/components/Skeletons'
 import { QueryError } from '@/components/QueryError'
 import { useCalendars } from '@/features/calendars/queries'
 import { directionOptions } from '@/features/routes/directions'
@@ -179,7 +179,7 @@ export function SchedulePage() {
     )
 
   if (route.isPending || patterns.isPending || routeVariants.isPending) {
-    return <PageLoader />
+    return <ChartSkeleton />
   }
   if (route.isError) {
     return <QueryError error={route.error} onRetry={() => void route.refetch()} />
@@ -259,7 +259,7 @@ export function SchedulePage() {
       ) : shown.isError ? (
         <QueryError error={shown.error} onRetry={() => void shown.refetch()} />
       ) : !shown.data || !current ? (
-        <PageLoader />
+        <BlockSkeleton h={480} />
       ) : (
         <ScheduleEditor
           // Novi podaci (drugi tip dana, smjer ili nakon spremanja) počinju ispočetka.

@@ -16,7 +16,7 @@ import { useDisclosure } from '@mantine/hooks'
 import { IconAlertTriangle, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { PageLoader } from '@/components/PageLoader'
+import { TableSkeleton } from '@/components/Skeletons'
 import { QueryError } from '@/components/QueryError'
 import { useRoutes } from '@/features/routes/queries'
 import { useSettings } from '@/features/settings/queries'
@@ -89,7 +89,7 @@ export function AgenciesPage() {
       />
 
       {agencies.isPending ? (
-        <PageLoader />
+        <TableSkeleton rows={3} />
       ) : agencies.isError ? (
         <QueryError error={agencies.error} onRetry={() => void agencies.refetch()} />
       ) : (

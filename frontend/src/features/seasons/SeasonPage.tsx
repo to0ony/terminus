@@ -19,7 +19,7 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { errorMessage } from '@/api/errors'
 import { PageBreadcrumbs } from '@/components/PageBreadcrumbs'
-import { PageLoader } from '@/components/PageLoader'
+import { DetailSkeleton } from '@/components/Skeletons'
 import { QueryError } from '@/components/QueryError'
 import { formatDate, formatNumber } from '@/lib/format'
 import { DayDialog } from './DayDialog'
@@ -48,7 +48,7 @@ export function SeasonPage() {
   const [copyOpened, copy] = useDisclosure(false)
 
   if (season.isPending) {
-    return <PageLoader />
+    return <DetailSkeleton />
   }
   if (season.isError) {
     return <QueryError error={season.error} onRetry={() => void season.refetch()} />

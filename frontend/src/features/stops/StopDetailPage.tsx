@@ -29,7 +29,7 @@ import {
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { errorMessage } from '@/api/errors'
 import { PageBreadcrumbs } from '@/components/PageBreadcrumbs'
-import { PageLoader } from '@/components/PageLoader'
+import { DetailSkeleton, TableSkeleton } from '@/components/Skeletons'
 import { QueryError } from '@/components/QueryError'
 import { RouteBadge } from '@/features/routes/RouteBadge'
 import { RouteDiagramPdfDialog } from '@/features/routes/RouteDiagramPdfDialog'
@@ -114,7 +114,7 @@ export function StopDetailPage() {
     )
 
   if (stop.isPending) {
-    return <PageLoader />
+    return <DetailSkeleton />
   }
   if (stop.isError) {
     return <QueryError error={stop.error} onRetry={() => void stop.refetch()} />
@@ -286,7 +286,7 @@ export function StopDetailPage() {
         {departures.isError ? (
           <QueryError error={departures.error} onRetry={() => void departures.refetch()} />
         ) : !departures.data ? (
-          <PageLoader />
+          <TableSkeleton />
         ) : shown.length === 0 ? (
           <Paper withBorder p="xl">
             <Text c="dimmed" ta="center">

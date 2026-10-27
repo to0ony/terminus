@@ -5,7 +5,7 @@ import dayjs from 'dayjs'
 import type { CSSProperties } from 'react'
 import { Link, useParams } from 'react-router'
 import { PageBreadcrumbs } from '@/components/PageBreadcrumbs'
-import { PageLoader } from '@/components/PageLoader'
+import { BlockSkeleton, DetailSkeleton } from '@/components/Skeletons'
 import { QueryError } from '@/components/QueryError'
 import { formatDate, formatNumber } from '@/lib/format'
 import { useCalendar, useCalendarDates } from './queries'
@@ -43,7 +43,7 @@ export function CalendarDetailPage() {
   const narrow = useMediaQuery('(max-width: 62em)')
 
   if (calendar.isPending) {
-    return <PageLoader />
+    return <DetailSkeleton />
   }
   if (calendar.isError) {
     return <QueryError error={calendar.error} onRetry={() => void calendar.refetch()} />
@@ -107,7 +107,7 @@ export function CalendarDetailPage() {
       {dates.isError ? (
         <QueryError error={dates.error} onRetry={() => void dates.refetch()} />
       ) : dates.isPending ? (
-        <PageLoader />
+        <BlockSkeleton h={300} />
       ) : (
         <Paper withBorder p="md">
           <Stack gap="md">
