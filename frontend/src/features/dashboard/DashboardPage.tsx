@@ -221,7 +221,7 @@ function QuickActions() {
         />
         <Action
           icon={IconFileTypePdf}
-          label="PDF voznih redova"
+          label="PDF stanica"
           hint="Odaberi stanice u tablici"
           to="/stops"
         />
