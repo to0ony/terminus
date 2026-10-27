@@ -1,12 +1,13 @@
-import { Alert, Button, Group, List, Paper, Stack, Text, Title } from '@mantine/core'
+import { Alert, Button, Group, List, Paper, Skeleton, Stack, Text, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { IconAlertCircle, IconDownload } from '@tabler/icons-react'
+import { IconAlertCircle, IconCircleCheck, IconDownload } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { ApiError, errorMessage } from '@/api/errors'
+import { QueryError } from '@/components/QueryError'
 import { saveFile } from '@/lib/download'
 import { GtfsImport } from './GtfsImport'
-import { useExportGtfs } from './queries'
+import { useExportGtfs, useGtfsCheck } from './queries'
 
 /** Izvoz trenutnog voznog reda i uvoz novog (npr. za novu sezonu). */
 export function GtfsPage() {
@@ -21,7 +22,10 @@ export function GtfsPage() {
 
 function ExportSection() {
   const exportFeed = useExportGtfs()
-  const problems = exportFeed.error instanceof ApiError ? exportFeed.error.problems : []
+  // Iste provjere kao izvoz, odmah pri otvaranju stranice.
+  const check = useGtfsCheck()
+  const problems = check.data ?? []
+  const exportProblems = exportFeed.error instanceof ApiError ? exportFeed.error.problems : []
 
   return (
     <Paper withBorder p="lg">
@@ -33,21 +37,46 @@ function ExportSection() {
             podaci se provjeravaju.
           </Text>
         </div>
+        {check.isPending ? (
+          <Skeleton h={36} radius="md" />
+        ) : check.isError ? (
+          <QueryError error={check.error} onRetry={() => void check.refetch()} />
+        ) : problems.length > 0 ? (
+          <Alert
+            color="red"
+            variant="light"
+            icon={<IconAlertCircle />}
+            title="Feed se ne može izvesti dok se ne isprave ovi problemi"
+          >
+            <List size="sm" spacing={4}>
+              {problems.map((problem) => (
+                <List.Item key={problem}>{problem}</List.Item>
+              ))}
+            </List>
+          </Alert>
+        ) : (
+          <Group gap="xs">
+            <IconCircleCheck size={18} color="var(--mantine-color-green-6)" />
+            <Text size="sm">Feed je spreman za izvoz.</Text>
+          </Group>
+        )}
         <Group>
           <Button
             leftSection={<IconDownload size={18} />}
             loading={exportFeed.isPending}
+            disabled={problems.length > 0}
             onClick={() => exportFeed.mutate(undefined, { onSuccess: saveFile })}
           >
             Preuzmi GTFS
           </Button>
         </Group>
+        {/* Podaci su se mogli promijeniti od provjere. */}
         {exportFeed.isError && (
           <Alert color="red" variant="light" icon={<IconAlertCircle />} title="Izvoz nije uspio">
             <Text size="sm">{errorMessage(exportFeed.error)}</Text>
-            {problems.length > 0 && (
+            {exportProblems.length > 0 && (
               <List size="sm" mt="xs" spacing={4}>
-                {problems.map((problem) => (
+                {exportProblems.map((problem) => (
                   <List.Item key={problem}>{problem}</List.Item>
                 ))}
               </List>
