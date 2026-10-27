@@ -300,6 +300,9 @@ export function DataTable<T>(props: DataTableProps<T>) {
   )
 }
 
+/** Poravnanje zaglavlja kao poravnanje stupca. */
+const justify = { left: 'flex-start', center: 'center', right: 'flex-end' } as const
+
 function SortHeader<T>({
   column,
   sort,
@@ -318,7 +321,7 @@ function SortHeader<T>({
       data-sorted={sorted || undefined}
       aria-sort={sorted ? (sort.descending ? 'descending' : 'ascending') : 'none'}
     >
-      <Group gap={4} wrap="nowrap" justify={column.align === 'right' ? 'flex-end' : 'flex-start'}>
+      <Group gap={4} wrap="nowrap" justify={justify[column.align ?? 'left']}>
         <span>{column.header}</span>
         <Icon size={14} stroke={1.8} />
         <VisuallyHidden>

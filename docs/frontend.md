@@ -107,7 +107,7 @@ prikazuje jednu stranicu.
   kolodvor, pristupačnost, koordinate, broj stanica, izmijenjeno); izbor se
   pamti u pregledniku (`terminus-columns-routes`, `terminus-columns-stops`).
   Stanice zadano imaju naziv, oznaku, peron, linije u boji i broj vožnji, a
-  linije oznaku, naziv, vrstu, varijante, vožnje, „Vozi” (prvi polazak –
+  linije oznaku, naziv, vrstu (ikona prijevoza s nazivom u oblačiću), varijante, vožnje, „Vozi” (prvi polazak –
   zadnji dolazak) i status.
 - **Slaganje** klikom na zaglavlje: uzlazno, silazno, pa zadano (stanice po
   nazivu, linije kao u GTFS-u). Može i po broju linija ili vožnji.

@@ -5,7 +5,7 @@ import { formatTime } from '@/features/live/clock'
 import { formatNumber } from '@/lib/format'
 import type { RouteTableRow } from './queries'
 import { RouteBadge } from './RouteBadge'
-import { routeTypeLabel } from './routeTypes'
+import { RouteTypeIcon } from './RouteTypeIcon'
 
 const dateFormat = new Intl.DateTimeFormat('hr-HR', { dateStyle: 'short' })
 
@@ -55,8 +55,9 @@ export function routeColumns(showAgency: boolean): DataColumn<RouteTableRow>[] {
       id: 'type',
       header: 'Vrsta',
       sortKey: 'RouteType',
-      width: 150,
-      cell: ({ route }) => routeTypeLabel(route.routeType),
+      align: 'center',
+      width: 80,
+      cell: ({ route }) => <RouteTypeIcon routeType={route.routeType} />,
     },
     {
       id: 'agency',
