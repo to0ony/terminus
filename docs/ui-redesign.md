@@ -70,11 +70,15 @@ Pretvoriti ga u radnu ploču:
 
 ### Tablice
 
-- `@tanstack/react-table` i `@tanstack/react-virtual` već su u ovisnostima, a
-  popisi koriste obični Mantine `Table` sa straničenjem. Moguće je dodati
-  sortiranje po stupcu, odabir više redaka i grupne akcije (deaktiviraj,
-  premjesti na drugog prijevoznika), ljepljivo zaglavlje i virtualizaciju
-  umjesto straničenja.
+- ✅ **Tablice linija i stanica** (branch `feat/tables`) – izbor stupaca,
+  slaganje po svakom stupcu na serveru, više filtara, veličina stranice,
+  odabir s grupnim akcijama (aktivacija, deaktivacija, PDF voznih redova
+  stanica, promjena prijevoznika linija), tipkovnica, ljepljivo zaglavlje i
+  kartice na mobitelu (`components/DataTable`, opis u
+  [frontendu](frontend.md#tablice-linija-i-stanica)). Vlastita komponenta na
+  Mantineu umjesto TanStack Tablea v9: podaci, stranice i slaganje su na
+  serveru, pa bi on dao samo vidljivost stupaca i odabir.
+- Virtualizacija umjesto straničenja i CSV izvoz prikaza – još nisu.
 - ✅ Prekidač gustoće prikaza (zbijeno / udobno) – u korisničkom izborniku i
   Postavkama, pamti se u pregledniku; redovi popisa 52 px ili 36 px.
 

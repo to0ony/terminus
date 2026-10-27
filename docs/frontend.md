@@ -11,10 +11,10 @@ i MapLibre GL. Pokretanje i naredbe su u [lokalnom razvoju](development.md#front
 | `/login` | prijava |
 | `/setup` | čarobnjak prvog pokretanja: uvoz GTFS-a ili početak od nule |
 | `/` | pregled: kalendari koji danas voze, do kada vrijedi vozni red, broj linija i stanica |
-| `/routes`, `/routes/:id` | linije (pretraga, filteri, nova linija); linija s izmjenom podataka, **varijantama** i voznim redom po danu i smjeru |
+| `/routes`, `/routes/:id` | **tablica linija** (opis niže) i nova linija; linija s izmjenom podataka, **varijantama** i voznim redom po danu i smjeru |
 | `/routes/:id/variants/:variantId` | **editor varijante** na karti (`new`, `new?from=` za kopiju, `new?reverse=` za povratni smjer) (opis niže) |
 | `/routes/:id/schedule` | **grafikon voznog reda** linije s uređivanjem vožnji (opis niže) |
-| `/stops`, `/stops/:id` | stanice s kartom, **nova stanica klikom** i **prijedlozi iz OpenStreetMapa**; stanica s izmjenom, brisanjem, peronima kolodvora, linijama, polascima za dan, premještanjem na karti, **PDF voznim redom** i poveznicom na zaslon |
+| `/stops`, `/stops/:id` | **tablica stanica** i karta (prikaz: tablica, oboje ili karta), **nova stanica klikom** i **prijedlozi iz OpenStreetMapa**; stanica s izmjenom, brisanjem, peronima kolodvora, linijama, polascima za dan, premještanjem na karti, **PDF voznim redom** i poveznicom na zaslon |
 | `/calendars` | sezone voznog reda (i nova sezona) te ostali kalendari, npr. uvezeni iz GTFS-a |
 | `/seasons/:id` | sezona: tipovi dana, pravilo za praznike i svi mjeseci; klik na dan mijenja kako vozi (kao drugi tip dana, ne vozi) uz napomenu; **razdoblja** (npr. školski raspust: radni dan vozi kao radni dan za vrijeme raspusta); **kopiranje sezone** za sljedeću godinu (zadano isti datumi godinu kasnije, godine u nazivu +1), po želji s vožnjama |
 | `/calendars/:id` | kalendar s danima u tjednu i iznimkama na mjesečnom prikazu |
@@ -23,7 +23,7 @@ i MapLibre GL. Pokretanje i naredbe su u [lokalnom razvoju](development.md#front
 | `/settings` | naziv, boje i logo javnih stranica, javna adresa, objava GTFS feeda, tema i podloga karte, promjena lozinke |
 | `/board/:stopCode` | **javni zaslon stanice**, bez prijave ([opis](departures-and-timetables.md#2-zaslon-na-stanici)) |
 
-Filteri, odabrani datum i stranica popisa čuvaju se u adresi (`?q=&date=&page=`),
+Filteri, redoslijed, odabrani datum i stranica popisa čuvaju se u adresi (`?q=&sort=&desc=&date=&page=&size=`),
 pa se prikaz može podijeliti poveznicom i preživi osvježavanje.
 
 ## Struktura
@@ -96,6 +96,38 @@ Dark, Liberty, Bright ili Fiord. Izbor se pamti u pregledniku
 (`terminus-map-style`) i vrijedi za sve karte; pri promjeni podloge slojevi
 stranice (npr. stanice) ostaju. Stanice se učitavaju za vidljivi dio karte (`/api/stops/area`,
 najviše 2000), a početni prikaz je područje svih stanica (`/api/stops/extent`).
+
+## Tablice linija i stanica
+
+Popisi linija i stanica su `components/DataTable`; podatke, stranice i
+redoslijed daje server (`/api/routes/table`, `/api/stops/table`), a tablica
+prikazuje jednu stranicu.
+
+- **Stupci**: izbornik „Stupci” uključuje i isključuje stupce (npr. GTFS ID,
+  kolodvor, pristupačnost, koordinate, broj stanica, izmijenjeno); izbor se
+  pamti u pregledniku (`terminus-columns-routes`, `terminus-columns-stops`).
+  Stanice zadano imaju naziv, oznaku, peron, linije u boji i broj vožnji, a
+  linije oznaku, naziv, vrstu, varijante, vožnje, „Vozi” (prvi polazak –
+  zadnji dolazak) i status.
+- **Slaganje** klikom na zaglavlje: uzlazno, silazno, pa zadano (stanice po
+  nazivu, linije kao u GTFS-u). Može i po broju linija ili vožnji.
+- **Filtri**: stanice po vrsti, statusu, vožnjama, liniji, pristupačnosti i
+  koordinatama, linije po prijevozniku, vrsti, statusu i vožnjama; „Očisti
+  filtre” ih briše. Ispod tablice su prikazani reci i veličina stranice (25,
+  50 ili 100).
+- **Odabir**: kvačice, Shift za raspon, kvačica u zaglavlju za cijelu
+  stranicu. Odabir ostaje pri promjeni stranice, a traka na dnu nudi grupne
+  akcije: stanice aktivirati, deaktivirati (uz potvrdu; ako ijedna ne smije,
+  popis razloga i bez izmjena) ili ispisati u jedan **PDF voznih redova** (do
+  100 stanica, svaka od nove stranice; stanice bez polazaka se preskaču), a
+  linije aktivirati, deaktivirati ili premjestiti drugom prijevozniku.
+- **Tipkovnica**: ↑ ↓ (ili J K) aktivni redak, Enter otvara, X ili razmak
+  odabire (Shift+↑ ↓ dodaje), Ctrl+A cijela stranica, Esc poništava odabir,
+  ← → stranica, `/` pretraga.
+- **Redak** otvara liniju ili stanicu klikom, a Ctrl+klik ili srednja tipka u
+  novoj kartici. Zaglavlje ostaje vidljivo dok se tablica pomiče.
+- **Mobitel**: umjesto tablice kartice (oznaka i naziv, ispod sitni podaci),
+  s kvačicom za odabir.
 
 ## Stanice
 
