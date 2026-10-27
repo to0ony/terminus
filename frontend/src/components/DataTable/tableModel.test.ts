@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { type DataColumn, isColumnVisible, moveIndex, nextSort, selectRange } from './dataTable'
+import { type DataColumn, isColumnVisible, moveIndex, nextSort, selectRange } from './tableModel'
 
 describe('nextSort', () => {
   it('cycles ascending, descending and back to the default order', () => {

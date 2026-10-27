@@ -15,7 +15,7 @@ import { IconArrowDown, IconArrowUp, IconSelector } from '@tabler/icons-react'
 import { type MouseEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { isCtrl, isTyping } from '@/lib/keyboard'
-import { type DataColumn, moveIndex, nextSort, selectRange, type SortState } from './dataTable'
+import { type DataColumn, moveIndex, nextSort, selectRange, type SortState } from './tableModel'
 import classes from './DataTable.module.css'
 
 interface DataTableProps<T> {
@@ -367,7 +367,7 @@ function MobileCard<T>({
             ))}
           </Group>
           {meta.length > 0 && (
-            <Group gap="md" rowGap={4}>
+            <Group gap="md" style={{ rowGap: 4 }}>
               {meta.map((c) => (
                 <Group key={c.id} gap={6} wrap="nowrap">
                   <Text size="xs" c="dimmed">

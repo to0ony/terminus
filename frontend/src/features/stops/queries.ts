@@ -16,9 +16,14 @@ export type TimetablePdfParams = NonNullable<
   paths['/api/stops/{id}/timetable.pdf']['get']['parameters']['query']
 >
 
+export type StopTableRow = components['schemas']['StopTableRowResponse']
+export type StopTableParams = NonNullable<paths['/api/stops/table']['get']['parameters']['query']>
+export type StopSortField = components['schemas']['StopSortField']
+
 export const stopKeys = {
   all: ['stops'] as const,
   list: (params: StopListParams) => [...stopKeys.all, 'list', params] as const,
+  table: (params: StopTableParams) => [...stopKeys.all, 'table', params] as const,
   area: (params: StopAreaParams) => [...stopKeys.all, 'area', params] as const,
   extent: () => [...stopKeys.all, 'extent'] as const,
   detail: (id: string) => [...stopKeys.all, id] as const,
@@ -33,6 +38,26 @@ export function useStops(params: StopListParams) {
 }
 
 /** Stanice unutar vidljivog dijela karte (najviše 2000, inače truncated). */
+/** Stranica tablice stanica; dok se učitava sljedeća, ostaje prikazana prethodna. */
+export function useStopTable(params: StopTableParams) {
+  return useQuery({
+    queryKey: stopKeys.table(params),
+    queryFn: async () => unwrap(await api.GET('/api/stops/table', { params: { query: params } })),
+    placeholderData: keepPreviousData,
+  })
+}
+
+/** Aktivira ili deaktivira odabrane stanice; ako ijedna ne smije, ne mijenja se nijedna. */
+export function useSetStopsActive() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: { ids: string[]; isActive: boolean }) =>
+      unwrap(await api.POST('/api/stops/bulk/active', { body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: stopKeys.all }),
+    meta: { handlesErrors: true },
+  })
+}
+
 export function useStopsInArea(params: StopAreaParams | null) {
   return useQuery({
     queryKey: stopKeys.area(params!),
@@ -94,6 +119,31 @@ export function useTimetablePdf(id: string) {
       })
       const blob = unwrap(result) as unknown as Blob
       return { blob, fileName: fileNameOf(result.response) ?? 'vozni-red.pdf' }
+    },
+    meta: { handlesErrors: true },
+  })
+}
+
+/**
+ * Vozni redovi više stanica u jednom PDF-u. Stanice bez polazaka backend
+ * preskače i javlja njihov broj (`skipped`); bez ijednog polaska vraća 422.
+ */
+export function useStopTimetablesPdf() {
+  return useMutation({
+    mutationFn: async (
+      params: TimetablePdfParams & { ids: string[] },
+    ): Promise<DownloadedFile & { skipped: number }> => {
+      const { ids, From, To, Paper, Language } = params
+      const result = await api.POST('/api/stops/timetables.pdf', {
+        body: { ids, from: From, to: To, paper: Paper, language: Language },
+        parseAs: 'blob',
+      })
+      const blob = unwrap(result) as unknown as Blob
+      return {
+        blob,
+        fileName: fileNameOf(result.response) ?? 'vozni-redovi.pdf',
+        skipped: Number(result.response.headers.get('X-Skipped-Stops')) || 0,
+      }
     },
     meta: { handlesErrors: true },
   })

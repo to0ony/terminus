@@ -1,5 +1,5 @@
 import { useLocalStorage } from '@mantine/hooks'
-import { type DataColumn, isColumnVisible } from './dataTable'
+import { type DataColumn, isColumnVisible } from './tableModel'
 
 export interface ColumnsState<T> {
   all: DataColumn<T>[]
