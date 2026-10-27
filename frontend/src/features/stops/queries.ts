@@ -2,7 +2,6 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { api } from '@/api/client'
 import { ApiError, unwrap } from '@/api/errors'
 import type { components, paths } from '@/api/schema'
-import type { RouteDiagramPdfParams } from '@/features/routes/queries'
 import { type DownloadedFile, fileNameOf } from '@/lib/download'
 import { nextStopCode } from './stopCode'
 
@@ -12,9 +11,6 @@ export type StopDeparture = components['schemas']['StopDayDepartureResponse']
 export type GeoBounds = components['schemas']['GeoBoundsResponse']
 export type StopListParams = NonNullable<paths['/api/stops']['get']['parameters']['query']>
 export type StopAreaParams = paths['/api/stops/area']['get']['parameters']['query']
-export type TimetablePdfParams = NonNullable<
-  paths['/api/stops/{id}/timetable.pdf']['get']['parameters']['query']
->
 
 export type StopTableRow = components['schemas']['StopTableRowResponse']
 export type StopTableParams = NonNullable<paths['/api/stops/table']['get']['parameters']['query']>
@@ -106,59 +102,23 @@ export function useStopDepartures(id: string, date: string | null) {
   })
 }
 
-/**
- * PDF vozni red stanice. Bez polazaka u razdoblju backend vraća 422, a
- * ApiError.problems kaže zašto.
- */
-export function useTimetablePdf(id: string) {
-  return useMutation({
-    mutationFn: async (params: TimetablePdfParams): Promise<DownloadedFile> => {
-      const result = await api.GET('/api/stops/{id}/timetable.pdf', {
-        params: { path: { id }, query: params },
-        parseAs: 'blob',
-      })
-      const blob = unwrap(result) as unknown as Blob
-      return { blob, fileName: fileNameOf(result.response) ?? 'vozni-red.pdf' }
-    },
-    meta: { handlesErrors: true },
-  })
-}
+export type StopPdfRequest = components['schemas']['StopPdfRequest']
 
 /**
- * Vozni redovi više stanica u jednom PDF-u. Stanice bez polazaka backend
- * preskače i javlja njihov broj (`skipped`); bez ijednog polaska vraća 422.
+ * PDF jedne ili više stanica: vozni red, sheme linija ili oboje. Stanice bez
+ * ičega za ispis backend preskače i javlja njihov broj (`skipped`); ako ispisa
+ * nema ni za jednu, vraća 422, a ApiError.problems kaže zašto.
  */
-export function useStopTimetablesPdf() {
+export function useStopPdf() {
   return useMutation({
-    mutationFn: async (
-      params: TimetablePdfParams & { ids: string[] },
-    ): Promise<DownloadedFile & { skipped: number }> => {
-      const { ids, From, To, Paper, Language } = params
-      const result = await api.POST('/api/stops/timetables.pdf', {
-        body: { ids, from: From, to: To, paper: Paper, language: Language },
-        parseAs: 'blob',
-      })
+    mutationFn: async (body: StopPdfRequest): Promise<DownloadedFile & { skipped: number }> => {
+      const result = await api.POST('/api/stops/pdf', { body, parseAs: 'blob' })
       const blob = unwrap(result) as unknown as Blob
       return {
         blob,
-        fileName: fileNameOf(result.response) ?? 'vozni-redovi.pdf',
+        fileName: fileNameOf(result.response) ?? 'stanice.pdf',
         skipped: Number(result.response.headers.get('X-Skipped-Stops')) || 0,
       }
-    },
-    meta: { handlesErrors: true },
-  })
-}
-
-/** Sheme svih linija koje staju na stanici, svaka na svojoj stranici. */
-export function useStopRoutesPdf(id: string) {
-  return useMutation({
-    mutationFn: async (params: RouteDiagramPdfParams): Promise<DownloadedFile> => {
-      const result = await api.GET('/api/stops/{id}/routes.pdf', {
-        params: { path: { id }, query: params },
-        parseAs: 'blob',
-      })
-      const blob = unwrap(result) as unknown as Blob
-      return { blob, fileName: fileNameOf(result.response) ?? 'linije.pdf' }
     },
     meta: { handlesErrors: true },
   })

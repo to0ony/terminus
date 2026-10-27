@@ -307,8 +307,12 @@ engleskom**:
 
 ### 3.3 Preuzimanje
 
-Na stranici stanice u dashboardu gumb **PDF vozni red** otvara dijalog s
-razdobljem, formatom i jezikom. API (samo administrator):
+Na stranici stanice u dashboardu gumb **PDF** otvara dijalog: što ispisati
+(vozni red, sheme linija sa stanice ili oboje), razdoblje voznog reda, format,
+jezik i minute na shemama. Isti dijalog za odabrane stanice u tablici stanica
+radi jedan PDF za sve njih (`POST /api/stops/pdf`, do 100 stanica, svaka od
+nove stranice; stanice bez ičega za ispis se preskaču). API za jednu stanicu
+(samo administrator):
 
 ```
 GET /api/stops/{stopId}/timetable.pdf?from=2026-12-01&to=2027-06-30&paper=A3&language=en

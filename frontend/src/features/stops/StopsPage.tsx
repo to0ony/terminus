@@ -53,7 +53,7 @@ import {
 } from './queries'
 import { OsmSuggestions } from './OsmSuggestions'
 import { stopColumns } from './stopColumns'
-import { TimetablePdfDialog } from './TimetablePdfDialog'
+import { StopPdfDialog } from './StopPdfDialog'
 import { type NewStop, StopDialog } from './StopDialog'
 import { StopsMap } from './StopsMap'
 
@@ -452,10 +452,10 @@ export function StopsPage() {
           }
           onClick={() => setPdfOpened(true)}
         >
-          PDF voznih redova
+          PDF
         </Button>
       </BulkBar>
-      <TimetablePdfDialog
+      <StopPdfDialog
         stops={[...selected.values()]}
         opened={pdfOpened}
         onClose={() => setPdfOpened(false)}

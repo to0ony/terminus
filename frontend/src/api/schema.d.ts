@@ -4484,7 +4484,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/stops/timetables.pdf": {
+    "/api/stops/pdf": {
         parameters: {
             query?: never;
             header?: never;
@@ -4502,9 +4502,9 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["StopTimetablesRequest"];
-                    "text/json": components["schemas"]["StopTimetablesRequest"];
-                    "application/*+json": components["schemas"]["StopTimetablesRequest"];
+                    "application/json": components["schemas"]["StopPdfRequest"];
+                    "text/json": components["schemas"]["StopPdfRequest"];
+                    "application/*+json": components["schemas"]["StopPdfRequest"];
                 };
             };
             responses: {
@@ -6088,6 +6088,19 @@ export interface components {
             date: string;
             departures: components["schemas"]["StopDayDepartureResponse"][];
         };
+        StopPdfRequest: {
+            ids: null | string[];
+            timetable?: boolean;
+            routes?: boolean;
+            /** Format: date */
+            from?: null | string;
+            /** Format: date */
+            to?: null | string;
+            paper?: components["schemas"]["PaperSize"];
+            language?: components["schemas"]["TimetableLanguage"];
+            showMinutes?: boolean;
+            minutesFromStop?: boolean;
+        };
         StopRequest: {
             code: null | string;
             publicCode?: null | string;
@@ -6176,15 +6189,6 @@ export interface components {
             /** Format: double */
             shapeDistTraveled: null | number;
             timepoint: boolean;
-        };
-        StopTimetablesRequest: {
-            ids: null | string[];
-            /** Format: date */
-            from?: null | string;
-            /** Format: date */
-            to?: null | string;
-            paper?: components["schemas"]["PaperSize"];
-            language?: components["schemas"]["TimetableLanguage"];
         };
         StringSegment: {
             buffer?: null | string;

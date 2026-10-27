@@ -10,11 +10,11 @@ i MapLibre GL. Pokretanje i naredbe su u [lokalnom razvoju](development.md#front
 |---|---|
 | `/login` | prijava |
 | `/setup` | čarobnjak prvog pokretanja: uvoz GTFS-a ili početak od nule |
-| `/` | **pregled**: gore problemi (GTFS provjere iz `/api/gtfs/check`, istek voznog reda, linije kojima istječe), a bez njih jedan zeleni redak; zatim brze akcije (nova linija, nova stanica, izvoz GTFS-a, PDF voznih redova, karta uživo) i sažetak (linije, stanice, prijevoznici, kalendari koji danas voze) |
+| `/` | **pregled**: gore problemi (GTFS provjere iz `/api/gtfs/check`, istek voznog reda, linije kojima istječe), a bez njih jedan zeleni redak; zatim brze akcije (nova linija, nova stanica, izvoz GTFS-a, PDF stanica, karta uživo) i sažetak (linije, stanice, prijevoznici, kalendari koji danas voze) |
 | `/routes`, `/routes/:id` | **tablica linija** (opis niže) i nova linija; linija s izmjenom podataka, **varijantama** i voznim redom po danu i smjeru |
 | `/routes/:id/variants/:variantId` | **editor varijante** na karti (`new`, `new?from=` za kopiju, `new?reverse=` za povratni smjer) (opis niže) |
 | `/routes/:id/schedule` | **grafikon voznog reda** linije s uređivanjem vožnji (opis niže) |
-| `/stops`, `/stops/:id` | **tablica stanica** i karta (prikaz: tablica, oboje ili karta), **nova stanica klikom** i **prijedlozi iz OpenStreetMapa**; stanica s izmjenom, brisanjem, peronima kolodvora, linijama, polascima za dan, premještanjem na karti, **PDF voznim redom** i poveznicom na zaslon |
+| `/stops`, `/stops/:id` | **tablica stanica** i karta (prikaz: tablica, oboje ili karta), **nova stanica klikom** i **prijedlozi iz OpenStreetMapa**; stanica s izmjenom, brisanjem, peronima kolodvora, linijama, polascima za dan, premještanjem na karti, **PDF-om** (vozni red, sheme linija ili oboje) i poveznicom na zaslon |
 | `/calendars` | sezone voznog reda (i nova sezona) te ostali kalendari, npr. uvezeni iz GTFS-a |
 | `/seasons/:id` | sezona: tipovi dana, pravilo za praznike i svi mjeseci; klik na dan mijenja kako vozi (kao drugi tip dana, ne vozi) uz napomenu; **razdoblja** (npr. školski raspust: radni dan vozi kao radni dan za vrijeme raspusta); **kopiranje sezone** za sljedeću godinu (zadano isti datumi godinu kasnije, godine u nazivu +1), po želji s vožnjama |
 | `/calendars/:id` | kalendar s danima u tjednu i iznimkama na mjesečnom prikazu |
@@ -120,8 +120,9 @@ prikazuje jednu stranicu.
 - **Odabir**: kvačice, Shift za raspon, kvačica u zaglavlju za cijelu
   stranicu. Odabir ostaje pri promjeni stranice, a traka na dnu nudi grupne
   akcije: stanice aktivirati, deaktivirati (uz potvrdu; ako ijedna ne smije,
-  popis razloga i bez izmjena) ili ispisati u jedan **PDF voznih redova** (do
-  100 stanica, svaka od nove stranice; stanice bez polazaka se preskaču), a
+  popis razloga i bez izmjena) ili ispisati u jedan **PDF** (do 100 stanica:
+  za svaku vozni red, sheme linija ili oboje, svaki od nove stranice; stanice
+  bez ičega za ispis se preskaču), a
   linije aktivirati, deaktivirati ili premjestiti drugom prijevozniku.
 - **Tipkovnica**: ↑ ↓ (ili J K) aktivni redak, Enter otvara, X ili razmak
   odabire (Shift+↑ ↓ dodaje), Ctrl+A cijela stranica, Esc poništava odabir,
