@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { unwrap } from '@/api/errors'
 import type { components } from '@/api/schema'
@@ -65,5 +65,17 @@ export function useExportGtfs() {
       return { blob, fileName: fileNameOf(result.response) ?? 'gtfs.zip' }
     },
     meta: { handlesErrors: true },
+  })
+}
+
+/**
+ * Provjere izvoza bez izrade ZIP-a: što bi blokiralo izvoz. Uvijek svježe,
+ * jer ih mijenja gotovo svaka izmjena podataka.
+ */
+export function useGtfsCheck() {
+  return useQuery({
+    queryKey: ['gtfs', 'check'],
+    queryFn: async () => unwrap(await api.GET('/api/gtfs/check')).problems,
+    staleTime: 0,
   })
 }

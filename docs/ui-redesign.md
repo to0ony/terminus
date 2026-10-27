@@ -61,12 +61,15 @@ Mantine nema rješenje.
 
 ### Pregled (dashboard)
 
-Pretvoriti ga u radnu ploču:
+✅ Pojednostavljen u radnu ploču (branch `feat/dashboard`), bez brojki o
+vožnjama:
 
-- upozorenja ("kalendar X istječe za 12 dana", "3 vožnje bez dana važenja"),
-- brze akcije i zadnje izmjene,
-- KPI kartice (linije, polasci danas, vozni km dnevno),
-- mjesto za analize iz drugog dijela ovog dokumenta.
+- ✅ problemi gore: GTFS provjere bez izvoza (`GET /api/gtfs/check`), istek
+  voznog reda i linije kojima istječe; bez problema jedan zeleni redak,
+- ✅ brze akcije: nova linija, nova stanica (`/stops?add=1`), izvoz GTFS-a,
+  PDF voznih redova, karta uživo,
+- ✅ sažetak: linije, stanice, prijevoznici i kalendari koji danas voze,
+- zadnje izmjene i analize – kasnije, ako zatrebaju.
 
 ### Tablice
 

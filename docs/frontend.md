@@ -10,7 +10,7 @@ i MapLibre GL. Pokretanje i naredbe su u [lokalnom razvoju](development.md#front
 |---|---|
 | `/login` | prijava |
 | `/setup` | čarobnjak prvog pokretanja: uvoz GTFS-a ili početak od nule |
-| `/` | pregled: kalendari koji danas voze, do kada vrijedi vozni red, broj linija i stanica |
+| `/` | **pregled**: gore problemi (GTFS provjere iz `/api/gtfs/check`, istek voznog reda, linije kojima istječe), a bez njih jedan zeleni redak; zatim brze akcije (nova linija, nova stanica, izvoz GTFS-a, PDF voznih redova, karta uživo) i sažetak (linije, stanice, prijevoznici, kalendari koji danas voze) |
 | `/routes`, `/routes/:id` | **tablica linija** (opis niže) i nova linija; linija s izmjenom podataka, **varijantama** i voznim redom po danu i smjeru |
 | `/routes/:id/variants/:variantId` | **editor varijante** na karti (`new`, `new?from=` za kopiju, `new?reverse=` za povratni smjer) (opis niže) |
 | `/routes/:id/schedule` | **grafikon voznog reda** linije s uređivanjem vožnji (opis niže) |
