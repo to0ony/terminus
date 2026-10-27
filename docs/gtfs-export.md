@@ -69,7 +69,9 @@ Izvoz se odbija (`422`) ako:
 - cijena nema prijevoznika, a feed ih ima više;
 - pravilo cijene koristi zonu koju nema nijedna izvezena stanica.
 
-Odgovor sadrži sve pronađene probleme:
+Iste provjere bez izrade ZIP-a vraća `GET /api/gtfs/check` (`{ "problems": [...] }`,
+prazan popis ako je feed spreman); koristi ih Pregled. Odgovor izvoza sadrži
+sve pronađene probleme:
 
 ```json
 {

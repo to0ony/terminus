@@ -13,10 +13,30 @@ public class GtfsExportService(IGtfsExportRepository repository, TimeProvider ti
 {
     private const int MinStopTimesPerTrip = 2;
 
+    private const string NotReady = "GTFS feed se ne može izvesti dok se ne isprave navedeni problemi.";
+
     public async Task<GtfsFeedFile> ExportAsync(CancellationToken cancellationToken = default)
     {
+        var source = await LoadAsync(cancellationToken);
+        var (feed, problems) = Check(source);
+        if (problems.Count > 0)
+        {
+            throw new UnprocessableException(NotReady, problems);
+        }
+
+        // Bez unesenog feed_info izdavač je prvi uneseni prijevoznik.
+        var publisher = SelectPublisher(source);
+
+        var generatedAt = timeProvider.GetUtcNow().UtcDateTime;
+        return new GtfsFeedFile(FileName(publisher.Name, generatedAt), Write(publisher, feed!, generatedAt));
+    }
+
+    public async Task<IReadOnlyList<string>> CheckAsync(CancellationToken cancellationToken = default) =>
+        Check(await LoadAsync(cancellationToken)).Problems;
+
+    private async Task<FeedSource> LoadAsync(CancellationToken cancellationToken) =>
         // DbContext nije thread-safe, pa se upiti izvršavaju jedan za drugim.
-        var source = new FeedSource(
+        new(
             Agencies: await repository.GetAgenciesAsync(cancellationToken),
             Stops: await repository.GetStopsAsync(cancellationToken),
             Routes: await repository.GetRoutesAsync(cancellationToken),
@@ -28,21 +48,16 @@ public class GtfsExportService(IGtfsExportRepository repository, TimeProvider ti
             Fares: await repository.GetFaresAsync(cancellationToken),
             FeedInfo: await repository.GetFeedInfoAsync(cancellationToken));
 
+    /// <summary>Odabrani podaci feeda i problemi zbog kojih se ne bi izvezao (bez prijevoznika feed je null).</summary>
+    private static (Feed? Feed, IReadOnlyList<string> Problems) Check(FeedSource source)
+    {
         if (source.Agencies.Count == 0)
         {
-            throw new UnprocessableException(
-                "GTFS feed se ne može izvesti dok se ne isprave navedeni problemi.",
-                ["Nije unesen nijedan prijevoznik."]);
+            return (null, ["Nije unesen nijedan prijevoznik."]);
         }
 
-        // Bez unesenog feed_info izdavač je prvi uneseni prijevoznik.
-        var publisher = SelectPublisher(source);
-
         var feed = Select(source);
-        Validate(feed);
-
-        var generatedAt = timeProvider.GetUtcNow().UtcDateTime;
-        return new GtfsFeedFile(FileName(publisher.Name, generatedAt), Write(publisher, feed, generatedAt));
+        return (feed, Validate(feed));
     }
 
     /// <summary>
@@ -152,7 +167,7 @@ public class GtfsExportService(IGtfsExportRepository repository, TimeProvider ti
     }
 
     /// <summary>Problemi koje pravila pri unosu ne mogu spriječiti jer se podaci s vremenom mijenjaju.</summary>
-    private static void Validate(Feed feed)
+    private static List<string> Validate(Feed feed)
     {
         var problems = new List<string>();
 
@@ -187,11 +202,7 @@ public class GtfsExportService(IGtfsExportRepository repository, TimeProvider ti
         }
 
         ValidateFares(feed, problems);
-
-        if (problems.Count > 0)
-        {
-            throw new UnprocessableException("GTFS feed se ne može izvesti dok se ne isprave navedeni problemi.", problems);
-        }
+        return problems;
     }
 
     private static void ValidateFares(Feed feed, List<string> problems)
