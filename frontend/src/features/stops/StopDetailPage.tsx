@@ -18,7 +18,6 @@ import { useDisclosure } from '@mantine/hooks'
 import { modals } from '@mantine/modals'
 import { notifications } from '@mantine/notifications'
 import {
-  IconArrowLeft,
   IconCalendar,
   IconChevronDown,
   IconDeviceTv,
@@ -29,6 +28,7 @@ import {
 } from '@tabler/icons-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { errorMessage } from '@/api/errors'
+import { PageBreadcrumbs } from '@/components/PageBreadcrumbs'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
 import { RouteBadge } from '@/features/routes/RouteBadge'
@@ -130,12 +130,7 @@ export function StopDetailPage() {
 
   return (
     <Stack gap="md">
-      <Anchor component={Link} to="/stops" size="sm">
-        <Group gap={4}>
-          <IconArrowLeft size={14} />
-          Stanice
-        </Group>
-      </Anchor>
+      <PageBreadcrumbs items={[{ label: 'Stanice', to: '/stops' }, { label: stop.data.name }]} />
 
       <Group justify="space-between" align="flex-start">
         <Stack gap={4}>

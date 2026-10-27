@@ -1,10 +1,10 @@
 import { Alert, Anchor, Box, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core'
 import { Calendar } from '@mantine/dates'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconArrowLeft } from '@tabler/icons-react'
 import dayjs from 'dayjs'
 import type { CSSProperties } from 'react'
 import { Link, useParams } from 'react-router'
+import { PageBreadcrumbs } from '@/components/PageBreadcrumbs'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
 import { formatDate, formatNumber } from '@/lib/format'
@@ -56,12 +56,9 @@ export function CalendarDetailPage() {
 
   return (
     <Stack gap="md">
-      <Anchor component={Link} to="/calendars" size="sm">
-        <Group gap={4}>
-          <IconArrowLeft size={14} />
-          Kalendari
-        </Group>
-      </Anchor>
+      <PageBreadcrumbs
+        items={[{ label: 'Kalendari', to: '/calendars' }, { label: calendar.data.name }]}
+      />
 
       <Stack gap={4}>
         <Title order={2}>{calendar.data.name}</Title>

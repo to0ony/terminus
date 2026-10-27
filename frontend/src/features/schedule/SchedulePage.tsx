@@ -22,7 +22,6 @@ import { notifications } from '@mantine/notifications'
 import {
   IconArrowBackUp,
   IconArrowForwardUp,
-  IconArrowLeft,
   IconArrowsExchange,
   IconDeviceFloppy,
   IconPencil,
@@ -32,6 +31,7 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useBlocker, useParams, useSearchParams } from 'react-router'
 import { ApiError, errorMessage } from '@/api/errors'
+import { PageBreadcrumbs } from '@/components/PageBreadcrumbs'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
 import { useCalendars } from '@/features/calendars/queries'
@@ -68,6 +68,7 @@ import { CopyDialog, TaktDialog } from './RepeatDialog'
 import { type Drawing, ScheduleChart } from './ScheduleChart'
 import { TripPanel } from './TripPanel'
 import { useScheduleEditor } from './useScheduleEditor'
+import { routeLabel } from '@/features/routes/routeLabel'
 
 const noCalendar = '00000000-0000-0000-0000-000000000000'
 
@@ -185,12 +186,13 @@ export function SchedulePage() {
 
   return (
     <Stack gap="md">
-      <Anchor component={Link} to={`/routes/${routeId}`} size="sm">
-        <Group gap={4}>
-          <IconArrowLeft size={14} />
-          Linija
-        </Group>
-      </Anchor>
+      <PageBreadcrumbs
+        items={[
+          { label: 'Linije', to: '/routes' },
+          { label: routeLabel(route.data), to: `/routes/${routeId}` },
+          { label: 'Grafikon voznog reda' },
+        ]}
+      />
 
       <Group gap="sm" wrap="nowrap">
         <RouteBadge route={route.data} size="lg" />

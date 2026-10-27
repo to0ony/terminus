@@ -1,5 +1,4 @@
 import {
-  Anchor,
   Badge,
   Box,
   Button,
@@ -15,10 +14,11 @@ import {
 import { useDisclosure } from '@mantine/hooks'
 import { modals } from '@mantine/modals'
 import { notifications } from '@mantine/notifications'
-import { IconArrowLeft, IconCopy, IconPencil, IconTrash } from '@tabler/icons-react'
+import { IconCopy, IconPencil, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { errorMessage } from '@/api/errors'
+import { PageBreadcrumbs } from '@/components/PageBreadcrumbs'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
 import { formatDate, formatNumber } from '@/lib/format'
@@ -90,12 +90,7 @@ export function SeasonPage() {
 
   return (
     <Stack gap="md">
-      <Anchor component={Link} to="/calendars" size="sm">
-        <Group gap={4}>
-          <IconArrowLeft size={14} />
-          Kalendari
-        </Group>
-      </Anchor>
+      <PageBreadcrumbs items={[{ label: 'Kalendari', to: '/calendars' }, { label: data.name }]} />
 
       <Group justify="space-between" align="flex-start">
         <Stack gap={4}>

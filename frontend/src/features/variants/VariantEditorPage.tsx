@@ -1,7 +1,6 @@
 import {
   ActionIcon,
   Alert,
-  Anchor,
   Badge,
   Box,
   Button,
@@ -22,7 +21,6 @@ import {
 import { notifications } from '@mantine/notifications'
 import {
   IconArrowDown,
-  IconArrowLeft,
   IconArrowUp,
   IconDeviceFloppy,
   IconGripVertical,
@@ -32,8 +30,9 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useBlocker, useNavigate, useParams, useSearchParams } from 'react-router'
+import { useBlocker, useNavigate, useParams, useSearchParams } from 'react-router'
 import { ApiError, errorMessage } from '@/api/errors'
+import { PageBreadcrumbs } from '@/components/PageBreadcrumbs'
 import { PageLoader } from '@/components/PageLoader'
 import { QueryError } from '@/components/QueryError'
 import { useRoute } from '@/features/routes/queries'
@@ -62,6 +61,7 @@ import { useVariantShape } from './useVariantShape'
 import { formatKm } from './variantMath'
 import { stopDistances } from './variantShape'
 import { distance, duration, suggestTravelTime } from './variantMath'
+import { routeLabel } from '@/features/routes/routeLabel'
 
 /** Stanica varijante u editoru; key razlikuje istu stanicu dvaput na kružnoj liniji. */
 interface EditorStop {
@@ -207,6 +207,7 @@ export function VariantEditorPage() {
       routeCode={route.data.code}
       approximate={route.data.timeMode === 'Approximate'}
       routeBadge={<RouteBadge route={route.data} />}
+      routeLabel={routeLabel(route.data)}
       // Kopija i povratni smjer postaju nova varijanta; izmjena zadržava Id.
       variant={isNew ? null : (source.data ?? null)}
       template={template}
@@ -236,6 +237,8 @@ interface VariantEditorProps {
    */
   approximate: boolean
   routeBadge: React.ReactNode
+  /** Naziv linije u putokazu. */
+  routeLabel: string
   variant: Variant | null
   template: Template | null
   /** Povratni smjer druge varijante: naziv se ne preuzima. */
@@ -260,6 +263,7 @@ function VariantEditor({
   routeCode,
   approximate,
   routeBadge,
+  routeLabel,
   variant,
   template,
   reversed,
@@ -541,12 +545,13 @@ function VariantEditor({
 
   return (
     <Stack gap="md">
-      <Anchor component={Link} to={`/routes/${routeId}`} size="sm">
-        <Group gap={4}>
-          <IconArrowLeft size={14} />
-          Linija
-        </Group>
-      </Anchor>
+      <PageBreadcrumbs
+        items={[
+          { label: 'Linije', to: '/routes' },
+          { label: routeLabel, to: `/routes/${routeId}` },
+          { label: variant ? variant.name || 'Varijanta' : 'Nova varijanta' },
+        ]}
+      />
       <Group justify="space-between" align="flex-end">
         <Group gap="sm">
           {routeBadge}
