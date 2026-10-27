@@ -208,7 +208,9 @@ export function StopDetailPage() {
         </Group>
       </Group>
       <StopDialog stop={stop.data} opened={editOpened} onClose={edit.close} />
-      {hasBoard && <TimetablePdfDialog stop={stop.data} opened={pdfOpened} onClose={pdf.close} />}
+      {hasBoard && (
+        <TimetablePdfDialog stops={[stop.data]} opened={pdfOpened} onClose={pdf.close} />
+      )}
       <RouteDiagramPdfDialog
         title="PDF sheme linija"
         description={`Sheme svih linija koje staju na stanici ${stop.data.name}, svaka na svojoj stranici. Stanica je na svakoj shemi istaknuta.`}

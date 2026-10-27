@@ -18,13 +18,15 @@ import { ApiError, errorMessage } from '@/api/errors'
 import { useServiceOverview } from '@/features/dashboard/queries'
 import { useSettings } from '@/features/settings/queries'
 import { saveFile } from '@/lib/download'
-import { type Stop, type TimetablePdfParams, useTimetablePdf } from './queries'
+import { notifications } from '@mantine/notifications'
+import { type TimetablePdfParams, useStopTimetablesPdf, useTimetablePdf } from './queries'
 
 type Paper = NonNullable<TimetablePdfParams['Paper']>
 type Language = NonNullable<TimetablePdfParams['Language']>
 
 interface TimetablePdfDialogProps {
-  stop: Stop
+  /** Jedna stanica ili više njih (jedan PDF, svaka od nove stranice). */
+  stops: { id: string; name: string }[]
   opened: boolean
   onClose: () => void
 }
@@ -34,10 +36,13 @@ interface TimetablePdfDialogProps {
  * zadano od danas do zadnjeg dana s voznim redom, pa se novi vozni red može
  * izraditi i unaprijed, od dana kad počinje vrijediti.
  */
-export function TimetablePdfDialog({ stop, opened, onClose }: TimetablePdfDialogProps) {
+export function TimetablePdfDialog({ stops, opened, onClose }: TimetablePdfDialogProps) {
   const overview = useServiceOverview()
   const settings = useSettings()
-  const pdf = useTimetablePdf(stop.id)
+  const many = stops.length > 1
+  const one = useTimetablePdf(stops[0]?.id ?? '')
+  const several = useStopTimetablesPdf()
+  const pdf = many ? several : one
 
   const [range, setRange] = useState<DatesRangeValue<string> | null>(null)
   const [paper, setPaper] = useState<Paper>('A4')
@@ -50,30 +55,63 @@ export function TimetablePdfDialog({ stop, opened, onClose }: TimetablePdfDialog
   const [from, to] = range ?? defaultRange
 
   const close = () => {
-    pdf.reset()
+    one.reset()
+    several.reset()
     onClose()
   }
 
-  const submit = () =>
-    pdf.mutate(
-      { From: from ?? undefined, To: to ?? undefined, Paper: paper, Language: language },
-      {
+  const submit = () => {
+    const params = {
+      From: from ?? undefined,
+      To: to ?? undefined,
+      Paper: paper,
+      Language: language,
+    }
+    if (!many) {
+      one.mutate(params, {
         onSuccess: (file) => {
           saveFile(file)
           close()
         },
+      })
+      return
+    }
+    several.mutate(
+      { ...params, ids: stops.map((s) => s.id) },
+      {
+        onSuccess: (file) => {
+          saveFile(file)
+          if (file.skipped > 0) {
+            notifications.show({
+              color: 'yellow',
+              message: `${file.skipped} od ${stops.length} stanica u tom razdoblju nema polazaka, pa nisu u PDF-u.`,
+            })
+          }
+          close()
+        },
       },
     )
+  }
 
   const error = pdf.error instanceof ApiError ? pdf.error : null
   const rangeError = error?.fieldErrors.to?.[0] ?? error?.fieldErrors.from?.[0]
   const problems = error?.problems ?? []
 
   return (
-    <Modal opened={opened} onClose={close} title="PDF vozni red" size="md">
+    <Modal
+      opened={opened}
+      onClose={close}
+      title={many ? `PDF vozni redovi (${stops.length} stanica)` : 'PDF vozni red'}
+      size="md"
+    >
       <Stack gap="md">
         <Text size="sm" c="dimmed">
-          Polasci sa stanice {stop.name} po linijama i smjerovima, u stupcima po danima u tjednu.
+          {many
+            ? `Vozni redovi odabranih stanica u jednom PDF-u, svaka od nove stranice: ${stops
+                .slice(0, 5)
+                .map((s) => s.name)
+                .join(', ')}${stops.length > 5 ? ' …' : ''}. Stanice bez polazaka se preskaču.`
+            : `Polasci sa stanice ${stops[0]?.name ?? ''} po linijama i smjerovima, u stupcima po danima u tjednu.`}{' '}
           Praznici i ostala odstupanja ispisuju se kao napomene.
         </Text>
 

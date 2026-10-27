@@ -14,6 +14,9 @@ import {
 } from '@mantine/core'
 import { useDebouncedCallback, useLocalStorage } from '@mantine/hooks'
 import {
+  IconCircleCheck,
+  IconCircleOff,
+  IconFileTypePdf,
   IconLayoutColumns,
   IconMap,
   IconMapPinPlus,
@@ -22,8 +25,12 @@ import {
   IconWorldDownload,
   IconX,
 } from '@tabler/icons-react'
+import { modals } from '@mantine/modals'
+import { notifications } from '@mantine/notifications'
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { ApiError, errorMessage } from '@/api/errors'
+import { BulkBar } from '@/components/DataTable/BulkBar'
 import { ColumnsMenu } from '@/components/DataTable/ColumnsMenu'
 import { DataTable } from '@/components/DataTable/DataTable'
 import { TableFooter } from '@/components/DataTable/TableFooter'
@@ -40,11 +47,13 @@ import {
   type Stop,
   type StopSortField,
   type StopTableParams,
+  useSetStopsActive,
   useStopTable,
   useStopsExtent,
 } from './queries'
 import { OsmSuggestions } from './OsmSuggestions'
 import { stopColumns } from './stopColumns'
+import { TimetablePdfDialog } from './TimetablePdfDialog'
 import { type NewStop, StopDialog } from './StopDialog'
 import { StopsMap } from './StopsMap'
 
@@ -65,6 +74,16 @@ const yesNo = (yes: string, no: string) => [
 const filterKeys = ['q', 'type', 'active', 'access', 'trips', 'coords', 'route']
 
 const boolParam = (value: string | null) => (value ? value === 'true' : undefined)
+
+/** Najviše stanica u jednom PDF-u (kao na serveru). */
+const maxPdfStops = 100
+
+/** 1 stanica, 2–4 stanice, 5 stanica (i 11–14 stanica). */
+const stopsNoun = (count: number) =>
+  [2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100) ? 'stanice' : 'stanica'
+
+/** Odabrane stanice, i s drugih stranica tablice. */
+type Selection = Map<string, Stop>
 
 /**
  * Stanice: tablica (filtri, slaganje, izbor stupaca, stanje u adresi) i karta
@@ -88,6 +107,9 @@ export function StopsPage() {
   const [lastCreated, setLastCreated] = useState<Stop | null>(null)
   const columns = useColumns('stops', stopColumns)
   const routes = useRoutes({ PageSize: 100 })
+  const [selected, setSelected] = useState<Selection>(new Map())
+  const [pdfOpened, setPdfOpened] = useState(false)
+  const setActive = useSetStopsActive()
 
   const placeAt = (position: { latitude: number; longitude: number }) => {
     // Klik blizu upravo dodane stanice je najčešće drugi peron istog naziva.
@@ -135,6 +157,70 @@ export function StopsPage() {
   const extent = useStopsExtent()
   const filtered = filterKeys.some((key) => table.get(key))
   const totalPages = stops.data ? Math.ceil(stops.data.totalCount / table.pageSize) : 0
+
+  const changeSelection = (ids: Set<string>) => {
+    const onPage = new Map(stops.data?.items.map((row) => [row.stop.id, row.stop]))
+    setSelected(
+      new Map(
+        [...ids].flatMap((id) => {
+          const stop = selected.get(id) ?? onPage.get(id)
+          return stop ? [[id, stop] as const] : []
+        }),
+      ),
+    )
+  }
+
+  const applyActive = (isActive: boolean) =>
+    setActive.mutate(
+      { ids: [...selected.keys()], isActive },
+      {
+        onSuccess: ({ changed }) => {
+          notifications.show({
+            color: 'green',
+            message:
+              changed === 0
+                ? `Odabrane stanice su već ${isActive ? 'aktivne' : 'neaktivne'}.`
+                : `${isActive ? 'Aktivirano' : 'Deaktivirano'}: ${changed} ${stopsNoun(changed)}.`,
+          })
+          setSelected(new Map())
+        },
+        onError: (error) => {
+          // Pravila deaktivacije navode svaku stanicu koja ne smije.
+          const reasons = error instanceof ApiError ? (error.fieldErrors.isActive ?? []) : []
+          modals.open({
+            title: 'Stanice nisu promijenjene',
+            children: (
+              <Stack gap="xs">
+                <Text size="sm">
+                  {reasons.length > 0
+                    ? 'Nijedna stanica nije promijenjena jer neke ne smiju biti neaktivne:'
+                    : errorMessage(error)}
+                </Text>
+                {reasons.map((reason) => (
+                  <Text key={reason} size="sm">
+                    • {reason}
+                  </Text>
+                ))}
+              </Stack>
+            ),
+          })
+        },
+      },
+    )
+
+  const confirmDeactivate = () =>
+    modals.openConfirmModal({
+      title: 'Deaktiviraj stanice',
+      children: (
+        <Text size="sm">
+          Odabrane stanice ({selected.size}) postaju neaktivne: vožnje ih preskaču, a ostale stanice
+          zadržavaju svoja vremena. Kolodvori se ne deaktiviraju, nego njihovi peroni.
+        </Text>
+      ),
+      labels: { confirm: 'Deaktiviraj', cancel: 'Odustani' },
+      confirmProps: { color: 'red' },
+      onConfirm: () => applyActive(false),
+    })
 
   const filterSelect = (key: string, label: string, data: { value: string; label: string }[]) => (
     <Select
@@ -218,6 +304,8 @@ export function StopsPage() {
             columns={columns.visible}
             getRowId={(row) => row.stop.id}
             getRowHref={(row) => `/stops/${row.stop.id}`}
+            selection={new Set(selected.keys())}
+            onSelectionChange={changeSelection}
             sort={table.sort}
             onSortChange={table.setSort}
             stale={stops.isPlaceholderData}
@@ -326,6 +414,47 @@ export function StopsPage() {
           </Text>
         </Alert>
       )}
+      <BulkBar count={selected.size} noun={stopsNoun} onClear={() => setSelected(new Map())}>
+        <Button
+          size="xs"
+          variant="light"
+          color="green"
+          leftSection={<IconCircleCheck size={14} />}
+          loading={setActive.isPending && setActive.variables.isActive}
+          onClick={() => applyActive(true)}
+        >
+          Aktiviraj
+        </Button>
+        <Button
+          size="xs"
+          variant="light"
+          color="red"
+          leftSection={<IconCircleOff size={14} />}
+          loading={setActive.isPending && !setActive.variables.isActive}
+          onClick={confirmDeactivate}
+        >
+          Deaktiviraj
+        </Button>
+        <Button
+          size="xs"
+          variant="light"
+          leftSection={<IconFileTypePdf size={14} />}
+          disabled={selected.size > maxPdfStops}
+          title={
+            selected.size > maxPdfStops
+              ? `Najviše ${maxPdfStops} stanica u jednom PDF-u`
+              : undefined
+          }
+          onClick={() => setPdfOpened(true)}
+        >
+          PDF voznih redova
+        </Button>
+      </BulkBar>
+      <TimetablePdfDialog
+        stops={[...selected.values()]}
+        opened={pdfOpened}
+        onClose={() => setPdfOpened(false)}
+      />
       <StopDialog
         create={create}
         opened={create !== null}
