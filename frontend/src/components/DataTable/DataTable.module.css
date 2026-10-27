@@ -1,0 +1,55 @@
+/* Tablica se pomiče unutar okvira, pa zaglavlje (sticky) ostaje vidljivo. */
+.frame {
+  overflow: hidden;
+}
+
+.scroll {
+  overflow: auto;
+  min-height: 160px;
+}
+
+.table {
+  transition: opacity 150ms ease;
+}
+
+.row {
+  cursor: pointer;
+}
+
+.row[data-selected] {
+  background-color: var(--mantine-primary-color-light);
+}
+
+.row[data-active] {
+  box-shadow: inset 3px 0 0 var(--mantine-primary-color-filled);
+  background-color: var(--mantine-color-default-hover);
+}
+
+.row[data-active][data-selected] {
+  background-color: var(--mantine-primary-color-light-hover);
+}
+
+.sort {
+  font-weight: inherit;
+  font-size: inherit;
+  color: inherit;
+  white-space: nowrap;
+}
+
+.sort svg {
+  opacity: 0.4;
+}
+
+.sort[data-sorted] svg {
+  opacity: 1;
+  color: var(--mantine-primary-color-filled);
+}
+
+.card {
+  cursor: pointer;
+}
+
+.card[data-selected] {
+  border-color: var(--mantine-primary-color-filled);
+  background-color: var(--mantine-primary-color-light);
+}
