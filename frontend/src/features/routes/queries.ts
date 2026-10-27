@@ -25,9 +25,14 @@ export type RouteDiagramPdfMutation = UseMutationResult<
   RouteDiagramPdfParams
 >
 
+export type RouteTableRow = components['schemas']['RouteTableRowResponse']
+export type RouteTableParams = NonNullable<paths['/api/routes/table']['get']['parameters']['query']>
+export type RouteSortField = components['schemas']['RouteSortField']
+
 export const routeKeys = {
   all: ['routes'] as const,
   list: (params: RouteListParams) => [...routeKeys.all, 'list', params] as const,
+  table: (params: RouteTableParams) => [...routeKeys.all, 'table', params] as const,
 }
 
 export function routeListQuery(params: RouteListParams) {
@@ -40,6 +45,38 @@ export function routeListQuery(params: RouteListParams) {
 /** Stranica popisa linija; dok se učitava sljedeća, ostaje prikazana prethodna. */
 export function useRoutes(params: RouteListParams) {
   return useQuery({ ...routeListQuery(params), placeholderData: keepPreviousData })
+}
+
+/** Stranica tablice linija; dok se učitava sljedeća, ostaje prikazana prethodna. */
+export function useRouteTable(params: RouteTableParams) {
+  return useQuery({
+    queryKey: routeKeys.table(params),
+    queryFn: async () => unwrap(await api.GET('/api/routes/table', { params: { query: params } })),
+    placeholderData: keepPreviousData,
+  })
+}
+
+/** Aktivira ili deaktivira odabrane linije. */
+export function useSetRoutesActive() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: { ids: string[]; isActive: boolean }) =>
+      unwrap(await api.POST('/api/routes/bulk/active', { body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: routeKeys.all }),
+    meta: { handlesErrors: true },
+  })
+}
+
+/** Premješta odabrane linije drugom prijevozniku; vožnje i vozni red ostaju. */
+export function useSetRoutesAgency() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: { ids: string[]; agencyId: string }) =>
+      unwrap(await api.POST('/api/routes/bulk/agency', { body })),
+    // I broj linija na stranici Prijevoznici dolazi iz upita linija.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: routeKeys.all }),
+    meta: { handlesErrors: true },
+  })
 }
 
 export type RoutePattern = components['schemas']['RoutePatternResponse']
