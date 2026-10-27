@@ -4,12 +4,17 @@ import { ModalsProvider } from '@mantine/modals'
 import { Notifications } from '@mantine/notifications'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { useMemo } from 'react'
 import { RouterProvider } from 'react-router'
 import { queryClient } from '@/api/queryClient'
 import { router } from './router'
-import { theme } from './theme'
+import { useDensity } from '@/features/appearance/density'
+import { appTheme } from './theme'
 
 export function App() {
+  const [density] = useDensity()
+  const theme = useMemo(() => appTheme(density), [density])
+
   return (
     <MantineProvider theme={theme} defaultColorScheme="auto">
       <DatesProvider settings={{ locale: 'hr', firstDayOfWeek: 1 }}>

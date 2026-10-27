@@ -12,11 +12,13 @@ import {
 } from '@mantine/core'
 import { mapStyles, type MapStyle, useMapStyle } from '@/components/map/mapStyles'
 import { colorSchemes } from './colorSchemes'
+import { type Density, densities, useDensity } from './density'
 
-/** Tema sučelja i podloga karte; vrijede samo za ovaj preglednik. */
+/** Tema sučelja, gustoća prikaza i podloga karte; vrijede samo za ovaj preglednik. */
 export function AppearanceSettings() {
   const { colorScheme, setColorScheme } = useMantineColorScheme()
   const [mapStyle, setMapStyle] = useMapStyle()
+  const [density, setDensity] = useDensity()
 
   return (
     <Stack gap="md">
@@ -33,6 +35,27 @@ export function AppearanceSettings() {
           value={colorScheme}
           onChange={(value) => setColorScheme(value as MantineColorScheme)}
           data={colorSchemes.map(({ value, label, icon: Icon }) => ({
+            value,
+            label: (
+              <Center style={{ gap: 8 }}>
+                <Icon size={16} />
+                <span>{label}</span>
+              </Center>
+            ),
+          }))}
+        />
+      </Input.Wrapper>
+
+      <Input.Wrapper
+        label="Gustoća prikaza"
+        description="Zbijeno smanjuje razmak redaka tablica, pa ih na zaslon stane više."
+      >
+        <SegmentedControl
+          fullWidth
+          mt={4}
+          value={density}
+          onChange={(value) => setDensity(value as Density)}
+          data={densities.map(({ value, label, icon: Icon }) => ({
             value,
             label: (
               <Center style={{ gap: 8 }}>

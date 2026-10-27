@@ -2,13 +2,15 @@ import { Avatar, Group, Menu, Text, UnstyledButton, useMantineColorScheme } from
 import { IconCheck, IconChevronDown, IconLogout, IconSettings } from '@tabler/icons-react'
 import { Link } from 'react-router'
 import { colorSchemes } from '@/features/appearance/colorSchemes'
+import { densities, useDensity } from '@/features/appearance/density'
 import { useCurrentUser, useLogout } from '@/features/auth/queries'
 
-/** Prijavljeni administrator: tema, postavke i odjava. */
+/** Prijavljeni administrator: tema, gustoća prikaza, postavke i odjava. */
 export function UserMenu() {
   const { data: user } = useCurrentUser()
   const logout = useLogout()
   const { colorScheme, setColorScheme } = useMantineColorScheme()
+  const [density, setDensity] = useDensity()
 
   if (!user) {
     return null
@@ -35,6 +37,18 @@ export function UserMenu() {
             leftSection={<Icon size={16} />}
             rightSection={value === colorScheme ? <IconCheck size={16} /> : null}
             onClick={() => setColorScheme(value)}
+          >
+            {label}
+          </Menu.Item>
+        ))}
+        <Menu.Divider />
+        <Menu.Label>Gustoća prikaza</Menu.Label>
+        {densities.map(({ value, label, icon: Icon }) => (
+          <Menu.Item
+            key={value}
+            leftSection={<Icon size={16} />}
+            rightSection={value === density ? <IconCheck size={16} /> : null}
+            onClick={() => setDensity(value)}
           >
             {label}
           </Menu.Item>

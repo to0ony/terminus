@@ -75,7 +75,8 @@ Pretvoriti ga u radnu ploču:
   sortiranje po stupcu, odabir više redaka i grupne akcije (deaktiviraj,
   premjesti na drugog prijevoznika), ljepljivo zaglavlje i virtualizaciju
   umjesto straničenja.
-- Prekidač gustoće prikaza (zbijeno / udobno).
+- ✅ Prekidač gustoće prikaza (zbijeno / udobno) – u korisničkom izborniku i
+  Postavkama, pamti se u pregledniku; mijenja zadani razmak redaka tablica.
 
 ### Editori
 
