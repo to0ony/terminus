@@ -121,6 +121,28 @@ public class StopsController(
     }
 
     /// <summary>
+    /// Vozni redovi odabranih stanica u jednom PDF-u (najviše 100), svaka od
+    /// nove stranice. Stanice bez polazaka se preskaču; njihov broj je u
+    /// zaglavlju X-Skipped-Stops. 422 ako polazaka nema nijedna.
+    /// </summary>
+    [HttpPost("timetables.pdf")]
+    [ProducesResponseType<FileContentResult>(StatusCodes.Status200OK, "application/pdf")]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> GetTimetablesPdf(
+        StopTimetablesRequest request,
+        CancellationToken cancellationToken)
+    {
+        var pdf = await stopTimetableService.GetPdfManyAsync(request.Ids!, request.ToOptions(), timeProvider.GetUtcNow(), cancellationToken);
+        Response.Headers[SkippedStopsHeader] = pdf.Skipped.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return File(pdf.Content, "application/pdf", pdf.FileName);
+    }
+
+    /// <summary>Broj preskočenih stanica (bez polazaka) u PDF-u više stanica.</summary>
+    public const string SkippedStopsHeader = "X-Skipped-Stops";
+
+    /// <summary>
     /// Sheme linija koje staju na stanici (PDF), svaka na svojoj stranici, sa
     /// stanicom istaknutom. 422 ako na stanici ne staje nijedna linija.
     /// </summary>

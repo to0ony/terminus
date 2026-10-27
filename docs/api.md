@@ -33,6 +33,7 @@ Sve osim `/api/public/*`, `/api/auth/login` i `/health` traži prijavu
 | Stanice: grupna izmjena | `POST /api/stops/bulk/active` `{ ids, isActive }` – najviše 500; pravila kao kod jedne stanice, a ako ijedna ne smije, ne mijenja se nijedna; vraća `{ changed }` |
 | Stanica: linije i polasci | `/api/stops/{id}/routes`, `/api/stops/{id}/departures?date=` |
 | Stanica: PDF vozni red | `GET /api/stops/{id}/timetable.pdf?from=&to=&paper=&language=` |
+| Stanice: PDF vozni redovi | `POST /api/stops/timetables.pdf` `{ ids, from, to, paper, language }` – do 100 stanica u jednom PDF-u, svaka od nove stranice; stanice bez polazaka se preskaču (broj u zaglavlju `X-Skipped-Stops`), 422 ako ih nema nijedna |
 | Linija: PDF shema | `GET /api/routes/{id}/diagram.pdf?paper=&language=&showMinutes=` |
 | Stanica: PDF shema svih linija | `GET /api/stops/{id}/routes.pdf?paper=&language=&showMinutes=&minutesFromStop=` |
 | Linije | `/api/routes`, `/api/routes/{id}/patterns`, `/api/routes/{id}/timetable?date=&directionId=` |

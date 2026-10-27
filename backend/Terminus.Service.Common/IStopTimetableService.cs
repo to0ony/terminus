@@ -20,6 +20,12 @@ public interface IStopTimetableService
     /// QR kod vodi na zaslon polazaka stanice ako je u postavkama javna adresa.
     /// </summary>
     Task<TimetablePdf> GetPdfAsync(Guid stopId, TimetablePdfOptions options, DateTimeOffset now, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Vozni redovi više stanica u jednom PDF-u, redom kojim su zadane. Stanice
+    /// bez polazaka u razdoblju se preskaču; ako ih nema nijedna, 422.
+    /// </summary>
+    Task<TimetablesPdf> GetPdfManyAsync(IReadOnlyCollection<Guid> stopIds, TimetablePdfOptions options, DateTimeOffset now, CancellationToken cancellationToken = default);
 }
 
 /// <param name="From">Prvi dan; bez njega danas.</param>
@@ -27,6 +33,9 @@ public interface IStopTimetableService
 public sealed record TimetablePdfOptions(DateOnly? From, DateOnly? To, PaperSize Paper, TimetableLanguage Language);
 
 public sealed record TimetablePdf(byte[] Content, string FileName);
+
+/// <param name="Skipped">Nazivi stanica bez polazaka u razdoblju, koje nisu u PDF-u.</param>
+public sealed record TimetablesPdf(byte[] Content, string FileName, IReadOnlyList<string> Skipped);
 
 // Kao tekst ("A4", "Hr"), i u OpenAPI opisu i u adresi.
 [JsonConverter(typeof(JsonStringEnumConverter<PaperSize>))]
