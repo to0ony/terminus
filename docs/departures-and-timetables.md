@@ -402,7 +402,7 @@ MigraDoc, MIT licenca).
 
 ## 4. Karta uživo
 
-Na **Pregledu** gumb **Karta uživo** (`/live`) otvara kartu u stilu Google
+Stavka izbornika **Karta uživo** (`/live`, odmah ispod Pregleda) otvara kartu u stilu Google
 karata s plavim stanicama. Klik na stanicu prikazuje **polaske do kraja
 dana** redom (linija, smjer, vrijeme, „za X min”). Klik na polazak prikazuje
 **trasu tog smjera** (vožnje linije s istim smjerom i natpisom) u boji linije,

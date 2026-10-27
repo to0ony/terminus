@@ -1,7 +1,6 @@
 import {
   Alert,
   Badge,
-  Button,
   Group,
   Paper,
   SimpleGrid,
@@ -16,7 +15,6 @@ import {
   IconBuildingCommunity,
   IconBus,
   IconCalendarCheck,
-  IconMap2,
   IconMapPin,
   IconRoute,
   type Icon,
@@ -48,12 +46,7 @@ export function DashboardPage() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between">
-        <Title order={2}>Pregled</Title>
-        <Button component={Link} to="/live" variant="light" leftSection={<IconMap2 size={16} />}>
-          Karta uživo
-        </Button>
-      </Group>
+      <Title order={2}>Pregled</Title>
 
       {overview.isError ? (
         <QueryError error={overview.error} onRetry={() => void overview.refetch()} />
