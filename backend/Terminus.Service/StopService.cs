@@ -25,6 +25,15 @@ public class StopService(IStopRepository repository) : IStopService
         return repository.FindAsync(filter, cancellationToken);
     }
 
+    public Task<PagedResult<StopTableRow>> FindTableAsync(StopFilter filter, CancellationToken cancellationToken = default)
+    {
+        var errors = new ValidationErrors();
+        errors.AddPagingErrors(filter.Page, filter.PageSize);
+        errors.ThrowIfAny();
+
+        return repository.FindTableAsync(filter, cancellationToken);
+    }
+
     public async Task<StopsInArea> FindInAreaAsync(GeoBounds bounds, bool? isActive, CancellationToken cancellationToken = default)
     {
         var errors = new ValidationErrors();

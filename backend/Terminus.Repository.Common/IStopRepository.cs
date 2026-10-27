@@ -16,6 +16,9 @@ public interface IStopRepository
 
     Task<PagedResult<IStopModel>> FindAsync(StopFilter filter, CancellationToken cancellationToken = default);
 
+    /// <summary>Kao FindAsync, uz kolodvor, perone, broj vožnji i linije svake stanice.</summary>
+    Task<PagedResult<StopTableRow>> FindTableAsync(StopFilter filter, CancellationToken cancellationToken = default);
+
     /// <summary>Stanice s koordinatama unutar područja, poredane po nazivu.</summary>
     /// <param name="isActive">Samo aktivne ili neaktivne; null za sve.</param>
     /// <returns>Najviše <paramref name="limit"/> stanica.</returns>

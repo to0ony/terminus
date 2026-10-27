@@ -30,6 +30,21 @@ public class StopsController(
     }
 
     /// <summary>
+    /// Stanice za tablicu u dashboardu: popis s dodatnim filtrima i redoslijedom,
+    /// a uz svaku stanicu kolodvor, broj perona i vožnji te linije koje staju.
+    /// </summary>
+    [HttpGet("table")]
+    [ProducesResponseType<PagedResult<StopTableRowResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PagedResult<StopTableRowResponse>>> FindTable(
+        [FromQuery] StopTableQuery query,
+        CancellationToken cancellationToken)
+    {
+        var result = await stopService.FindTableAsync(query.ToFilter(), cancellationToken);
+        return Ok(result.Map(r => r.ToResponse()));
+    }
+
+    /// <summary>
     /// Stanice s koordinatama unutar područja karte, najviše 2000. Ako ih ima
     /// više, truncated je true i kartu treba približiti.
     /// </summary>

@@ -29,6 +29,7 @@ Sve osim `/api/public/*`, `/api/auth/login` i `/health` traži prijavu
 | Postavke instance | `GET`/`PUT /api/settings`, `PUT`/`DELETE /api/settings/logo` |
 | Prijevoznici | `/api/agencies`; `DELETE /api/agencies/{id}?moveRoutesTo=` linije i cijene prvo prebacuje na drugog prijevoznika |
 | Stanice | `/api/stops`, `/api/stops/area`, `/api/stops/extent` |
+| Tablica stanica | `GET /api/stops/table` – filtri popisa i `wheelchairBoarding`, `hasTrips`, `hasCoordinates`, `routeId`; redoslijed `sortBy` (`Name`, `Code`, `PublicCode`, `PlatformCode`, `LocationType`, `WheelchairBoarding`, `IsActive`, `RouteCount`, `TripCount`, `UpdatedAt`) i `sortDescending`; uz svaku stanicu kolodvor, broj perona i vožnji te linije |
 | Stanica: linije i polasci | `/api/stops/{id}/routes`, `/api/stops/{id}/departures?date=` |
 | Stanica: PDF vozni red | `GET /api/stops/{id}/timetable.pdf?from=&to=&paper=&language=` |
 | Linija: PDF shema | `GET /api/routes/{id}/diagram.pdf?paper=&language=&showMinutes=` |
