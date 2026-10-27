@@ -158,6 +158,9 @@ Editor varijante (`features/variants`):
 - Stupac **km** su kilometri od prve stanice, kao u registriranom voznom redu:
   po trasi, a gdje trase (još) nema zračnom crtom, uz oznaku ≈. Dionice trase
   imaju i svoju duljinu.
+- **Tipkovnica**: ↑ ↓ odabir stanice, Alt+↑ ↓ premještanje, Del uklanjanje,
+  `/` traži stanicu, F prikazuje odabranu stanicu na karti, Esc poništava
+  odabir, Ctrl+S sprema (i iz polja za unos).
 - Varijanta koju koriste vožnje zadržava stanice, a mijenjaju se samo vremena
   (za drugi redoslijed kopija).
   Kad su vremena promijenjena, spremanje pita „Samo varijanta” ili „Presnimi
@@ -230,6 +233,10 @@ Uređivanje:
 | „Nacrtaj vožnju” | klik polaska na prvoj stanici, po želji vremena na sljedećim, kraj klikom na zadnjoj stanici ili Enterom; stanice između po vremenima vožnje varijante; Backspace briše zadnju točku, Esc odustaje |
 | ← → (Shift: ±5) | pomak odabranih za minutu |
 | Del, Ctrl+Z, Ctrl+Y | brisanje, poništavanje, ponavljanje |
+| ↑ ↓, Ctrl+A | prethodna ili sljedeća vožnja po polasku, odabir svih vožnji |
+| N | „Nacrtaj vožnju” |
+| Ctrl+S | spremanje (i iz polja za unos) |
+| + − 0 | približi, udalji, cijeli dan |
 | Panel desno | točna vremena (dolazak i polazak), natpis smjera, tip dana, kopiranje s pomakom (npr. svakih 10 min, 5 puta), generator takta (od–do svakih N min, po odabranoj varijanti) |
 | „Polazak vozi u” | kvačice tipova dana za odabranu vožnju (ili više njih): polazak, npr. „svaki dan”, je jedna vožnja po tipu dana s istim vremenima. Pri spremanju server vožnje u označenim tipovima dana dodaje ili usklađuje (vremena, varijanta, trasa), a iz isključenih briše; izmjena vremena u bilo kojem tipu dana prenosi se na ostale. „Odvoji” izdvaja vožnju (npr. subotom kreće kasnije), a ostale ostaju |
 | „Preslikaj iz suprotnog smjera” | povratak za svaki polazak varijante suprotnog smjera, po odabranoj varijanti ovog smjera: okret na terminusu (dolazak + N min) ili pomak od polaska. Okret je zajednički, a pojedini polazak se može dotjerati, pa se zaključa 🔒 i promjena zajedničkog okreta ga ne dira (klik na lokot ga vraća). Polazak u više tipova dana daje jedan povratak u svima njima, s istim vozilom (BlockId). Povratak koji već postoji (±2 min) je isključen, a „Zamijeni postojeće” prvo briše vožnje odabrane varijante. Okret i zaključani polasci pamte se u pregledniku za taj par varijanti (`mirror.ts`, `MirrorDialog`) |

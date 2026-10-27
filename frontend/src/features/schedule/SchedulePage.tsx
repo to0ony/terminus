@@ -69,6 +69,7 @@ import { type Drawing, ScheduleChart } from './ScheduleChart'
 import { TripPanel } from './TripPanel'
 import { useScheduleEditor } from './useScheduleEditor'
 import { routeLabel } from '@/features/routes/routeLabel'
+import { isCtrl, isTyping } from '@/lib/keyboard'
 
 const noCalendar = '00000000-0000-0000-0000-000000000000'
 
@@ -509,52 +510,6 @@ function ScheduleEditor({
     })
   }
 
-  // Tipkovnica: pomak, brisanje, poništavanje, spremanje.
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement
-      if (target.closest('input, textarea, select, [contenteditable="true"]')) {
-        return
-      }
-      const ctrl = event.ctrlKey || event.metaKey
-      if (anchors !== null && ['Enter', 'Escape', 'Backspace'].includes(event.key)) {
-        // Crtanje: Enter završava vožnju, Backspace briše zadnju točku, Esc odustaje.
-        if (event.key === 'Enter') {
-          finishDrawing(anchors)
-        } else if (event.key === 'Backspace') {
-          setAnchors(anchors.slice(0, -1))
-        } else {
-          setAnchors(anchors.length > 0 ? [] : null)
-        }
-      } else if (ctrl && event.key.toLowerCase() === 'z' && !event.shiftKey) {
-        editor.undo()
-      } else if (
-        ctrl &&
-        (event.key.toLowerCase() === 'y' || (event.key.toLowerCase() === 'z' && event.shiftKey))
-      ) {
-        editor.redo()
-      } else if (
-        editor.selected.length > 0 &&
-        (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
-      ) {
-        const step = (event.shiftKey ? 5 : 1) * 60
-        shiftSelected(event.key === 'ArrowLeft' ? -step : step)
-      } else if (
-        editor.selected.length > 0 &&
-        (event.key === 'Delete' || event.key === 'Backspace')
-      ) {
-        deleteSelected()
-      } else if (event.key === 'Escape') {
-        editor.select([])
-      } else {
-        return
-      }
-      event.preventDefault()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  })
-
   // Nespremljene izmjene: upozorenje pri odlasku sa stranice ili promjeni tipa dana.
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) => dirty && currentLocation !== nextLocation,
@@ -587,6 +542,87 @@ function ScheduleEditor({
     setView(clampView([center - half, center + half], span))
   }
 
+  /** Odabire sljedeću ili prethodnu vožnju po polasku; bez odabira prvu ili zadnju. */
+  const selectNext = (step: 1 | -1) => {
+    const ordered = [...visible].sort((a, b) => firstDeparture(a) - firstDeparture(b))
+    if (ordered.length === 0) {
+      return
+    }
+    const current = ordered.findIndex((t) => editor.selected.includes(t.key))
+    const index =
+      current === -1
+        ? step === 1
+          ? 0
+          : ordered.length - 1
+        : Math.min(Math.max(current + step, 0), ordered.length - 1)
+    editor.select([ordered[index].key])
+  }
+
+  // Tipkovnica: pomak, brisanje, poništavanje, spremanje.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      // Spremanje radi i iz polja za unos, i ne otvara spremanje stranice u pregledniku.
+      if (isCtrl(event, 's')) {
+        event.preventDefault()
+        if (dirty && invalid.size === 0 && !save.isPending) {
+          submit()
+        }
+        return
+      }
+      if (isTyping(event.target)) {
+        return
+      }
+      const ctrl = event.ctrlKey || event.metaKey
+      if (anchors !== null && ['Enter', 'Escape', 'Backspace'].includes(event.key)) {
+        // Crtanje: Enter završava vožnju, Backspace briše zadnju točku, Esc odustaje.
+        if (event.key === 'Enter') {
+          finishDrawing(anchors)
+        } else if (event.key === 'Backspace') {
+          setAnchors(anchors.slice(0, -1))
+        } else {
+          setAnchors(anchors.length > 0 ? [] : null)
+        }
+      } else if (ctrl && event.key.toLowerCase() === 'z' && !event.shiftKey) {
+        editor.undo()
+      } else if (
+        ctrl &&
+        (event.key.toLowerCase() === 'y' || (event.key.toLowerCase() === 'z' && event.shiftKey))
+      ) {
+        editor.redo()
+      } else if (isCtrl(event, 'a')) {
+        editor.select(visible.map((t) => t.key))
+      } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+        selectNext(event.key === 'ArrowUp' ? -1 : 1)
+      } else if (!ctrl && (event.key === '+' || event.key === '=')) {
+        zoom(0.5)
+      } else if (!ctrl && event.key === '-') {
+        zoom(2)
+      } else if (!ctrl && event.key === '0') {
+        setView(span)
+      } else if (!ctrl && event.key.toLowerCase() === 'n' && active) {
+        setAnchors([])
+      } else if (
+        editor.selected.length > 0 &&
+        (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
+      ) {
+        const step = (event.shiftKey ? 5 : 1) * 60
+        shiftSelected(event.key === 'ArrowLeft' ? -step : step)
+      } else if (
+        editor.selected.length > 0 &&
+        (event.key === 'Delete' || event.key === 'Backspace')
+      ) {
+        deleteSelected()
+      } else if (event.key === 'Escape') {
+        editor.select([])
+      } else {
+        return
+      }
+      event.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
   return (
     <>
       <Group justify="space-between">
@@ -597,12 +633,12 @@ function ScheduleEditor({
           <Text size="sm" c="dimmed">
             {formatTime(view[0] % (24 * hour))} – {formatTime(view[1] % (24 * hour))}
           </Text>
-          <Tooltip label="Približi">
+          <Tooltip label="Približi (+)">
             <ActionIcon variant="default" onClick={() => zoom(0.5)} aria-label="Približi">
               <IconZoomIn size={16} />
             </ActionIcon>
           </Tooltip>
-          <Tooltip label="Udalji">
+          <Tooltip label="Udalji (−)">
             <ActionIcon variant="default" onClick={() => zoom(2)} aria-label="Udalji">
               <IconZoomOut size={16} />
             </ActionIcon>
