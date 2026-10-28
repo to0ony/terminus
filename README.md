@@ -1,8 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-white.png">
-    <img src="docs/logo.png" alt="Terminus" width="420">
-  </picture>
+  <img src="docs/banner.png" alt="Terminus – GTFS editor">
 </p>
 
 <p align="center">
@@ -12,14 +9,9 @@
 <p align="center">
   <a href="https://github.com/to0ony/terminus/actions/workflows/ci.yml"><img src="https://github.com/to0ony/terminus/actions/workflows/ci.yml/badge.svg?branch=master" alt="Build & Test"></a>
   <img src="https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white" alt=".NET 10">
-  <img src="https://img.shields.io/badge/EF_Core-10-512BD4?logo=dotnet&logoColor=white" alt="EF Core 10">
   <img src="https://img.shields.io/badge/PostgreSQL-13%2B-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL 13+">
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React 19">
   <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white" alt="TypeScript 5.9">
-  <img src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white" alt="Vite 8">
-  <img src="https://img.shields.io/badge/Mantine-9-339AF0?logo=mantine&logoColor=white" alt="Mantine 9">
-  <img src="https://img.shields.io/badge/TanStack_Query-5-FF4154?logo=reactquery&logoColor=white" alt="TanStack Query 5">
-  <img src="https://img.shields.io/badge/MapLibre_GL-6-396CB2?logo=maplibre&logoColor=white" alt="MapLibre GL 6">
   <img src="https://img.shields.io/badge/GTFS-Schedule-0B7A75" alt="GTFS Schedule">
 </p>
 
@@ -27,94 +19,87 @@
 
 Terminus je aplikacija u kojoj prijevoznik vodi stanice, linije, kalendare i
 vožnje, iz njih izvozi GTFS feed za Google Maps i druge aplikacije, a putnicima
-prikazuje polaske na javnim stranicama stanica.
+prikazuje polaske na zaslonima stanica, karti uživo i ispisanim voznim redovima.
 
 Terminus je **single-tenant**: svaka tvrtka (npr. gradski prijevoznik) dobiva
 vlastitu instancu i bazu. Unutar instance može postojati više prijevoznika
 (GTFS `agency`), a svaka linija pripada jednom od njih.
 
+## Snimke zaslona
+
+**Dashboard**
+
+<table>
+  <tr>
+    <td width="33%" valign="top">
+      <img src="docs/screenshots/map.png" alt="Karta uživo s trasom linije">
+      <br><sub><b>Karta uživo</b> – stanice, trase i vozila prema voznom redu</sub>
+    </td>
+    <td width="33%" valign="top">
+      <img src="docs/screenshots/schedule.png" alt="Grafikon voznog reda linije">
+      <br><sub><b>Grafikon voznog reda</b> – uređivanje vožnji linije</sub>
+    </td>
+    <td width="33%" valign="top">
+      <img src="docs/screenshots/gtfs.png" alt="GTFS uvoz i izvoz">
+      <br><sub><b>GTFS</b> – provjera podataka, uvoz i izvoz feeda</sub>
+    </td>
+  </tr>
+</table>
+
+**Na stanici**
+
+<table>
+  <tr>
+    <td width="72%" valign="top">
+      <img src="docs/screenshots/departures-showcase.png" alt="Zaslon polazaka na stanici">
+      <br><sub><b>Zaslon polazaka</b> – sljedeći polasci za ekrane na stanicama i mobitele</sub>
+    </td>
+    <td width="28%" valign="top">
+      <img src="docs/screenshots/timetable-pdf-showcase1.png" alt="Ispisani vozni red na stanici">
+      <br><sub><b>PDF vozni red</b> – za ispis na stanicama</sub>
+    </td>
+  </tr>
+</table>
+
 ## Mogućnosti
 
-**Za administratora (dashboard)**
+**Za prijevoznika**
 
-- **Prvo pokretanje** – čarobnjak: uvoz postojećeg GTFS-a ili početak od nule.
-- **GTFS uvoz osnove** – prijevoznici, stanice, linije, trase i varijante
-  linija s vremenima vožnje iz postojećeg feeda, s pregledom i odabirom
-  varijanti; ponovni uvoz dopunjava i ne dira sezone ni vožnje.
-- **GTFS izvoz** s provjerama prije izvoza i, po izboru, javni feed bez prijave.
-- **Pregled voznog reda** – linije, vozni red linije po danu i smjeru, stanice
-  na karti, polasci sa stanice za odabrani dan, kalendari s iznimkama,
-  prijevoznici i pregled do kada vrijedi vozni red.
-- **PDF vozni red stanice** – A4 ili A3, hrvatski ili engleski, za odabrano
-  razdoblje (i unaprijed); stupci po danima u tjednu, praznici i odstupanja kao
-  napomene, QR kod na zaslon stanice.
-- **Postavke instance** – naziv, boje i logo za javne stranice i PDF, javna
-  adresa, objava GTFS feeda, promjena lozinke.
-
-**Izrada voznog reda (editor)**
-
-- **Stanice** – nova stanica klikom na kartu, prijedlozi stajališta iz
-  OpenStreetMapa, peroni kolodvora, premještanje i brisanje.
-- **Prijevoznici** – dodavanje, izmjena i brisanje (linije preuzima drugi
-  prijevoznik); više prijevoznika po instanci, npr. konzorcij u gradskom prijevozu.
-- **Linije i varijante** – varijanta (redoslijed stanica smjera s vremenima
-  vožnje) klikom na stanice na karti, premještanje povlačenjem, povratni smjer
-  jednim klikom (stanice s druge strane ceste).
-- **Trase** – automatski po cestama ili prugama iz OpenStreetMapa (iz
-  vektorskih pločica karte, bez rutera), dorada povlačenjem i ručne dionice.
-- **Sezone voznog reda** – tipovi dana, državni praznici, iznimke klikom na dan,
-  razdoblja poput školskih raspusta; kopiranje sezone za sljedeću godinu, s vožnjama.
-- **Grafikon voznog reda** – vožnje kao crte kroz stanice: povlačenje, točna
-  vremena, nova vožnja klikom ili crtanjem, takt, kopiranje s pomakom i u drugi
-  tip dana, polazak u više tipova dana (npr. „svaki dan”) koji se mijenja
-  jednom, poništavanje i spremanje u jednoj transakciji.
+- Stanice, linije i varijante uređuju se na karti; trase se crtaju po cestama
+  i prugama iz OpenStreetMapa.
+- Sezone voznog reda s tipovima dana, praznicima i raspustima, a vožnje se
+  uređuju u grafikonu voznog reda.
+- Uvoz postojećeg GTFS feeda i izvoz s provjerama, po izboru i kao javni feed.
+- PDF vozni red stanice (A4 ili A3, hrvatski ili engleski) s QR kodom na
+  zaslon stanice.
+- Naziv, boje i logo prijevoznika na javnim stranicama i PDF-u.
 
 **Za putnike**
 
-- **Zaslon na stanici** – javna stranica `/board/{stopCode}` sa sljedećim
-  polascima (linija, odredište, "za 4 min"), za ekrane na stanicama i mobitele.
-- **Javni API** polazaka i GTFS feeda, s cacheom i ograničenjem zahtjeva.
+- Zaslon polazaka za ekrane na stanicama i mobitele.
+- Javna karta uživo s vozilima prema voznom redu.
+- Javni API polazaka i GTFS feeda.
 
-**Temelji**
-
-- **GTFS model** – sva polja osnovnih datoteka (`agency`, `stops`, `routes`,
-  `trips`, `stop_times`, `calendar`, `calendar_dates`), stanice s peronima,
-  ulazima i mjestima ukrcavanja, trase (`shapes`), cijene (Fares v1) i
-  `feed_info`.
-- **Izračun polazaka** – kalendari i iznimke, vožnje preko ponoći (do 48 h),
-  ljetno računanje vremena, kolodvori s peronima.
-- **Prijava administratora** kolačićem, uz zaključavanje računa nakon
-  neuspjelih pokušaja.
-
-U planu su produkcijski deploy, PDF za sve stanice odjednom, trase za sve
-varijante linije odjednom i upravljanje administratorima; vidi
-[roadmap](docs/roadmap.md).
+Što je u planu, vidi u [roadmapu](docs/roadmap.md).
 
 ## Tehnologije
 
 | Dio | Tehnologije |
 |---|---|
 | Backend | ASP.NET Core Web API (.NET 10), Entity Framework Core 10, ASP.NET Core Identity |
-| Baza | PostgreSQL (Npgsql, snake_case nazivi) |
-| PDF | QuestPDF, QRCoder |
-| Frontend | React 19, TypeScript, Vite, Mantine, React Router, TanStack Query, MapLibre GL |
-| Testovi | xUnit v3 (backend), Vitest i Testing Library (frontend) |
+| Baza | PostgreSQL |
+| PDF | QuestPDF |
+| Frontend | React 19, TypeScript, Vite, Mantine, TanStack Query, MapLibre GL |
+| Testovi | xUnit (backend), Vitest (frontend) |
 | CI | GitHub Actions |
 
 ## Struktura repozitorija
 
 ```
 terminus/
-├── backend/                   .NET rješenje Terminus.slnx
-│   ├── Terminus.WebApi/       kontroleri, ugovori (DTO), konfiguracija, prijava, javni API
-│   ├── Terminus.Service*/     poslovna pravila, polasci, GTFS uvoz i izvoz, PDF
-│   ├── Terminus.Repository*/  pristup podacima (EF Core)
-│   ├── Terminus.DAL/          entiteti, konfiguracije i migracije
-│   ├── Terminus.Model*/       modeli, sučelja, enumi i filteri
-│   ├── Terminus.Common/       zajednički tipovi (GTFS vrijeme i datum, iznimke)
-│   └── Terminus.Tests/        unit testovi
-├── frontend/                  dashboard i javni zaslon stanice (React)
-└── docs/                      dokumentacija
+├── backend/    .NET rješenje: Web API, servisi, pristup podacima, testovi
+├── frontend/   dashboard, javni zaslon stanice i karta (React)
+└── docs/       dokumentacija
 ```
 
 ## Brzi početak
@@ -134,7 +119,7 @@ dotnet run --project Terminus.WebApi --launch-profile http   # http://localhost:
 ```sh
 cd frontend
 npm install
-npm run dev    # http://localhost:5173, /api ide na backend preko Vite proxyja
+npm run dev    # http://localhost:5173
 ```
 
 Nakon prijave čarobnjak nudi uvoz GTFS-a ili početak od nule. Konfiguracija,
@@ -144,13 +129,12 @@ testovi i migracije opisani su u [lokalnom razvoju](docs/development.md).
 
 | Dokument | Sadržaj |
 |---|---|
-| [Roadmap](docs/roadmap.md) | stanje, faze razvoja, odluke i otvorena pitanja |
-| [Lokalni razvoj](docs/development.md) | postavljanje, konfiguracija, prvo pokretanje, testovi, migracije |
+| [Roadmap](docs/roadmap.md) | stanje, faze razvoja i otvorena pitanja |
+| [Lokalni razvoj](docs/development.md) | postavljanje, konfiguracija, testovi, migracije |
 | [Arhitektura](docs/architecture.md) | backend slojevi, tok zahtjeva, obrada grešaka |
 | [Frontend](docs/frontend.md) | stranice, struktura, rute i pozivi API-ja |
 | [API](docs/api.md) | prijava, endpointi, javni API, greške |
 | [Model podataka i GTFS](docs/data-model.md) | tablice, podržana GTFS polja, pravila |
-| [GTFS uvoz](docs/gtfs-import.md) | izvještaj, greške i upozorenja, pretvorbe |
-| [GTFS izvoz](docs/gtfs-export.md) | sadržaj feeda, format i provjere |
+| [GTFS uvoz](docs/gtfs-import.md) i [izvoz](docs/gtfs-export.md) | izvještaj, provjere, sadržaj feeda |
 | [Polasci, zaslon i PDF](docs/departures-and-timetables.md) | izračun polazaka, zaslon na stanici, PDF vozni red |
 | [Shema baze](docs/terminus_schema.sql) | SQL shema s komentarima |
