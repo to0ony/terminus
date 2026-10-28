@@ -13,6 +13,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "screenshots": "node scripts/screenshots.ts",
     "api:generate": "openapi-typescript http://localhost:5183/openapi/v1.json -o src/api/schema.d.ts"
   },
   "dependencies": {
@@ -50,10 +51,13 @@
     "jsdom": "^29.1.1",
     "openapi-typescript": "^7.13.0",
     "oxlint": "^1.81.0",
+    "pdfjs-dist": "^6.4.299",
+    "playwright": "^1.64.1",
     "postcss": "^8.5.30",
     "postcss-preset-mantine": "^1.18.0",
     "postcss-simple-vars": "^7.0.1",
     "prettier": "^3.9.10",
+    "sharp": "^0.35.5",
     "typescript": "~5.9.3",
     "vite": "^8.3.0",
     "vitest": "^5.0.5"
