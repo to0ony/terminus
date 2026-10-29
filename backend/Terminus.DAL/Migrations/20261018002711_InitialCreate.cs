@@ -104,6 +104,7 @@ namespace Terminus.DAL.Migrations
                     primary_text_color = table.Column<string>(type: "text", nullable: true),
                     public_url = table.Column<string>(type: "text", nullable: true),
                     public_gtfs_enabled = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    public_map_enabled = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     logo = table.Column<byte[]>(type: "bytea", nullable: true),
                     logo_content_type = table.Column<string>(type: "text", nullable: true),
                     logo_updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
