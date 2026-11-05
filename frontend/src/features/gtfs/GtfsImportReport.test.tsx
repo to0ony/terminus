@@ -8,10 +8,10 @@ const counts: Report['counts'] = {
   agencies: 1,
   stops: 3800,
   routes: 154,
-  calendars: 7,
-  calendarDates: 95,
-  trips: 66661,
-  stopTimes: 1131537,
+  calendars: 10,
+  calendarDates: 72,
+  trips: 98915,
+  stopTimes: 1697138,
   shapes: 561,
   shapePoints: 82147,
   fares: 0,
@@ -25,17 +25,8 @@ const report = (overrides: Partial<Report> = {}): Report => ({
   imported: false,
   canImport: true,
   counts,
-  existing: { agencies: 0, stops: 0, routes: 0, trips: 0 },
-  changes: {
-    newAgencies: 1,
-    updatedAgencies: 0,
-    newStops: 3700,
-    updatedStops: 100,
-    newRoutes: 154,
-    updatedRoutes: 0,
-    newShapes: 561,
-    updatedShapes: 0,
-  },
+  existing: { agencies: 0, stops: 0, routes: 0, trips: 0, seasons: 0 },
+  expired: { calendars: 5, trips: 47892, stopTimes: 824980 },
   variants: [
     {
       key: 'a',
@@ -46,6 +37,7 @@ const report = (overrides: Partial<Report> = {}): Report => ({
       headsign: 'Sopot',
       stopCount: 23,
       tripCount: 584,
+      expiredTripCount: 100,
       duration: 2340,
       share: 0.66,
       main: true,
@@ -64,10 +56,15 @@ describe('GtfsImportReport', () => {
 
     expect(screen.getByText('Feed se može uvesti')).toBeInTheDocument()
     expect(screen.getByText('3.800')).toBeInTheDocument()
-    expect(screen.getByText('3.700 novih · 100 ažurira se')).toBeInTheDocument()
-    expect(
-      screen.getByText(/66.661 vožnji iz feeda služi samo za prepoznavanje/),
-    ).toBeInTheDocument()
+    expect(screen.getByText('98.915')).toBeInTheDocument()
+    expect(screen.getByText('10')).toBeInTheDocument()
+  })
+
+  it('leaves expired trips out of the numbers when they are skipped', () => {
+    render(<GtfsImportReport report={report()} skipExpired />)
+
+    expect(screen.getByText('51.023')).toBeInTheDocument()
+    expect(screen.getByText('5')).toBeInTheDocument()
   })
 
   it('lists errors with counts and examples and hides the counts', () => {

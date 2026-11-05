@@ -22,8 +22,8 @@ interface VariantSelectionProps {
 }
 
 /**
- * Prepoznate varijante linija i koje se uvoze. Zadano su odabrane glavne i
- * česte; rijetke (npr. vožnje u garažu) korisnik uključuje sam.
+ * Prepoznate varijante linija i koje se uvoze. Zadano su odabrane sve, jer se
+ * vožnje neodabrane varijante ne uvoze.
  */
 export function VariantSelection({ variants, selected, onChange }: VariantSelectionProps) {
   const [search, setSearch] = useState('')
@@ -65,19 +65,17 @@ export function VariantSelection({ variants, selected, onChange }: VariantSelect
       <div>
         <Title order={4}>Varijante linija</Title>
         <Text size="sm" c="dimmed">
-          Redoslijed stanica svake linije po smjeru, s vremenima vožnje iz feeda. Uvezene varijante
-          su predložak za vožnje koje ćeš dodati; možeš ih poslije urediti ili obrisati.
+          Redoslijed stanica svake linije po smjeru, s vremenima vožnje iz feeda. Vožnje neodabrane
+          varijante se ne uvoze.
         </Text>
       </div>
 
       <Group justify="space-between" gap="xs">
         <Text size="sm" fw={500}>
-          Odabrano {formatNumber(selected.size)} od {formatNumber(variants.length)}
+          Odabrano {formatNumber(variants.filter((v) => selected.has(v.key)).length)} od{' '}
+          {formatNumber(variants.length)}
         </Text>
         <Group gap="xs">
-          <Button size="compact-sm" variant="default" onClick={() => choose((v) => v.included)}>
-            Zadano
-          </Button>
           <Button size="compact-sm" variant="default" onClick={() => choose((v) => v.main)}>
             Samo glavne
           </Button>

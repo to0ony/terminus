@@ -100,7 +100,7 @@ function ImportSection() {
     notifications.show({
       color: 'green',
       title: 'Uvoz je završen',
-      message: 'Stanice, linije, trase i varijante su uvezene.',
+      message: 'Feed je uvezen i zamijenio je prethodne podatke.',
     })
     setImported(true)
   }
@@ -116,9 +116,9 @@ function ImportSection() {
         <div>
           <Title order={3}>Uvoz iz GTFS-a</Title>
           <Text size="sm" c="dimmed">
-            Iz tuđeg ili starog GTFS feeda uvoze se prijevoznici, stanice, linije, trase i varijante
-            linija s vremenima vožnje. Kalendari i vožnje se ne uvoze. Uvoz dopunjava: isti GTFS ID
-            se ažurira, a sezone i vožnje ostaju. Upisuje se tek nakon potvrde.
+            Uvozi se cijeli feed: prijevoznici, stanice, linije, trase, varijante, kalendari i
+            vožnje s vremenima. Uvoz zamjenjuje sve postojeće podatke, a upisuje se tek nakon
+            potvrde.
           </Text>
         </div>
         <GtfsImport key={run} onImported={() => void handleImported()} />
