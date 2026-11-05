@@ -125,7 +125,7 @@ razdoblja u kojem zamijenjeni tip dana inače vozi), a iz njih iznimke kao i za
 praznike. Ručna iznimka i praznik imaju prednost, pa Božić u raspustu vozi po
 pravilu za praznike. Razdoblja istog tipa dana se ne preklapaju.
 Kalendari uvezeni iz GTFS-a nisu u sezoni i ostaju kakvi jesu. GTFS uvoz briše
-i sezone.
+i sezone, kao i sve ostale podatke voznog reda.
 
 **Varijante linije.** Varijanta (`route_variants`) je redoslijed stanica
 jednog smjera linije (npr. Črnomerec → Sopot, skraćena, iz garaže), s
