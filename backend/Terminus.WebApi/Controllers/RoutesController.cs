@@ -18,9 +18,12 @@ public class RoutesController(
     IScheduleService scheduleService,
     ILiveMapService liveMapService,
     IRouteDiagramService routeDiagramService,
+    IRouteTimetableExcelService timetableExcelService,
     IOutputCacheStore outputCache,
     TimeProvider timeProvider) : ControllerBase
 {
+    private const string XlsxContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
     /// <summary>
     /// Shema linije za ispis (PDF): stanice glavnih varijanti oba smjera odozgo
     /// prema dolje, s minutama vožnje. Gdje smjerovi idu različitim stanicama,
@@ -197,6 +200,24 @@ public class RoutesController(
     {
         var timetable = await timetableService.GetRouteTimetableAsync(id, query.ToQuery(), timeProvider.GetUtcNow(), cancellationToken);
         return Ok(timetable.ToResponse());
+    }
+
+    /// <summary>
+    /// Vozni red linije jednog dana (bez datuma današnji) kao Excel tablica,
+    /// svaki smjer na svom listu. 422 ako linija taj dan ne vozi.
+    /// </summary>
+    [HttpGet("{id:guid}/timetable.xlsx")]
+    [ProducesResponseType<FileContentResult>(StatusCodes.Status200OK, XlsxContentType)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> GetTimetableXlsx(
+        Guid id,
+        [FromQuery] TimetableXlsxQuery query,
+        CancellationToken cancellationToken)
+    {
+        var file = await timetableExcelService.GetXlsxAsync(id, query.Date, timeProvider.GetUtcNow(), cancellationToken);
+        return File(file.Content, XlsxContentType, file.FileName);
     }
 
     /// <summary>Karta uživo, sva vozila: vožnje svih linija jednog dana (bez datuma današnji).</summary>

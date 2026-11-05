@@ -42,6 +42,13 @@ public class TimetableQuery
     public TripDirection? DirectionId { get; set; }
 }
 
+/// <summary>Query parametri za Excel vozni red linije.</summary>
+public class TimetableXlsxQuery
+{
+    /// <summary>Dan voznog reda (YYYY-MM-DD); bez njega današnji u zoni prijevoznika.</summary>
+    public DateOnly? Date { get; set; }
+}
+
 /// <param name="Stops">Redci tablice.</param>
 /// <param name="Trips">Stupci tablice, poredani po polasku s prve stanice.</param>
 public record RouteTimetableResponse(

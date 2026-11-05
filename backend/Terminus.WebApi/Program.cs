@@ -138,6 +138,7 @@ builder.Services.AddScoped<IFareService, FareService>();
 builder.Services.AddScoped<IFeedInfoService, FeedInfoService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<ITimetableService, TimetableService>();
+builder.Services.AddScoped<IRouteTimetableExcelService, RouteTimetableExcelService>();
 builder.Services.AddScoped<ILiveMapService, LiveMapService>();
 // Ispis stanica spaja dokumente obaju servisa, pa ih traži kao konkretne tipove.
 builder.Services.AddScoped<StopTimetableService>();

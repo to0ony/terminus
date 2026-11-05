@@ -12,19 +12,23 @@ import {
 } from '@mantine/core'
 import { DatePickerInput } from '@mantine/dates'
 import { useDisclosure } from '@mantine/hooks'
+import { notifications } from '@mantine/notifications'
 import {
   IconCalendar,
   IconChartLine,
   IconDots,
+  IconFileSpreadsheet,
   IconFileTypePdf,
   IconPencil,
   IconTrash,
 } from '@tabler/icons-react'
 import { Link, useParams, useSearchParams } from 'react-router'
+import { errorMessage } from '@/api/errors'
 import { PageBreadcrumbs } from '@/components/PageBreadcrumbs'
 import { DetailSkeleton, TableSkeleton } from '@/components/Skeletons'
 import { QueryError } from '@/components/QueryError'
 import { useAgencies } from '@/features/agencies/queries'
+import { saveFile } from '@/lib/download'
 import { formatNumber } from '@/lib/format'
 import { directionOptions } from './directions'
 import {
@@ -33,6 +37,7 @@ import {
   useRouteDiagramPdf,
   useRoutePatterns,
   useRouteTimetable,
+  useRouteTimetableXlsx,
 } from './queries'
 import { RouteBadge } from './RouteBadge'
 import { useRouteVariants } from '@/features/variants/queries'
@@ -57,6 +62,7 @@ export function RouteDetailPage() {
   const [deleteOpened, deleteDialog] = useDisclosure(false)
   const [pdfOpened, pdf] = useDisclosure(false)
   const diagramPdf = useRouteDiagramPdf(routeId)
+  const timetableXlsx = useRouteTimetableXlsx(routeId)
 
   const directions = directionOptions(patterns.data ?? [])
   const direction =
@@ -82,6 +88,18 @@ export function RouteDetailPage() {
       },
       { replace: true },
     )
+
+  // Dan koji se vidi u tablici (bez odabira današnji), oba smjera.
+  const exportXlsx = () =>
+    timetableXlsx.mutate(timetable.data?.date ?? date ?? undefined, {
+      onSuccess: saveFile,
+      onError: (error) =>
+        notifications.show({
+          color: 'red',
+          title: 'Izvoz nije uspio',
+          message: errorMessage(error),
+        }),
+    })
 
   if (route.isPending) {
     return <DetailSkeleton />
@@ -195,6 +213,16 @@ export function RouteDetailPage() {
             onChange={(value) => setParam('dir', value)}
           />
         )}
+        <Button
+          variant="default"
+          leftSection={<IconFileSpreadsheet size={16} />}
+          ml="auto"
+          loading={timetableXlsx.isPending}
+          disabled={!timetable.data || timetable.isPlaceholderData}
+          onClick={exportXlsx}
+        >
+          Izvoz u Excel
+        </Button>
       </Group>
 
       {patterns.isError ? (

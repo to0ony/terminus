@@ -162,3 +162,21 @@ export function useRouteDiagramPdf(id: string) {
     meta: { handlesErrors: true },
   })
 }
+
+/**
+ * Excel vozni red linije za jedan dan (bez datuma današnji), svaki smjer na
+ * svom listu. Ako linija taj dan ne vozi, backend vraća 422.
+ */
+export function useRouteTimetableXlsx(id: string) {
+  return useMutation({
+    mutationFn: async (date: string | undefined): Promise<DownloadedFile> => {
+      const result = await api.GET('/api/routes/{id}/timetable.xlsx', {
+        params: { path: { id }, query: { Date: date } },
+        parseAs: 'blob',
+      })
+      const blob = unwrap(result) as unknown as Blob
+      return { blob, fileName: fileNameOf(result.response) ?? 'vozni-red.xlsx' }
+    },
+    meta: { handlesErrors: true },
+  })
+}
