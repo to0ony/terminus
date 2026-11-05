@@ -66,9 +66,9 @@ pokretanjem.
 | 2.3 | Izvještaj o uvozu: broj uvezenih zapisa, greške koje zaustavljaju uvoz, upozorenja i preskočene datoteke ✅ | 2.2 |
 | 2.4 | Uvoz `shapes.txt` i cijena (Fares v1); `frequencies.txt` se pretvara u pojedinačne vožnje ✅ | 2.2 |
 
-Od 18. 10. 2026. uvoz donosi samo osnovu (prijevoznici, stanice, linije, trase,
-varijante linija) i dopunjava postojeće podatke; kalendari i vožnje rade se u
-aplikaciji (vidi plan editora u fazi 5). Detaljno u [gtfs-import.md](gtfs-import.md).
+Od 18. 10. 2026. uvoz je donosio samo osnovu i dopunjavao postojeće podatke. Od
+5. 11. 2026. uvozi cijeli feed, s kalendarima i vožnjama, i zamjenjuje sve podatke
+voznog reda. Detaljno u [gtfs-import.md](gtfs-import.md).
 
 Datoteke koje Terminus ne podržava (npr. `transfers.txt`, Fares v2) navode se
 u izvještaju kao preskočene.
@@ -187,7 +187,7 @@ red linije.
 
 | Tema | Odluka | Razlog |
 |---|---|---|
-| Uvoz | Samo osnova (stanice, linije, trase, varijante), kao dopuna | Tuđi kalendari i vožnje su često neuredni; vozni red se radi u aplikaciji, a ponovni uvoz ne smije pregaziti taj rad. |
+| Uvoz | Cijeli feed s vožnjama, uz zamjenu svih podataka | Instanca je jedan feed: uvoz je novi početak ili prelazak, pa dopuna i sudari ID-eva otpadaju. Prije brisanja traži se potvrda s brojem zapisa. |
 | Autentikacija | ASP.NET Core Identity, HttpOnly cookie | Ugrađeno u .NET, korisnici u našoj bazi, bez dodatne infrastrukture. Frontend i API su na istoj domeni, pa cookie radi bez tokena u pregledniku. |
 | Endpointi za prijavu | Vlastiti (`/api/auth/login`, `logout`, `me`) preko `SignInManager` | `MapIdentityApi` otvara javnu registraciju, a ovdje administratore dodaje samo drugi administrator. |
 | CORS | Nije potreban | U razvoju Vite proxy šalje `/api` na backend; u produkciji je isti origin. |

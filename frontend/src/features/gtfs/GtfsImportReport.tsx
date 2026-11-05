@@ -4,50 +4,36 @@ import { formatNumber } from '@/lib/format'
 import type { GtfsImportIssue, GtfsImportReport as Report } from './queries'
 
 /**
- * Izvještaj pregleda ili uvoza: osnova koja se uvozi (novo i ažurirano),
- * greške, upozorenja i preskočene datoteke.
+ * Izvještaj pregleda ili uvoza: što se uvozi, greške, upozorenja i preskočene
+ * datoteke.
  */
 export function GtfsImportReport({
   report,
   selectedVariants,
+  skipExpired,
 }: {
   report: Report
   /** Broj varijanti koje je korisnik odabrao (u pregledu); bez njega zadani izbor. */
   selectedVariants?: number
+  /** U pregledu: brojke su bez kalendara i vožnji koji više ne voze. */
+  skipExpired?: boolean
 }) {
-  const { counts, changes, errors, warnings, skippedFiles } = report
+  const { counts, expired, errors, warnings, skippedFiles } = report
 
   const stats = [
-    {
-      label: 'Prijevoznici',
-      value: counts.agencies,
-      added: changes.newAgencies,
-      updated: changes.updatedAgencies,
-    },
-    {
-      label: 'Stanice',
-      value: counts.stops,
-      added: changes.newStops,
-      updated: changes.updatedStops,
-    },
-    {
-      label: 'Linije',
-      value: counts.routes,
-      added: changes.newRoutes,
-      updated: changes.updatedRoutes,
-    },
-    {
-      label: 'Trase',
-      value: counts.shapes,
-      added: changes.newShapes,
-      updated: changes.updatedShapes,
-    },
+    { label: 'Prijevoznici', value: counts.agencies },
+    { label: 'Stanice', value: counts.stops },
+    { label: 'Linije', value: counts.routes },
+    { label: 'Trase', value: counts.shapes },
     {
       label: 'Varijante linija',
       value: selectedVariants ?? report.variants.filter((v) => v.included).length,
-      added: null,
-      updated: null,
     },
+    {
+      label: 'Kalendari',
+      value: skipExpired ? counts.calendars - expired.calendars : counts.calendars,
+    },
+    { label: 'Vožnje', value: skipExpired ? counts.trips - expired.trips : counts.trips },
   ]
 
   return (
@@ -66,30 +52,18 @@ export function GtfsImportReport({
       )}
 
       {report.canImport && (
-        <>
-          <SimpleGrid cols={{ base: 2, xs: 3, sm: 5 }} spacing="sm">
-            {stats.map((stat) => (
-              <Paper key={stat.label} withBorder p="sm">
-                <Text size="xs" c="dimmed">
-                  {stat.label}
-                </Text>
-                <Text fw={700} size="lg">
-                  {formatNumber(stat.value)}
-                </Text>
-                {stat.added !== null && stat.updated !== null && stat.updated > 0 && (
-                  <Text size="xs" c="dimmed">
-                    {formatNumber(stat.added)} novih · {formatNumber(stat.updated)} ažurira se
-                  </Text>
-                )}
-              </Paper>
-            ))}
-          </SimpleGrid>
-          <Text size="sm" c="dimmed">
-            Kalendari i vožnje se ne uvoze, nego ih radiš u aplikaciji.
-            {counts.trips > 0 &&
-              ` ${formatNumber(counts.trips)} vožnji iz feeda služi samo za prepoznavanje varijanti i vremena vožnje.`}
-          </Text>
-        </>
+        <SimpleGrid cols={{ base: 2, xs: 3, sm: 4 }} spacing="sm">
+          {stats.map((stat) => (
+            <Paper key={stat.label} withBorder p="sm">
+              <Text size="xs" c="dimmed">
+                {stat.label}
+              </Text>
+              <Text fw={700} size="lg">
+                {formatNumber(stat.value)}
+              </Text>
+            </Paper>
+          ))}
+        </SimpleGrid>
       )}
 
       {(warnings.length > 0 || skippedFiles.length > 0) && (
@@ -131,9 +105,7 @@ export function GtfsImportReport({
 
 function Summary({ report }: { report: Report }) {
   if (report.imported) {
-    return (
-      <Alert color="green" variant="light" icon={<IconCircleCheck />} title="Osnova je uvezena" />
-    )
+    return <Alert color="green" variant="light" icon={<IconCircleCheck />} title="Feed je uvezen" />
   }
   if (!report.canImport) {
     return null

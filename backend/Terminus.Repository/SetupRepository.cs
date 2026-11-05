@@ -11,5 +11,6 @@ public class SetupRepository(TerminusDbContext context) : ISetupRepository
         Agencies: await context.Agencies.CountAsync(cancellationToken),
         Stops: await context.Stops.CountAsync(cancellationToken),
         Routes: await context.Routes.CountAsync(cancellationToken),
-        Trips: await context.Trips.CountAsync(cancellationToken));
+        Trips: await context.Trips.CountAsync(cancellationToken),
+        Seasons: await context.TimetableSeasons.CountAsync(cancellationToken));
 }

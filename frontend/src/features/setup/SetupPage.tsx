@@ -82,7 +82,7 @@ export function SetupPage() {
               <Choice
                 icon={IconFileZip}
                 title="Uvezi postojeći GTFS"
-                description="Prijevoznici, stanice, linije, trase i varijante linija iz GTFS ZIP datoteke, da ne kreneš od nule. Kalendare i vožnje radiš u aplikaciji."
+                description="Prijevoznici, stanice, linije, trase, varijante, kalendari i vožnje iz GTFS ZIP datoteke, da ne kreneš od nule."
                 onClick={() => setMode('import')}
               />
               <Choice
@@ -99,15 +99,10 @@ export function SetupPage() {
           <Stack gap="lg">
             <StepTitle
               title="Uvoz GTFS-a"
-              description="Odaberi GTFS ZIP. Feed se prvo provjeri, a podaci se upisuju tek nakon potvrde. Uvoze se stanice, linije, trase i varijante linija; kalendare i vožnje radiš u aplikaciji."
+              description="Odaberi GTFS ZIP. Feed se prvo provjeri, a podaci se upisuju tek nakon potvrde."
             />
             <GtfsImport
-              onImported={() =>
-                finish(
-                  'Osnova je uvezena. Sljedeći korak: napravi sezonu voznog reda.',
-                  '/calendars',
-                )
-              }
+              onImported={() => finish('Feed je uvezen.')}
               onCancel={() => setMode('choose')}
             />
           </Stack>

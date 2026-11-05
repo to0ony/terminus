@@ -916,6 +916,10 @@ export interface paths {
                         file?: components["schemas"]["IFormFile"];
                     } & {
                         variants?: string;
+                    } & {
+                        skipExpired?: boolean;
+                    } & {
+                        createSeason?: boolean;
                     };
                 };
             };
@@ -5449,24 +5453,6 @@ export interface components {
         GtfsCheckResponse: {
             problems: string[];
         };
-        GtfsImportChangesResponse: {
-            /** Format: int32 */
-            newAgencies: number;
-            /** Format: int32 */
-            updatedAgencies: number;
-            /** Format: int32 */
-            newStops: number;
-            /** Format: int32 */
-            updatedStops: number;
-            /** Format: int32 */
-            newRoutes: number;
-            /** Format: int32 */
-            updatedRoutes: number;
-            /** Format: int32 */
-            newShapes: number;
-            /** Format: int32 */
-            updatedShapes: number;
-        };
         GtfsImportCountsResponse: {
             /** Format: int32 */
             agencies: number;
@@ -5496,6 +5482,14 @@ export interface components {
             /** Format: int32 */
             interpolatedStopTimes: number;
         };
+        GtfsImportExpiredResponse: {
+            /** Format: int32 */
+            calendars: number;
+            /** Format: int32 */
+            trips: number;
+            /** Format: int32 */
+            stopTimes: number;
+        };
         GtfsImportIssueResponse: {
             file: null | string;
             message: string;
@@ -5508,11 +5502,24 @@ export interface components {
             canImport: boolean;
             counts: components["schemas"]["GtfsImportCountsResponse"];
             existing: components["schemas"]["SetupCountsResponse"];
-            changes: components["schemas"]["GtfsImportChangesResponse"];
+            expired: components["schemas"]["GtfsImportExpiredResponse"];
+            season: null | components["schemas"]["GtfsImportSeasonResponse"];
+            activeSeason: null | components["schemas"]["GtfsImportSeasonResponse"];
             variants: components["schemas"]["GtfsImportVariantResponse"][];
             errors: components["schemas"]["GtfsImportIssueResponse"][];
             warnings: components["schemas"]["GtfsImportIssueResponse"][];
             skippedFiles: components["schemas"]["GtfsSkippedFileResponse"][];
+        };
+        GtfsImportSeasonResponse: {
+            problem: null | string;
+            name: null | string;
+            /** Format: date */
+            startDate: null | string;
+            /** Format: date */
+            endDate: null | string;
+            dayTypes: string[];
+            /** Format: int32 */
+            exceptions: number;
         };
         GtfsImportVariantResponse: {
             key: string;
@@ -5525,6 +5532,8 @@ export interface components {
             stopCount: number;
             /** Format: int32 */
             tripCount: number;
+            /** Format: int32 */
+            expiredTripCount: number;
             /** Format: int32 */
             duration: number;
             /** Format: double */
@@ -6074,6 +6083,8 @@ export interface components {
             routes: number;
             /** Format: int32 */
             trips: number;
+            /** Format: int32 */
+            seasons: number;
         };
         SetupStatusResponse: {
             completed: boolean;

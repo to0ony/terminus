@@ -12,24 +12,22 @@ public class GtfsImportService(
     ISettingsRepository settingsRepository,
     TimeProvider timeProvider) : IGtfsImportService
 {
-    /// <summary>Sporedna varijanta se zadano uvozi ako ima barem toliki udio vožnji smjera.</summary>
-    public const double MinVariantShare = 0.05;
-
     public async Task<GtfsImportReport> PreviewAsync(Stream zip, CancellationToken cancellationToken = default)
     {
-        var (report, _, _) = await ReadAsync(zip, null, cancellationToken);
+        var (report, _, _) = await ReadAsync(zip, new GtfsImportOptions(), cancellationToken);
         return report;
     }
 
-    public async Task<GtfsImportReport> ImportAsync(Stream zip, IReadOnlyCollection<string>? variantKeys, CancellationToken cancellationToken = default)
+    public async Task<GtfsImportReport> ImportAsync(Stream zip, GtfsImportOptions options, CancellationToken cancellationToken = default)
     {
-        var (report, feed, variants) = await ReadAsync(zip, variantKeys, cancellationToken);
+        var (report, feed, variants) = await ReadAsync(zip, options, cancellationToken);
         if (feed is null)
         {
             return report;
         }
 
-        await importRepository.MergeAsync(feed, variants, cancellationToken);
+        DepartureLinker.Link(feed);
+        await importRepository.ReplaceAllAsync(feed, variants, cancellationToken);
         await settingsRepository.MarkSetupCompletedAsync(timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
 
         return report with { Imported = true };
@@ -37,7 +35,7 @@ public class GtfsImportService(
 
     private async Task<(GtfsImportReport Report, GtfsFeedData? Feed, IReadOnlyList<IRouteVariantModel> Variants)> ReadAsync(
         Stream zip,
-        IReadOnlyCollection<string>? variantKeys,
+        GtfsImportOptions options,
         CancellationToken cancellationToken)
     {
         var existing = await setupRepository.GetCountsAsync(cancellationToken);
@@ -59,13 +57,43 @@ public class GtfsImportService(
             }
         }
 
-        var changes = new GtfsImportChanges(0, 0, 0, 0, 0, 0, 0, 0);
-        var derived = new List<(IRouteVariantModel Variant, GtfsImportVariant Summary)>();
+        var expired = new GtfsImportExpired(0, 0, 0);
+        GtfsImportSeason? season = null;
+        GtfsImportSeason? activeSeason = null;
+        var derived = new List<DerivedVariant>();
         if (feed is not null)
         {
-            var codes = await importRepository.GetExistingCodesAsync(cancellationToken);
-            changes = Changes(feed, codes);
-            derived = DeriveVariants(feed, variantKeys);
+            var today = Today(feed);
+            var expiredCalendars = ExpiredCalendars.Find(feed.Calendars, feed.CalendarDates, today);
+            var expiredTrips = feed.Trips.Where(t => expiredCalendars.Contains(t.ServiceCalendarId)).Select(t => t.Id).ToHashSet();
+            expired = new GtfsImportExpired(
+                expiredCalendars.Count,
+                expiredTrips.Count,
+                feed.StopTimes.Count(st => expiredTrips.Contains(st.TripId)));
+
+            var active = WithoutExpired(feed, expiredCalendars, expiredTrips);
+            season = Summary(FeedSeasonBuilder.Build(feed, null));
+            activeSeason = Summary(FeedSeasonBuilder.Build(active, today));
+
+            if (options.SkipExpired)
+            {
+                feed = active;
+            }
+
+            derived = DeriveVariants(feed, options.VariantKeys, expiredTrips);
+            feed = WithChosenTrips(feed, derived);
+            if (options.CreateSeason)
+            {
+                feed = WithSeason(feed, FeedSeasonBuilder.Build(feed, options.SkipExpired ? today : null), builder);
+            }
+
+            counts = counts with
+            {
+                Calendars = feed.Calendars.Count,
+                CalendarDates = feed.CalendarDates.Count,
+                Trips = feed.Trips.Count,
+                StopTimes = feed.StopTimes.Count
+            };
         }
 
         var report = new GtfsImportReport(
@@ -73,7 +101,9 @@ public class GtfsImportService(
             CanImport: !builder.HasErrors,
             Counts: counts,
             Existing: existing,
-            Changes: changes,
+            Expired: expired,
+            Season: season,
+            ActiveSeason: activeSeason,
             Variants: derived.Select(d => d.Summary).ToList(),
             Errors: builder.Errors,
             Warnings: builder.Warnings,
@@ -82,28 +112,76 @@ public class GtfsImportService(
         return (report, feed, derived.Where(d => d.Summary.Included).Select(d => d.Variant).ToList());
     }
 
-    private static GtfsImportChanges Changes(GtfsFeedData feed, GtfsExistingCodes codes)
+    /// <summary>Današnji dan u zoni prijevoznika; svi prijevoznici feeda imaju istu zonu.</summary>
+    private DateOnly Today(GtfsFeedData feed)
     {
-        static (int New, int Updated) Count(IEnumerable<string> feedCodes, IReadOnlySet<string> existing)
+        var zone = TimeZoneInfo.FindSystemTimeZoneById(feed.Agencies[0].Timezone);
+        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(timeProvider.GetUtcNow(), zone).DateTime);
+    }
+
+    private static GtfsFeedData WithoutExpired(GtfsFeedData feed, IReadOnlySet<Guid> calendars, IReadOnlySet<Guid> trips) => feed with
+    {
+        Calendars = feed.Calendars.Where(c => !calendars.Contains(c.Id)).ToList(),
+        CalendarDates = feed.CalendarDates.Where(d => !calendars.Contains(d.ServiceCalendarId)).ToList(),
+        Trips = feed.Trips.Where(t => !trips.Contains(t.Id)).ToList(),
+        StopTimes = feed.StopTimes.Where(st => !trips.Contains(st.TripId)).ToList()
+    };
+
+    private static GtfsImportSeason Summary(FeedSeason season) => new(
+        season.Problem,
+        season.Season?.Name,
+        season.Season?.StartDate,
+        season.Season?.EndDate,
+        season.DayTypes.Select(d => d.Name).ToList(),
+        season.Days.Count);
+
+    private static GtfsFeedData WithSeason(GtfsFeedData feed, FeedSeason season, ImportReportBuilder report)
+    {
+        if (season.Problem is not null)
         {
-            var list = feedCodes.ToList();
-            var updated = list.Count(existing.Contains);
-            return (list.Count - updated, updated);
+            report.Warning(null, $"Sezona nije napravljena: {season.Problem} Kalendari ostaju izvan sezona.");
+            return feed;
         }
 
-        var agencies = Count(feed.Agencies.Select(a => a.Code), codes.Agencies);
-        var stops = Count(feed.Stops.Select(s => s.Code), codes.Stops);
-        var routes = Count(feed.Routes.Select(r => r.Code), codes.Routes);
-        var shapes = Count(feed.Shapes.Select(s => s.Code), codes.Shapes);
-        return new GtfsImportChanges(
-            agencies.New, agencies.Updated, stops.New, stops.Updated, routes.New, routes.Updated, shapes.New, shapes.Updated);
+        return feed with
+        {
+            Season = season.Season,
+            SeasonDays = season.Days,
+            Calendars = [.. season.DayTypes, .. season.OtherCalendars],
+            CalendarDates = [.. season.CalendarDates, .. season.OtherCalendarDates]
+        };
     }
 
     /// <summary>
-    /// Varijante svake linije iz njezinih vožnji. Zadano se uvoze glavne i one s
-    /// barem 5 % vožnji smjera; rijetke (npr. vožnje u garažu) korisnik uključuje sam.
+    /// Vožnje za upis: one odabranih varijanti, povezane s varijantom. Vožnje bez
+    /// kalendara (feed nema calendar.txt ni calendar_dates.txt) se ne upisuju.
     /// </summary>
-    private static List<(IRouteVariantModel, GtfsImportVariant)> DeriveVariants(GtfsFeedData feed, IReadOnlyCollection<string>? variantKeys)
+    private static GtfsFeedData WithChosenTrips(GtfsFeedData feed, IReadOnlyList<DerivedVariant> derived)
+    {
+        var variantByTrip = derived
+            .Where(d => d.Summary.Included)
+            .SelectMany(d => d.TripIds.Select(tripId => (TripId: tripId, VariantId: d.Variant.Id)))
+            .ToDictionary(x => x.TripId, x => x.VariantId);
+
+        var trips = new List<ITripModel>();
+        foreach (var trip in feed.Trips)
+        {
+            if (trip.ServiceCalendarId != Guid.Empty && variantByTrip.TryGetValue(trip.Id, out var variantId))
+            {
+                trip.VariantId = variantId;
+                trips.Add(trip);
+            }
+        }
+
+        var kept = trips.Select(t => t.Id).ToHashSet();
+        return feed with { Trips = trips, StopTimes = feed.StopTimes.Where(st => kept.Contains(st.TripId)).ToList() };
+    }
+
+    /// <summary>Varijante svake linije iz njezinih vožnji; bez odabira se uvoze sve.</summary>
+    private static List<DerivedVariant> DeriveVariants(
+        GtfsFeedData feed,
+        IReadOnlyCollection<string>? variantKeys,
+        IReadOnlySet<Guid> expiredTrips)
     {
         var stops = feed.Stops.ToDictionary(s => s.Id);
         var stopTimes = feed.StopTimes.GroupBy(st => st.TripId).ToDictionary(g => g.Key, g => (IReadOnlyList<IStopTimeModel>)g.OrderBy(st => st.StopSequence).ToList());
@@ -111,7 +189,8 @@ public class GtfsImportService(
             .Select(t => new TripStopTimes(t, stopTimes.GetValueOrDefault(t.Id) ?? []))
             .ToLookup(t => t.Trip.RouteId);
 
-        var result = new List<(IRouteVariantModel, GtfsImportVariant)>();
+        var chosen = variantKeys?.ToHashSet(StringComparer.Ordinal);
+        var result = new List<DerivedVariant>();
         foreach (var route in feed.Routes)
         {
             var trips = tripsByRoute[route.Id].ToList();
@@ -122,10 +201,8 @@ public class GtfsImportService(
                 var stopCodes = variant.Stops.Select(s => stops[s.StopId].Code);
                 var key = Key($"{route.Code}|{variant.DirectionId}|{string.Join('>', stopCodes)}");
                 var share = (double)tripIds.Count / Math.Max(1, trips.Count(t => t.Trip.DirectionId == variant.DirectionId));
-                var main = variant.SortOrder == 0;
-                var included = variantKeys?.Contains(key) ?? (main || share >= MinVariantShare);
 
-                result.Add((variant, new GtfsImportVariant(
+                result.Add(new DerivedVariant(variant, tripIds, new GtfsImportVariant(
                     key,
                     route.Code,
                     route.ShortName ?? route.LongName,
@@ -134,10 +211,11 @@ public class GtfsImportService(
                     variant.Headsign,
                     variant.Stops.Count,
                     tripIds.Count,
+                    tripIds.Count(expiredTrips.Contains),
                     variant.Stops.Sum(s => s.TravelTime + s.DwellTime),
                     share,
-                    main,
-                    included)));
+                    Main: variant.SortOrder == 0,
+                    Included: chosen?.Contains(key) ?? true)));
             }
         }
 
@@ -147,4 +225,6 @@ public class GtfsImportService(
     /// <summary>Kratki stalni ključ (isti feed daje isti ključ i u pregledu i u uvozu).</summary>
     private static string Key(string value) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)))[..16].ToLowerInvariant();
+
+    private sealed record DerivedVariant(IRouteVariantModel Variant, IReadOnlyList<Guid> TripIds, GtfsImportVariant Summary);
 }

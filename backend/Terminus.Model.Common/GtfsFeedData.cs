@@ -4,7 +4,7 @@ namespace Terminus.Model.Common;
 /// Cijeli vozni red instance za upis odjednom (uvoz GTFS-a). Id-evi su već
 /// dodijeljeni i veze (npr. Trip.RouteId) pokazuju na njih.
 /// </summary>
-public sealed class GtfsFeedData
+public sealed record GtfsFeedData
 {
     public required IReadOnlyList<IAgencyModel> Agencies { get; init; }
     public required IReadOnlyList<IStopModel> Stops { get; init; }
@@ -24,4 +24,10 @@ public sealed class GtfsFeedData
     public required IReadOnlyList<IFareModel> Fares { get; init; }
 
     public IFeedInfoModel? FeedInfo { get; init; }
+
+    /// <summary>Sezona napravljena iz kalendara feeda; bez nje su kalendari izvan sezona.</summary>
+    public ITimetableSeasonModel? Season { get; init; }
+
+    /// <summary>Dani sezone koji odstupaju od dana u tjednu.</summary>
+    public IReadOnlyList<SeasonDay> SeasonDays { get; init; } = [];
 }

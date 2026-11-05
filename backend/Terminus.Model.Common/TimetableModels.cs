@@ -14,7 +14,7 @@ public sealed record TripSummary(
     string? LastStopName);
 
 /// <summary>Koliko podataka voznog reda instanca ima.</summary>
-public sealed record TimetableCounts(int Agencies, int Stops, int Routes, int Trips);
+public sealed record TimetableCounts(int Agencies, int Stops, int Routes, int Trips, int Seasons);
 
 /// <summary>Pravokutno područje karte (WGS84), rubovi uključeni.</summary>
 public sealed record GeoBounds(double MinLatitude, double MinLongitude, double MaxLatitude, double MaxLongitude);

@@ -6,30 +6,59 @@ POST /api/gtfs/import           uvoz (polje "variants": odabrane varijante)
 ```
 
 Oba primaju GTFS ZIP kao `multipart/form-data` (polje `file`, najviše 200 MB)
-i vraćaju isti izvještaj. Dashboard prvo šalje pregled, prikaže izvještaj s
-popisom varijanti linija i nakon potvrde šalje istu datoteku i odabrane
-varijante (`variants`, JSON popis ključeva iz pregleda; bez njega vrijedi zadani
-izbor).
+i vraćaju isti izvještaj. Dashboard prvo šalje pregled, prikaže izvještaj i
+odabir varijanti, a nakon potvrde šalje istu datoteku s poljima `variants` (JSON
+popis ključeva iz pregleda; bez njega se uvoze sve) i `skipExpired` (izostavlja
+kalendare koji više ne voze).
 
-**Uvozi se osnova, a ne vozni red.** Terminus je alat u kojem se vozni red
-radi; tuđi GTFS pomaže da se ne kreće od nule, ali se njegovi kalendari i
-vožnje ne preuzimaju (često su neuredni, npr. kalendari po tjednima samo s
-datumima). Uvoze se:
+**Uvoz zamjenjuje sve podatke voznog reda.** U jednoj transakciji briše se sve,
+uključujući sezone i vožnje rađene u aplikaciji, i upisuje feed. Ostaju samo
+korisnici i postavke instance. Ako upis ne uspije, podaci ostaju netaknuti, a
+feed s greškama vraća `422` s izvještajem i ne mijenja ništa. Zato je uvoz
+namijenjen početku rada ili prelasku na novi feed, a ne redovitom osvježavanju.
+Dashboard upozorava već pri odabiru datoteke, a prije uvoza traži potvrdu s
+brojem zapisa koji se brišu. Uspješan uvoz završava čarobnjak prvog pokretanja.
 
 | Uvozi se | Napomena |
 |---|---|
 | prijevoznici, stanice (s kolodvorima i peronima), linije | |
 | trase (`shapes.txt`) | |
 | **varijante linija** | prepoznate iz vožnji, s vremenima vožnje (vidi niže) |
-| cijene (Fares v1) i `feed_info` | zamjenjuju postojeće |
-| kalendari i vožnje | **ne**; čitaju se samo za prepoznavanje varijanti |
+| kalendari i iznimke | kao sezona ako je moguće, inače izvan sezona (vidi niže) |
+| vožnje i vremena | povezane s varijantom po kojoj voze i s polaskom |
+| cijene (Fares v1) i `feed_info` | |
 
-**Uvoz dopunjava.** Zapisi s istim GTFS ID-em (`code`) se ažuriraju, a novi
-dodaju; ništa se ne briše. Sezone, vožnje i ručno uređene varijante ostaju.
-Varijante iz prethodnog uvoza koje nemaju vožnji zamjenjuju se novima, a nova
-varijanta istog smjera i redoslijeda stanica kao postojeća se preskače. Ako
-feed ima greške, uvoz vraća `422` s izvještajem i ništa ne mijenja. Uspješan
-uvoz završava čarobnjak prvog pokretanja.
+## Istekli kalendari
+
+Kalendar je istekao ako od današnjeg dana (u zoni prijevoznika) nema nijedan dan
+vožnje. Računa se iz stvarnih dana, a ne iz `end_date`: feed može imati kalendar
+do 2030. bez ijednog dana u tjednu, sa svim datumima u `calendar_dates.txt`.
+Izvještaj u `expired` navodi koliko je kalendara, vožnji i vremena isteklo. Uz
+`skipExpired` oni se ne uvoze, a dashboard je tu opciju zadano uključio.
+
+## Sezona iz feeda
+
+Polje `createSeason` od kalendara radi jednu sezonu; dashboard ga zadano
+uključuje. Sezona traje od prvog do zadnjeg stvarnog dana vožnje, a uz
+`skipExpired` počinje današnjim danom. Za svaki dan u tjednu najčešći kalendar
+postaje njegov tip dana („Radni dan”, „Subota”), a ostali su tipovi dana bez dana
+u tjednu koji voze kroz ručne iznimke „vozi kao”. Dan bez vožnje na koji bi tip
+dana inače vozio postaje „ne vozi”. Sezona tako vozi točno iste dane kao feed.
+Automatski državni praznici se ne dodaju, jer ih feed već sadrži.
+
+Sezona nije moguća ako istog dana vozi više kalendara, jer tip dana isključuje
+ostale, ako feed ima više od 10 kalendara s vožnjama ili traje dulje od 731 dan.
+Izvještaj u `season` (cijeli feed) i `activeSeason` (bez isteklih kalendara)
+opisuje što bi nastalo ili u `problem` kaže zašto ne može. Tada kalendari ostaju
+izvan sezona i uvoz uspijeva uz upozorenje. Kalendari bez vožnji ostaju izvan
+sezone.
+
+## Polasci
+
+Vožnje s istim vremenima, stanicama, varijantom, natpisima i trasom u različitim
+kalendarima dijele `departure_id`, pa se u grafikonu mijenjaju zajedno. Vozilo
+(`block_id`) smije biti različito. Polazak ima najviše jednu vožnju po kalendaru,
+pa je druga ista vožnja u kalendaru zaseban polazak.
 
 ## Varijante linija
 
@@ -39,10 +68,11 @@ su medijan njezinih vožnji, a natpis smjera i trasa najčešći. Naziv je
 „prva → zadnja stanica” (isti naziv dobiva broj: „… (2)”). Unutar smjera
 varijanta s najviše vožnji je glavna.
 
-Zadano se uvoze glavne varijante i one s barem 5 % vožnji smjera; rijetke
-(npr. pojedinačne vožnje u garažu) korisnik uključuje sam u pregledu. Ključ
-varijante je sažetak linije, smjera i GTFS ID-eva stanica, pa isti feed daje
-iste ključeve i u pregledu i u uvozu.
+Zadano se uvoze sve varijante. **Vožnje neodabrane varijante se ne uvoze**, pa
+bi izostavljanje rijetkih varijanti izgubilo stvarne polaske. Ključ varijante je
+sažetak linije, smjera i GTFS ID-eva stanica, pa isti feed daje iste ključeve i
+u pregledu i u uvozu. Varijanta sa samo isteklim vožnjama ima
+`expiredTripCount = tripCount` i ne uvozi se uz `skipExpired`.
 
 ## Izvještaj
 
@@ -50,16 +80,19 @@ iste ključeve i u pregledu i u uvozu.
 {
   "imported": false,
   "canImport": true,
-  "counts": { "agencies": 1, "stops": 3800, "routes": 154, "calendars": 7, "calendarDates": 95,
-              "trips": 66661, "stopTimes": 1131537, "shapes": 561, "shapePoints": 82147,
+  "counts": { "agencies": 1, "stops": 3802, "routes": 154, "calendars": 10, "calendarDates": 72,
+              "trips": 98915, "stopTimes": 1697138, "shapes": 536, "shapePoints": 78469,
               "fares": 0, "fareRules": 0, "feedInfo": true,
               "tripsFromFrequencies": 0, "interpolatedStopTimes": 0 },
-  "existing": { "agencies": 0, "stops": 0, "routes": 0, "trips": 0 },
-  "changes": { "newAgencies": 1, "updatedAgencies": 0, "newStops": 3800, "updatedStops": 0,
-               "newRoutes": 154, "updatedRoutes": 0, "newShapes": 561, "updatedShapes": 0 },
+  "existing": { "agencies": 0, "stops": 0, "routes": 0, "trips": 0, "seasons": 0 },
+  "expired": { "calendars": 5, "trips": 47892, "stopTimes": 824980 },
+  "season": { "problem": null, "name": "Vozni red 21. 10. 2026. – 31. 12. 2026.", "startDate": "2026-10-21",
+              "endDate": "2026-12-31", "dayTypes": ["Radni dan", "Subota", "…"], "exceptions": 16 },
+  "activeSeason": { "problem": null, "name": "Vozni red 5. 11. 2026. – 31. 12. 2026.", "startDate": "2026-11-05",
+                    "endDate": "2026-12-31", "dayTypes": ["Radni dan", "Subota", "…"], "exceptions": 6 },
   "variants": [
     { "key": "3f1c…", "routeCode": "6", "routeName": "6", "directionId": 0,
-      "name": "Črnomerec → Sopot", "headsign": "Sopot", "stopCount": 23, "tripCount": 584,
+      "name": "Črnomerec → Sopot", "headsign": "Sopot", "stopCount": 23, "tripCount": 584, "expiredTripCount": 280,
       "duration": 2340, "share": 0.66, "main": true, "included": true }
   ],
   "errors": [],
@@ -71,10 +104,12 @@ iste ključeve i u pregledu i u uvozu.
 }
 ```
 
-- `counts` – što je pročitano iz feeda, nakon preskakanja neispravnih zapisa.
-- `existing` – podaci u instanci prije uvoza.
-- `changes` – koliko je prijevoznika, stanica, linija i trasa novo, a koliko
-  se ažurira.
+- `counts` – što se uvozi, nakon preskakanja neispravnih zapisa i primjene
+  odabira.
+- `existing` – podaci u instanci prije uvoza; uvoz ih briše.
+- `expired` – dio feeda koji od današnjeg dana više ne vozi.
+- `season`, `activeSeason` – sezona koja bi nastala s isteklim kalendarima i bez
+  njih.
 - `variants` – prepoznate varijante linija; `included` kaže uvozi li se.
 - `errors` – zbog njih se feed ne može uvesti (`canImport: false`).
 - `warnings` – zapisi koji su preskočeni ili ispravljeni; uvoz je moguć.
@@ -97,7 +132,8 @@ preskače se lančano (npr. vožnja na preskočenoj liniji).
 
 Bez `trips.txt` i `stop_times.txt`, ili kad nakon provjere ne ostane nijedna
 vožnja, uvoz je moguć, ali bez varijanti (upozorenje). Bez kalendara
-(`calendar.txt` i `calendar_dates.txt`) vožnje se i dalje koriste za varijante.
+(`calendar.txt` i `calendar_dates.txt`) vožnje se ne uvoze, nego služe samo za
+varijante (upozorenje).
 
 | Upozorenje | Posljedica |
 |---|---|
@@ -155,11 +191,14 @@ datumi i verzija (izvoz ih računa sam).
 |---|---|
 | CSV i ZIP | `GtfsCsvReader`, `GtfsArchive` (`Terminus.Service/Gtfs/Import`) |
 | Provjere i pretvorbe | `GtfsFeedReader` (stanice, linije, kalendari, trase, cijene, vožnje i vremena) |
+| Istekli kalendari | `ExpiredCalendars` |
+| Sezona i polasci | `FeedSeasonBuilder`, `DepartureLinker` |
 | Izvještaj | `ImportReportBuilder` |
 | Varijante iz vožnji | `RouteVariantBuilder` |
 | Pregled i uvoz | `GtfsImportService` |
-| Upis | `GtfsImportRepository`: dopuna po GTFS ID-u u jednoj transakciji; točke trasa binarnim `COPY`-jem |
+| Upis | `GtfsImportRepository`: `TRUNCATE` i upis u jednoj transakciji; kalendari, točke trasa, vožnje i vremena binarnim `COPY`-jem |
 
-Za ZET (3.800 stanica, 154 linije, 66.661 vožnja s 1,1 milijun vremena) pregled
-traje oko 4 s, a uvoz oko 6 s (559 prepoznatih varijanti, 430 zadano
-odabranih).
+ZET-ov feed (studeni 2026.) ima 3.802 stanice, 154 linije, 98.915 vožnji s 1,7
+milijuna vremena i 532 varijante; 48 % vožnji je u kalendarima koji su već
+istekli. Bez njih nastaje sezona 5. 11. – 31. 12. s pet tipova dana i šest dana
+koji odstupaju, a 44.631 od 51.023 vožnje čini 19.905 polazaka.
