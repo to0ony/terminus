@@ -124,8 +124,9 @@ razdoblja. Iz razdoblja nastaju dani sezone s izvorom „razdoblje” (svaki dan
 razdoblja u kojem zamijenjeni tip dana inače vozi), a iz njih iznimke kao i za
 praznike. Ručna iznimka i praznik imaju prednost, pa Božić u raspustu vozi po
 pravilu za praznike. Razdoblja istog tipa dana se ne preklapaju.
-Kalendari uvezeni iz GTFS-a nisu u sezoni i ostaju kakvi jesu. GTFS uvoz briše
-i sezone, kao i sve ostale podatke voznog reda.
+GTFS uvoz briše sezone, kao i sve ostale podatke voznog reda, a od kalendara
+feeda može napraviti novu sezonu. Inače su uvezeni kalendari izvan sezona i
+ostaju kakvi jesu.
 
 **Varijante linije.** Varijanta (`route_variants`) je redoslijed stanica
 jednog smjera linije (npr. Črnomerec → Sopot, skraćena, iz garaže), s

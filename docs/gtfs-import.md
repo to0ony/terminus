@@ -24,8 +24,8 @@ brojem zapisa koji se brišu. Uspješan uvoz završava čarobnjak prvog pokretan
 | prijevoznici, stanice (s kolodvorima i peronima), linije | |
 | trase (`shapes.txt`) | |
 | **varijante linija** | prepoznate iz vožnji, s vremenima vožnje (vidi niže) |
-| kalendari i iznimke | izvan sezona, kakvi su u feedu |
-| vožnje i vremena | povezane s varijantom po kojoj voze |
+| kalendari i iznimke | kao sezona ako je moguće, inače izvan sezona (vidi niže) |
+| vožnje i vremena | povezane s varijantom po kojoj voze i s polaskom |
 | cijene (Fares v1) i `feed_info` | |
 
 ## Istekli kalendari
@@ -35,6 +35,30 @@ vožnje. Računa se iz stvarnih dana, a ne iz `end_date`: feed može imati kalen
 do 2030. bez ijednog dana u tjednu, sa svim datumima u `calendar_dates.txt`.
 Izvještaj u `expired` navodi koliko je kalendara, vožnji i vremena isteklo. Uz
 `skipExpired` oni se ne uvoze, a dashboard je tu opciju zadano uključio.
+
+## Sezona iz feeda
+
+Polje `createSeason` od kalendara radi jednu sezonu; dashboard ga zadano
+uključuje. Sezona traje od prvog do zadnjeg stvarnog dana vožnje, a uz
+`skipExpired` počinje današnjim danom. Za svaki dan u tjednu najčešći kalendar
+postaje njegov tip dana („Radni dan”, „Subota”), a ostali su tipovi dana bez dana
+u tjednu koji voze kroz ručne iznimke „vozi kao”. Dan bez vožnje na koji bi tip
+dana inače vozio postaje „ne vozi”. Sezona tako vozi točno iste dane kao feed.
+Automatski državni praznici se ne dodaju, jer ih feed već sadrži.
+
+Sezona nije moguća ako istog dana vozi više kalendara, jer tip dana isključuje
+ostale, ako feed ima više od 10 kalendara s vožnjama ili traje dulje od 731 dan.
+Izvještaj u `season` (cijeli feed) i `activeSeason` (bez isteklih kalendara)
+opisuje što bi nastalo ili u `problem` kaže zašto ne može. Tada kalendari ostaju
+izvan sezona i uvoz uspijeva uz upozorenje. Kalendari bez vožnji ostaju izvan
+sezone.
+
+## Polasci
+
+Vožnje s istim vremenima, stanicama, varijantom, natpisima i trasom u različitim
+kalendarima dijele `departure_id`, pa se u grafikonu mijenjaju zajedno. Vozilo
+(`block_id`) smije biti različito. Polazak ima najviše jednu vožnju po kalendaru,
+pa je druga ista vožnja u kalendaru zaseban polazak.
 
 ## Varijante linija
 
@@ -62,6 +86,10 @@ u pregledu i u uvozu. Varijanta sa samo isteklim vožnjama ima
               "tripsFromFrequencies": 0, "interpolatedStopTimes": 0 },
   "existing": { "agencies": 0, "stops": 0, "routes": 0, "trips": 0, "seasons": 0 },
   "expired": { "calendars": 5, "trips": 47892, "stopTimes": 824980 },
+  "season": { "problem": null, "name": "Vozni red 21. 10. 2026. – 31. 12. 2026.", "startDate": "2026-10-21",
+              "endDate": "2026-12-31", "dayTypes": ["Radni dan", "Subota", "…"], "exceptions": 16 },
+  "activeSeason": { "problem": null, "name": "Vozni red 5. 11. 2026. – 31. 12. 2026.", "startDate": "2026-11-05",
+                    "endDate": "2026-12-31", "dayTypes": ["Radni dan", "Subota", "…"], "exceptions": 6 },
   "variants": [
     { "key": "3f1c…", "routeCode": "6", "routeName": "6", "directionId": 0,
       "name": "Črnomerec → Sopot", "headsign": "Sopot", "stopCount": 23, "tripCount": 584, "expiredTripCount": 280,
@@ -80,6 +108,8 @@ u pregledu i u uvozu. Varijanta sa samo isteklim vožnjama ima
   odabira.
 - `existing` – podaci u instanci prije uvoza; uvoz ih briše.
 - `expired` – dio feeda koji od današnjeg dana više ne vozi.
+- `season`, `activeSeason` – sezona koja bi nastala s isteklim kalendarima i bez
+  njih.
 - `variants` – prepoznate varijante linija; `included` kaže uvozi li se.
 - `errors` – zbog njih se feed ne može uvesti (`canImport: false`).
 - `warnings` – zapisi koji su preskočeni ili ispravljeni; uvoz je moguć.
@@ -162,6 +192,7 @@ datumi i verzija (izvoz ih računa sam).
 | CSV i ZIP | `GtfsCsvReader`, `GtfsArchive` (`Terminus.Service/Gtfs/Import`) |
 | Provjere i pretvorbe | `GtfsFeedReader` (stanice, linije, kalendari, trase, cijene, vožnje i vremena) |
 | Istekli kalendari | `ExpiredCalendars` |
+| Sezona i polasci | `FeedSeasonBuilder`, `DepartureLinker` |
 | Izvještaj | `ImportReportBuilder` |
 | Varijante iz vožnji | `RouteVariantBuilder` |
 | Pregled i uvoz | `GtfsImportService` |
@@ -169,4 +200,5 @@ datumi i verzija (izvoz ih računa sam).
 
 ZET-ov feed (studeni 2026.) ima 3.802 stanice, 154 linije, 98.915 vožnji s 1,7
 milijuna vremena i 532 varijante; 48 % vožnji je u kalendarima koji su već
-istekli.
+istekli. Bez njih nastaje sezona 5. 11. – 31. 12. s pet tipova dana i šest dana
+koji odstupaju, a 44.631 od 51.023 vožnje čini 19.905 polazaka.

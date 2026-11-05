@@ -50,7 +50,7 @@ Sve osim `/api/public/*`, `/api/auth/login` i `/health` traži prijavu
 | Trase | `/api/shapes` |
 | Cijene karata | `/api/fares` |
 | Izdavač feeda | `/api/feed-info` |
-| GTFS uvoz (zamjenjuje sve podatke) | `POST /api/gtfs/import/preview`, `POST /api/gtfs/import` (polja `variants` i `skipExpired`) |
+| GTFS uvoz (zamjenjuje sve podatke) | `POST /api/gtfs/import/preview`, `POST /api/gtfs/import` (polja `variants`, `skipExpired` i `createSeason`) |
 | GTFS izvoz | `GET /api/gtfs`; provjere bez izvoza `GET /api/gtfs/check` (`{ problems }`, prazno ako je feed spreman) |
 
 Resursi bez navedene metode imaju uobičajeni CRUD: `GET` popis (straničen,
