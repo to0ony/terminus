@@ -24,4 +24,10 @@ public sealed record GtfsFeedData
     public required IReadOnlyList<IFareModel> Fares { get; init; }
 
     public IFeedInfoModel? FeedInfo { get; init; }
+
+    /// <summary>Sezona napravljena iz kalendara feeda; bez nje su kalendari izvan sezona.</summary>
+    public ITimetableSeasonModel? Season { get; init; }
+
+    /// <summary>Dani sezone koji odstupaju od dana u tjednu.</summary>
+    public IReadOnlyList<SeasonDay> SeasonDays { get; init; } = [];
 }

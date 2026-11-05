@@ -26,6 +26,7 @@ public class GtfsImportService(
             return report;
         }
 
+        DepartureLinker.Link(feed);
         await importRepository.ReplaceAllAsync(feed, variants, cancellationToken);
         await settingsRepository.MarkSetupCompletedAsync(timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
 
@@ -57,23 +58,35 @@ public class GtfsImportService(
         }
 
         var expired = new GtfsImportExpired(0, 0, 0);
+        GtfsImportSeason? season = null;
+        GtfsImportSeason? activeSeason = null;
         var derived = new List<DerivedVariant>();
         if (feed is not null)
         {
-            var expiredCalendars = ExpiredCalendars.Find(feed.Calendars, feed.CalendarDates, Today(feed));
+            var today = Today(feed);
+            var expiredCalendars = ExpiredCalendars.Find(feed.Calendars, feed.CalendarDates, today);
             var expiredTrips = feed.Trips.Where(t => expiredCalendars.Contains(t.ServiceCalendarId)).Select(t => t.Id).ToHashSet();
             expired = new GtfsImportExpired(
                 expiredCalendars.Count,
                 expiredTrips.Count,
                 feed.StopTimes.Count(st => expiredTrips.Contains(st.TripId)));
 
+            var active = WithoutExpired(feed, expiredCalendars, expiredTrips);
+            season = Summary(FeedSeasonBuilder.Build(feed, null));
+            activeSeason = Summary(FeedSeasonBuilder.Build(active, today));
+
             if (options.SkipExpired)
             {
-                feed = WithoutExpired(feed, expiredCalendars, expiredTrips);
+                feed = active;
             }
 
             derived = DeriveVariants(feed, options.VariantKeys, expiredTrips);
             feed = WithChosenTrips(feed, derived);
+            if (options.CreateSeason)
+            {
+                feed = WithSeason(feed, FeedSeasonBuilder.Build(feed, options.SkipExpired ? today : null), builder);
+            }
+
             counts = counts with
             {
                 Calendars = feed.Calendars.Count,
@@ -89,6 +102,8 @@ public class GtfsImportService(
             Counts: counts,
             Existing: existing,
             Expired: expired,
+            Season: season,
+            ActiveSeason: activeSeason,
             Variants: derived.Select(d => d.Summary).ToList(),
             Errors: builder.Errors,
             Warnings: builder.Warnings,
@@ -111,6 +126,31 @@ public class GtfsImportService(
         Trips = feed.Trips.Where(t => !trips.Contains(t.Id)).ToList(),
         StopTimes = feed.StopTimes.Where(st => !trips.Contains(st.TripId)).ToList()
     };
+
+    private static GtfsImportSeason Summary(FeedSeason season) => new(
+        season.Problem,
+        season.Season?.Name,
+        season.Season?.StartDate,
+        season.Season?.EndDate,
+        season.DayTypes.Select(d => d.Name).ToList(),
+        season.Days.Count);
+
+    private static GtfsFeedData WithSeason(GtfsFeedData feed, FeedSeason season, ImportReportBuilder report)
+    {
+        if (season.Problem is not null)
+        {
+            report.Warning(null, $"Sezona nije napravljena: {season.Problem} Kalendari ostaju izvan sezona.");
+            return feed;
+        }
+
+        return feed with
+        {
+            Season = season.Season,
+            SeasonDays = season.Days,
+            Calendars = [.. season.DayTypes, .. season.OtherCalendars],
+            CalendarDates = [.. season.CalendarDates, .. season.OtherCalendarDates]
+        };
+    }
 
     /// <summary>
     /// Vožnje za upis: one odabranih varijanti, povezane s varijantom. Vožnje bez

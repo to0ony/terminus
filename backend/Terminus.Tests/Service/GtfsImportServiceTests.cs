@@ -468,6 +468,85 @@ public class GtfsImportServiceTests
         Assert.Equal(["Radni dan (RD)", "Radni dan (RD2)"], _repository.Feed!.Calendars.Select(c => c.Name).Order());
     }
 
+    [Fact]
+    public async Task PreviewAsync_ReportsSeasonWithAndWithoutExpiredCalendars()
+    {
+        AddExpiredTrip();
+
+        var report = await Service.PreviewAsync(Zip(_files), Ct);
+
+        // Oba kalendara voze radnim danom, pa sezona iz cijelog feeda nije moguća.
+        Assert.Contains("više kalendara", report.Season!.Problem);
+        var active = report.ActiveSeason!;
+        Assert.Null(active.Problem);
+        Assert.Equal((new DateOnly(2026, 10, 16), new DateOnly(2026, 12, 31)), (active.StartDate!.Value, active.EndDate!.Value));
+        Assert.Equal(["Radni dan"], active.DayTypes);
+    }
+
+    [Fact]
+    public async Task ImportAsync_CreateSeason_PutsCalendarsIntoSeason()
+    {
+        var report = await Service.ImportAsync(Zip(_files), new GtfsImportOptions(CreateSeason: true), Ct);
+
+        Assert.True(report.Imported, Describe(report));
+        var feed = _repository.Feed!;
+        var calendar = Assert.Single(feed.Calendars);
+        Assert.Equal(feed.Season!.Id, calendar.SeasonId);
+        Assert.Equal(calendar.Id, Assert.Single(feed.Trips).ServiceCalendarId);
+    }
+
+    [Fact]
+    public async Task ImportAsync_SkipExpiredWithSeason_StartsSeasonToday()
+    {
+        AddExpiredTrip();
+
+        await Service.ImportAsync(Zip(_files), new GtfsImportOptions(SkipExpired: true, CreateSeason: true), Ct);
+
+        Assert.Equal(new DateOnly(2026, 10, 16), _repository.Feed!.Season!.StartDate);
+    }
+
+    [Fact]
+    public async Task ImportAsync_WithoutCreateSeason_LeavesCalendarsOutsideSeasons()
+    {
+        await Service.ImportAsync(Zip(_files), new GtfsImportOptions(), Ct);
+
+        Assert.Null(_repository.Feed!.Season);
+        Assert.Null(Assert.Single(_repository.Feed.Calendars).SeasonId);
+    }
+
+    [Fact]
+    public async Task ImportAsync_ImpossibleSeason_WarnsAndKeepsCalendars()
+    {
+        AddExpiredTrip();
+
+        var report = await Service.ImportAsync(Zip(_files), new GtfsImportOptions(CreateSeason: true), Ct);
+
+        Assert.True(report.Imported, Describe(report));
+        Assert.Null(_repository.Feed!.Season);
+        Assert.Equal(2, _repository.Feed.Calendars.Count);
+        Assert.Contains(report.Warnings, w => w.Message.Contains("Sezona nije napravljena"));
+    }
+
+    [Fact]
+    public async Task ImportAsync_SameTripInTwoCalendars_IsLinkedAsDeparture()
+    {
+        _files["calendar.txt"] += "\nSUB,0,0,0,0,0,1,0,20260101,20261231";
+        _files["trips.txt"] += "\nL1,SUB,T2,Bolnica,0";
+        _files["stop_times.txt"] += """
+
+            T2,06:00:00,06:00:00,AK-1,1,0
+            T2,,,B,2,5
+            T2,06:20:00,06:20:00,C,3,20
+            """;
+
+        await Service.ImportAsync(Zip(_files), new GtfsImportOptions(), Ct);
+
+        var trips = _repository.Feed!.Trips;
+        Assert.Equal(2, trips.Count);
+        Assert.NotNull(trips[0].DepartureId);
+        Assert.Equal(trips[0].DepartureId, trips[1].DepartureId);
+    }
+
     private void AddExpiredTrip()
     {
         _files["calendar.txt"] += "\nOLD,1,1,1,1,1,0,0,20260101,20260930";

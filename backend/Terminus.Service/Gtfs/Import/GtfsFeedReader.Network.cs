@@ -305,7 +305,7 @@ internal sealed partial class GtfsFeedReader
     }
 
     /// <param name="days">Ponedjeljak do nedjelja.</param>
-    private static string WeekdayName(bool[] days)
+    internal static string WeekdayName(bool[] days)
     {
         string[] full = ["Ponedjeljak", "Utorak", "Srijeda", "Četvrtak", "Petak", "Subota", "Nedjelja"];
         string[] shortNames = ["Pon", "Uto", "Sri", "Čet", "Pet", "Sub", "Ned"];

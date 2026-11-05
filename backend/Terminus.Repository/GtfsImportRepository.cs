@@ -46,7 +46,8 @@ public class GtfsImportRepository(TerminusDbContext context) : IGtfsImportReposi
             ("saturday", NpgsqlDbType.Boolean, c => c.Saturday),
             ("sunday", NpgsqlDbType.Boolean, c => c.Sunday),
             ("start_date", NpgsqlDbType.Date, c => c.StartDate),
-            ("end_date", NpgsqlDbType.Date, c => c.EndDate));
+            ("end_date", NpgsqlDbType.Date, c => c.EndDate),
+            ("season_id", NpgsqlDbType.Uuid, c => c.SeasonId));
 
         await CopyAsync(connection, "calendar_dates", feed.CalendarDates, cancellationToken,
             ("service_calendar_id", NpgsqlDbType.Uuid, d => d.ServiceCalendarId),
@@ -72,6 +73,7 @@ public class GtfsImportRepository(TerminusDbContext context) : IGtfsImportReposi
             ("block_id", NpgsqlDbType.Text, t => t.BlockId),
             ("shape_id", NpgsqlDbType.Uuid, t => t.ShapeId),
             ("variant_id", NpgsqlDbType.Uuid, t => t.VariantId),
+            ("departure_id", NpgsqlDbType.Uuid, t => t.DepartureId),
             ("wheelchair_accessible", NpgsqlDbType.Smallint, t => (short)t.WheelchairAccessible),
             ("bikes_allowed", NpgsqlDbType.Smallint, t => (short)t.BikesAllowed));
 
@@ -88,6 +90,18 @@ public class GtfsImportRepository(TerminusDbContext context) : IGtfsImportReposi
             ("continuous_drop_off", NpgsqlDbType.Smallint, st => (short?)st.ContinuousDropOff),
             ("shape_dist_traveled", NpgsqlDbType.Double, st => st.ShapeDistTraveled),
             ("timepoint", NpgsqlDbType.Boolean, st => st.Timepoint));
+
+        // Dani pokazuju na kalendare, pa idu nakon njih.
+        context.SeasonDays.AddRange(feed.SeasonDays.Select(d => new DAL.Entities.SeasonDay
+        {
+            SeasonId = feed.Season!.Id,
+            Date = d.Date,
+            Mode = (short)d.Mode,
+            CalendarId = d.CalendarId,
+            Source = (short)d.Source,
+            Note = d.Note
+        }));
+        await context.SaveChangesAsync(cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
     }
@@ -141,6 +155,19 @@ public class GtfsImportRepository(TerminusDbContext context) : IGtfsImportReposi
             var entity = new FeedInfo();
             FeedInfoMapper.Apply(feed.FeedInfo, entity);
             context.FeedInfo.Add(entity);
+        }
+
+        if (feed.Season is { } season)
+        {
+            context.TimetableSeasons.Add(new TimetableSeason
+            {
+                Id = season.Id,
+                Name = season.Name,
+                StartDate = season.StartDate,
+                EndDate = season.EndDate,
+                HolidayCountry = season.HolidayCountry,
+                HolidayMode = (short)season.HolidayMode
+            });
         }
     }
 

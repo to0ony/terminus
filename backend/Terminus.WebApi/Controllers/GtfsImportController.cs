@@ -44,8 +44,9 @@ public class GtfsImportController(IGtfsImportService importService, IOutputCache
     /// voznog reda (korisnici i postavke ostaju), upisuje feed i završava čarobnjak
     /// prvog pokretanja. Polje "variants" (JSON popis ključeva iz pregleda) bira
     /// varijante i njihove vožnje; bez njega se uvoze sve. Polje "skipExpired"
-    /// izostavlja kalendare koji više ne voze. S greškama vraća 422 i isti
-    /// izvještaj, a podaci ostaju nepromijenjeni.
+    /// izostavlja kalendare koji više ne voze, a "createSeason" od kalendara radi
+    /// sezonu ako je to moguće. S greškama vraća 422 i isti izvještaj, a podaci
+    /// ostaju nepromijenjeni.
     /// </summary>
     [HttpPost]
     [Consumes("multipart/form-data")]
@@ -58,6 +59,7 @@ public class GtfsImportController(IGtfsImportService importService, IOutputCache
         IFormFile file,
         [FromForm] string? variants,
         [FromForm] bool skipExpired,
+        [FromForm] bool createSeason,
         CancellationToken cancellationToken)
     {
         IReadOnlyCollection<string>? variantKeys;
@@ -74,7 +76,7 @@ public class GtfsImportController(IGtfsImportService importService, IOutputCache
         }
 
         await using var zip = file.OpenReadStream();
-        var report = await importService.ImportAsync(zip, new GtfsImportOptions(variantKeys, skipExpired), cancellationToken);
+        var report = await importService.ImportAsync(zip, new GtfsImportOptions(variantKeys, skipExpired, createSeason), cancellationToken);
 
         if (report.Imported)
         {

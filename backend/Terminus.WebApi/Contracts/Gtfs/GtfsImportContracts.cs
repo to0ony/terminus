@@ -9,6 +9,8 @@ namespace Terminus.WebApi.Contracts.Gtfs;
 /// <param name="Counts">Što se uvozi, nakon preskakanja neispravnih zapisa i primjene odabira.</param>
 /// <param name="Existing">Podaci u instanci prije uvoza; uvoz ih briše.</param>
 /// <param name="Expired">Dio feeda koji od današnjeg dana više ne vozi.</param>
+/// <param name="Season">Sezona koja bi nastala iz cijelog feeda; null ako feed ima greške.</param>
+/// <param name="ActiveSeason">Sezona bez isteklih kalendara, od današnjeg dana; null ako feed ima greške.</param>
 /// <param name="Variants">Prepoznate varijante linija i koje se uvoze.</param>
 public record GtfsImportReportResponse(
     bool Imported,
@@ -16,6 +18,8 @@ public record GtfsImportReportResponse(
     GtfsImportCountsResponse Counts,
     SetupCountsResponse Existing,
     GtfsImportExpiredResponse Expired,
+    GtfsImportSeasonResponse? Season,
+    GtfsImportSeasonResponse? ActiveSeason,
     IReadOnlyList<GtfsImportVariantResponse> Variants,
     IReadOnlyList<GtfsImportIssueResponse> Errors,
     IReadOnlyList<GtfsImportIssueResponse> Warnings,
@@ -40,6 +44,17 @@ public record GtfsImportCountsResponse(
     int InterpolatedStopTimes);
 
 public record GtfsImportExpiredResponse(int Calendars, int Trips, int StopTimes);
+
+/// <param name="Problem">Zašto se sezona ne može napraviti; null ako može.</param>
+/// <param name="DayTypes">Nazivi tipova dana.</param>
+/// <param name="Exceptions">Broj dana koji odstupaju od dana u tjednu.</param>
+public record GtfsImportSeasonResponse(
+    string? Problem,
+    string? Name,
+    DateOnly? StartDate,
+    DateOnly? EndDate,
+    IReadOnlyList<string> DayTypes,
+    int Exceptions);
 
 /// <param name="Key">Ključ za odabir pri uvozu (polje "variants").</param>
 /// <param name="Duration">Trajanje vožnje u sekundama.</param>
@@ -90,12 +105,17 @@ public static class GtfsImportMappings
             report.Counts.InterpolatedStopTimes),
         new SetupCountsResponse(report.Existing.Agencies, report.Existing.Stops, report.Existing.Routes, report.Existing.Trips, report.Existing.Seasons),
         new GtfsImportExpiredResponse(report.Expired.Calendars, report.Expired.Trips, report.Expired.StopTimes),
+        report.Season?.ToResponse(),
+        report.ActiveSeason?.ToResponse(),
         report.Variants.Select(v => new GtfsImportVariantResponse(
             v.Key, v.RouteCode, v.RouteName, v.DirectionId, v.Name, v.Headsign,
             v.StopCount, v.TripCount, v.ExpiredTripCount, v.Duration, v.Share, v.Main, v.Included)).ToList(),
         report.Errors.Select(ToResponse).ToList(),
         report.Warnings.Select(ToResponse).ToList(),
         report.SkippedFiles.Select(f => new GtfsSkippedFileResponse(f.File, f.Reason)).ToList());
+
+    private static GtfsImportSeasonResponse ToResponse(this GtfsImportSeason season) =>
+        new(season.Problem, season.Name, season.StartDate, season.EndDate, season.DayTypes, season.Exceptions);
 
     private static GtfsImportIssueResponse ToResponse(GtfsImportIssue issue) =>
         new(issue.File, issue.Message, issue.Count, issue.Examples);
