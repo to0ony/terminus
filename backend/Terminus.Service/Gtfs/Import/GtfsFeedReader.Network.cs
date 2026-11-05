@@ -191,6 +191,12 @@ internal sealed partial class GtfsFeedReader
         {
             calendar.Name = CalendarName(calendar, addedDates[calendar.Id].ToList());
         }
+
+        // Grafikon i ispisi razlikuju kalendare po nazivu.
+        foreach (var calendar in _calendarsByCode.Values.GroupBy(c => c.Name).Where(g => g.Count() > 1).SelectMany(g => g))
+        {
+            calendar.Name = $"{calendar.Name} ({calendar.Code})";
+        }
     }
 
     private void ReadCalendarDates()

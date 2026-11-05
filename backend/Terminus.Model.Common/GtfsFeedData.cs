@@ -4,7 +4,7 @@ namespace Terminus.Model.Common;
 /// Cijeli vozni red instance za upis odjednom (uvoz GTFS-a). Id-evi su već
 /// dodijeljeni i veze (npr. Trip.RouteId) pokazuju na njih.
 /// </summary>
-public sealed class GtfsFeedData
+public sealed record GtfsFeedData
 {
     public required IReadOnlyList<IAgencyModel> Agencies { get; init; }
     public required IReadOnlyList<IStopModel> Stops { get; init; }

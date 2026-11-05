@@ -8,7 +8,7 @@ namespace Terminus.WebApi.Contracts.Setup;
 /// <param name="Completed">true kad je čarobnjak prvog pokretanja završen.</param>
 public record SetupStatusResponse(bool Completed, DateTime? CompletedAt, SetupCountsResponse Counts);
 
-public record SetupCountsResponse(int Agencies, int Stops, int Routes, int Trips);
+public record SetupCountsResponse(int Agencies, int Stops, int Routes, int Trips, int Seasons);
 
 /// <summary>Prvi prijevoznik pri početku od nule.</summary>
 public class StartBlankRequest
@@ -38,7 +38,7 @@ public static class SetupMappings
     public static SetupStatusResponse ToResponse(this SetupStatus status) => new(
         status.Completed,
         status.CompletedAt,
-        new SetupCountsResponse(status.Counts.Agencies, status.Counts.Stops, status.Counts.Routes, status.Counts.Trips));
+        new SetupCountsResponse(status.Counts.Agencies, status.Counts.Stops, status.Counts.Routes, status.Counts.Trips, status.Counts.Seasons));
 
     // Name i Url su [Required]; prazan kod, zonu i jezik popunjava servis.
     public static IAgencyModel ToModel(this StartBlankRequest request) => new AgencyModel

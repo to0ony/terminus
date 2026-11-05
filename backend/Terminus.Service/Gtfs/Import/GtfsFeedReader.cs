@@ -45,8 +45,8 @@ internal sealed partial class GtfsFeedReader
     private int _tripsFromFrequencies;
 
     /// <summary>
-    /// Feed bez calendar.txt i calendar_dates.txt: kalendari se ionako ne uvoze,
-    /// pa vožnje služe samo za prepoznavanje varijanti i ne traže kalendar.
+    /// Feed bez calendar.txt i calendar_dates.txt: vožnje nemaju kalendar, pa se
+    /// ne uvoze, nego služe samo za prepoznavanje varijanti.
     /// </summary>
     private bool _withoutCalendars;
     private int _interpolatedStopTimes;
@@ -74,8 +74,7 @@ internal sealed partial class GtfsFeedReader
             _report.SkippedFiles.Add(new GtfsSkippedFile(file, SkipReason(file)));
         }
 
-        // Uvozi se osnova (prijevoznici, stanice, linije, trase); vožnje služe samo
-        // za prepoznavanje varijanti linija, pa nisu obavezne.
+        // Vožnje nisu obavezne: bez njih se uvozi samo osnova, bez varijanti.
         foreach (var required in new[] { "agency.txt", "stops.txt", "routes.txt" })
         {
             if (!_archive.Contains(required))
@@ -95,6 +94,10 @@ internal sealed partial class GtfsFeedReader
             _report.Warning(null, "Feed nema trips.txt i stop_times.txt, pa se varijante linija ne mogu prepoznati; napravit ćeš ih u aplikaciji.");
         }
         _withoutCalendars = !_archive.Contains("calendar.txt") && !_archive.Contains("calendar_dates.txt");
+        if (withTrips && _withoutCalendars)
+        {
+            _report.Warning(null, "Feed nema kalendara, pa se vožnje ne uvoze; iz njih se prepoznaju samo varijante linija.");
+        }
 
         // feed_info prvi: njegov jezik je zadani jezik prijevoznika.
         ReadFeedInfo();

@@ -77,6 +77,6 @@ public class SetupServiceTests
     private sealed class CountingSetupRepository(FakeAgencyRepository agencies) : ISetupRepository
     {
         public async Task<TimetableCounts> GetCountsAsync(CancellationToken cancellationToken = default) =>
-            new(await agencies.AnyAsync(cancellationToken) ? 1 : 0, 0, 0, 0);
+            new(await agencies.AnyAsync(cancellationToken) ? 1 : 0, 0, 0, 0, 0);
     }
 }

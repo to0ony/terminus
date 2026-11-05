@@ -9,10 +9,9 @@ using Terminus.WebApi.Infrastructure;
 namespace Terminus.WebApi.Controllers;
 
 /// <summary>
-/// Uvoz osnove iz GTFS feeda u dva koraka: pregled (provjera, izvještaj i
-/// prepoznate varijante linija, bez upisa) pa uvoz iste datoteke. Uvoze se
-/// prijevoznici, stanice, linije, trase, varijante, cijene i feed_info kao
-/// dopuna; kalendari i vožnje se rade u aplikaciji.
+/// Uvoz GTFS feeda u dva koraka: pregled (provjera, izvještaj i prepoznate
+/// varijante linija, bez upisa) pa uvoz iste datoteke. Uvoz zamjenjuje sve
+/// podatke voznog reda, uključujući sezone i vožnje rađene u aplikaciji.
 /// </summary>
 [ApiController]
 [Route("api/gtfs/import")]
@@ -41,11 +40,12 @@ public class GtfsImportController(IGtfsImportService importService, IOutputCache
     }
 
     /// <summary>
-    /// Uvozi osnovu: ako nema grešaka, u jednoj transakciji ažurira zapise s
-    /// istim GTFS ID-em i dodaje nove (sezone, vožnje i ručne varijante ostaju)
-    /// te završava čarobnjak prvog pokretanja. Polje "variants" (JSON popis
-    /// ključeva iz pregleda) bira varijante; bez njega vrijedi zadani izbor. S
-    /// greškama vraća 422 i isti izvještaj, a podaci ostaju nepromijenjeni.
+    /// Uvozi feed: ako nema grešaka, u jednoj transakciji briše sve podatke
+    /// voznog reda (korisnici i postavke ostaju), upisuje feed i završava čarobnjak
+    /// prvog pokretanja. Polje "variants" (JSON popis ključeva iz pregleda) bira
+    /// varijante i njihove vožnje; bez njega se uvoze sve. Polje "skipExpired"
+    /// izostavlja kalendare koji više ne voze. S greškama vraća 422 i isti
+    /// izvještaj, a podaci ostaju nepromijenjeni.
     /// </summary>
     [HttpPost]
     [Consumes("multipart/form-data")]
@@ -57,6 +57,7 @@ public class GtfsImportController(IGtfsImportService importService, IOutputCache
     public async Task<ActionResult<GtfsImportReportResponse>> Import(
         IFormFile file,
         [FromForm] string? variants,
+        [FromForm] bool skipExpired,
         CancellationToken cancellationToken)
     {
         IReadOnlyCollection<string>? variantKeys;
@@ -73,7 +74,7 @@ public class GtfsImportController(IGtfsImportService importService, IOutputCache
         }
 
         await using var zip = file.OpenReadStream();
-        var report = await importService.ImportAsync(zip, variantKeys, cancellationToken);
+        var report = await importService.ImportAsync(zip, new GtfsImportOptions(variantKeys, skipExpired), cancellationToken);
 
         if (report.Imported)
         {
