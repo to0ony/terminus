@@ -27,6 +27,7 @@ import { useSetupStatus } from '@/features/setup/queries'
 import { formatBytes, formatNumber } from '@/lib/format'
 import { GtfsImportReport } from './GtfsImportReport'
 import { ReplaceConfirmDialog } from './ReplaceConfirmDialog'
+import { SeasonOption } from './SeasonOption'
 import { VariantSelection } from './VariantSelection'
 import {
   hasExistingData,
@@ -52,6 +53,7 @@ export function GtfsImport({ onImported, onCancel }: GtfsImportProps) {
   const preview = usePreviewGtfs()
   const importFeed = useImportGtfs()
   const [skipExpired, setSkipExpired] = useState(true)
+  const [createSeason, setCreateSeason] = useState(true)
   const [confirmOpened, confirm] = useDisclosure(false)
   const status = useSetupStatus()
   // null: korisnik još nije mijenjao odabir, pa vrijede zadane varijante iz pregleda.
@@ -66,6 +68,7 @@ export function GtfsImport({ onImported, onCancel }: GtfsImportProps) {
     (v) => !skipExpired || v.tripCount > v.expiredTripCount,
   )
   const selectedVariants = variants.filter((v) => selection.has(v.key)).length
+  const season = skipExpired ? report?.activeSeason : report?.season
   // Nakon uspješnog uvoza svi su koraci završeni.
   const step = importFeed.data?.imported
     ? 3
@@ -93,7 +96,7 @@ export function GtfsImport({ onImported, onCancel }: GtfsImportProps) {
   const confirmImport = () => {
     if (file) {
       importFeed.mutate(
-        { file, variants: [...selection], skipExpired },
+        { file, variants: [...selection], skipExpired, createSeason },
         { onSuccess: (result) => result.imported && onImported(result) },
       )
     }
@@ -219,6 +222,9 @@ export function GtfsImport({ onImported, onCancel }: GtfsImportProps) {
                   description={`${formatNumber(report.expired.calendars)} kalendara i ${formatNumber(report.expired.trips)} vožnji nemaju nijedan dan vožnje od danas nadalje.`}
                 />
               )}
+              {report.canImport && !report.imported && season && (
+                <SeasonOption season={season} checked={createSeason} onChange={setCreateSeason} />
+              )}
               <GtfsImportReport
                 report={report}
                 selectedVariants={report.imported ? undefined : selectedVariants}
@@ -278,8 +284,7 @@ function NextSteps() {
   return (
     <Alert color="blue" variant="light" icon={<IconInfoCircle />} title="Sljedeći koraci">
       <Text size="sm">
-        Vožnje možeš urediti u grafikonu na stranici linije. Kalendari iz feeda nisu u sezoni; vidiš
-        ih na stranici{' '}
+        Vožnje možeš urediti u grafikonu na stranici linije, a sezonu i kalendare na stranici{' '}
         <Anchor component={Link} to="/calendars" size="sm">
           Kalendari
         </Anchor>

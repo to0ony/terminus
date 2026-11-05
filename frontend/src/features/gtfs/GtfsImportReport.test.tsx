@@ -27,6 +27,8 @@ const report = (overrides: Partial<Report> = {}): Report => ({
   counts,
   existing: { agencies: 0, stops: 0, routes: 0, trips: 0, seasons: 0 },
   expired: { calendars: 5, trips: 47892, stopTimes: 824980 },
+  season: null,
+  activeSeason: null,
   variants: [
     {
       key: 'a',

@@ -117,8 +117,8 @@ function ImportSection() {
           <Title order={3}>Uvoz iz GTFS-a</Title>
           <Text size="sm" c="dimmed">
             Uvozi se cijeli feed: prijevoznici, stanice, linije, trase, varijante, kalendari i
-            vožnje s vremenima. Uvoz zamjenjuje sve postojeće podatke, a upisuje se tek nakon
-            potvrde.
+            vožnje s vremenima, a od kalendara može nastati sezona. Uvoz zamjenjuje sve postojeće
+            podatke, a upisuje se tek nakon potvrde.
           </Text>
         </div>
         <GtfsImport key={run} onImported={() => void handleImported()} />

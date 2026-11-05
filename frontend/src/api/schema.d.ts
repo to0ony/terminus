@@ -918,6 +918,8 @@ export interface paths {
                         variants?: string;
                     } & {
                         skipExpired?: boolean;
+                    } & {
+                        createSeason?: boolean;
                     };
                 };
             };
@@ -5501,10 +5503,23 @@ export interface components {
             counts: components["schemas"]["GtfsImportCountsResponse"];
             existing: components["schemas"]["SetupCountsResponse"];
             expired: components["schemas"]["GtfsImportExpiredResponse"];
+            season: null | components["schemas"]["GtfsImportSeasonResponse"];
+            activeSeason: null | components["schemas"]["GtfsImportSeasonResponse"];
             variants: components["schemas"]["GtfsImportVariantResponse"][];
             errors: components["schemas"]["GtfsImportIssueResponse"][];
             warnings: components["schemas"]["GtfsImportIssueResponse"][];
             skippedFiles: components["schemas"]["GtfsSkippedFileResponse"][];
+        };
+        GtfsImportSeasonResponse: {
+            problem: null | string;
+            name: null | string;
+            /** Format: date */
+            startDate: null | string;
+            /** Format: date */
+            endDate: null | string;
+            dayTypes: string[];
+            /** Format: int32 */
+            exceptions: number;
         };
         GtfsImportVariantResponse: {
             key: string;

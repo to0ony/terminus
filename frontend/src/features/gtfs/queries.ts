@@ -22,12 +22,16 @@ export function hasExistingData({
 /** Najveći ZIP koji backend prima (GtfsImportController.MaxUploadBytes). */
 export const maxGtfsUploadBytes = 200 * 1024 * 1024
 
-function fileBody(file: File, options?: { variants: string[]; skipExpired: boolean }) {
+function fileBody(
+  file: File,
+  options?: { variants: string[]; skipExpired: boolean; createSeason: boolean },
+) {
   const form = new FormData()
   form.append('file', file)
   if (options) {
     form.append('variants', JSON.stringify(options.variants))
     form.append('skipExpired', String(options.skipExpired))
+    form.append('createSeason', String(options.createSeason))
   }
   return { body: {}, bodySerializer: () => form }
 }
@@ -51,14 +55,20 @@ export function useImportGtfs() {
       file,
       variants,
       skipExpired,
+      createSeason,
     }: {
       file: File
       /** Ključevi odabranih varijanti iz pregleda. */
       variants: string[]
       /** Izostavlja kalendare koji više ne voze i njihove vožnje. */
       skipExpired: boolean
+      /** Pretvara kalendare u sezonu. */
+      createSeason: boolean
     }): Promise<GtfsImportReport> => {
-      const result = await api.POST('/api/gtfs/import', fileBody(file, { variants, skipExpired }))
+      const result = await api.POST(
+        '/api/gtfs/import',
+        fileBody(file, { variants, skipExpired, createSeason }),
+      )
       if (result.response.status === 422) {
         return result.error as GtfsImportReport
       }
